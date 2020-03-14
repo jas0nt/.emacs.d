@@ -1,3 +1,17 @@
+;;custom file
+(setq custom-file (expand-file-name "lisp/custom.el" user-emacs-directory))
+(load-file custom-file)
+
+;;configs
+
+;;ido mode
+(setq indo-enable-flex-matching t)
+(setq ido-everywhere t)
+(ido-mode t)
+
+;;buffer
+(defalias 'list-buffers 'ibuffer)
+
 ;;diable error tone
 (setq ring-bell-function 'ignore)
 
@@ -30,5 +44,6 @@
 ;; lazy load
 (with-eval-after-load 'dired
     (define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file))
+
 
 (provide 'init-config)

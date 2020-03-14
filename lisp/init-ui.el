@@ -35,8 +35,5 @@
 ;;highlight current line
 (global-hl-line-mode)
 
-;;color theme
-;(load-theme 'solarized-light t)
-
 
 (provide 'init-ui)
