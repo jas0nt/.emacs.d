@@ -9,13 +9,14 @@
   (package-refresh-contents)
   (package-install 'use-package))
 
-;;(use-package company
-;;  :ensure t
-;;  :config (global-company-mode t))
-
-(use-package god-mode
+(use-package company
   :ensure t
-  :bind (("<escape>" . god-local-mode)))
+  :config (global-company-mode t)
+  :bind (("M-/" . company-dabbrev)))
+
+;;(use-package god-mode
+;;  :ensure t
+;;  :bind (("<escape>" . god-local-mode)))
 
 (use-package helm
   :ensure t
