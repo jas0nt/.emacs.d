@@ -9,9 +9,9 @@
   (package-refresh-contents)
   (package-install 'use-package))
 
-(use-package company
-  :ensure t
-  :config (global-company-mode t))
+;;(use-package company
+;;  :ensure t
+;;  :config (global-company-mode t))
 
 (use-package god-mode
   :ensure t
@@ -19,7 +19,10 @@
 
 (use-package helm
   :ensure t
-  :bind (("M-x" . helm-M-x)))
+  :bind (("M-x" . helm-M-x)
+	 ("C-s" . helm-occur)
+	 ("C-x C-r" . helm-recentf)
+	 ("C-x C-f" . helm-find-files)))
 
 (use-package which-key
   :ensure t
@@ -49,6 +52,11 @@
      '(aw-leading-char-face
        ((t (:inhrit ace-jump-face-foreground :height 3.0)))))
     ))
+
+(use-package avy
+  :ensure t
+  :bind (("C-;" . avy-goto-char)))
+
 
 
 (provide 'init-package)
