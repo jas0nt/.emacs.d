@@ -123,8 +123,11 @@
 #+BEGIN_SRC emacs-lisp
 (use-package company
   :ensure t
-  :config (global-company-mode t)
-  :bind (("M-/" . company-dabbrev)))
+  :config
+  (setq company-idle-delay 0)
+  (setq company-minimum-prefix-length 3)
+  (global-company-mode t)
+  )
 #+END_SRC
 
 ** helm
@@ -198,4 +201,17 @@
   :ensure t
   :config
   (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+#+END_SRC
+
+** evil
+#+BEGIN_SRC emacs-lisp
+(use-package evil
+  :ensure t
+  :config
+  (progn
+    (evil-mode 1)
+    (setcdr evil-insert-state-map nil)
+    ;;(setq evil-default-state 'emacs)
+    (define-key evil-insert-state-map [escape] 'evil-normal-state)
+    ))
 #+END_SRC
