@@ -1,0 +1,201 @@
+#+STARTUP: overview 
+#+PROPERTY: header-args :comments yes :results silent
+
+* General Config
+#+BEGIN_SRC emacs-lisp
+
+;;custom file
+(setq custom-file (expand-file-name "~/.emacs.d/custom.el" user-emacs-directory))
+(load-file custom-file)
+
+;;ido mode
+(setq indo-enable-flex-matching t)
+(setq ido-everywhere t)
+(ido-mode t)
+
+;;buffer
+(defalias 'list-buffers 'ibuffer)
+
+;;diable error tone
+(setq ring-bell-function 'ignore)
+
+;;no backup file
+(setq make-backup-files nil)
+(setq auto-save-default nil)
+
+;;abbrev
+(setq-default abbrev-mode t)
+(define-abbrev-table 'global-abbrev-table '(
+					    ("j" "jason")
+					    ))
+
+;;show recent file
+(recentf-mode 1)
+(setq recentf-max-menu-items 15)
+
+;;delete selection
+(delete-selection-mode 1)
+
+;;paste from clipboard
+(setq x-select-enable-clipboard t)
+
+;;replace Yes/No with y/n
+(fset 'yes-or-no-p 'y-or-n-p)
+
+;; lazy load
+(with-eval-after-load 'dired
+    (define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file))
+
+#+END_SRC
+
+* UI
+#+BEGIN_SRC emacs-lisp
+
+;;hide tool bar
+(tool-bar-mode -1)
+
+;;hide scroll bar
+(scroll-bar-mode -1)
+
+;;hide menu bar
+(menu-bar-mode -1)
+
+;;show line number
+(global-linum-mode t)
+
+;;disable welcome page
+(setq inhibit-splash-screen t)
+
+;;default open with full screen
+(setq initial-frame-alist (quote ((fullscreen . maximized))))
+
+;;set cursor type
+(setq-default cursor-type 'box)
+(set-cursor-color "#ff69b4")
+(blink-cursor-mode 0)
+
+;;show match ()
+(add-hook 'emacs-lisp-mode-hook 'show-paren-mode)
+
+;;show parent fun
+(defadvice show-paren-function (around fix-show-paren-function activate)
+  (cond ((looking-at-p "\\s(") ad-do-it)
+	(t (save-excursion
+	     (ignore-errors (backward-up-list))
+	     ad-do-it)))
+  )
+
+;;highlight current line
+(global-hl-line-mode)
+
+#+END_SRC
+
+* Packages
+
+** elpa
+
+#+BEGIN_SRC emacs-lisp
+(require 'package)
+;;elpa
+(setq package-archives '(("gnu"   . "http://elpa.emacs-china.org/gnu/")
+			 ("melpa" . "http://elpa.emacs-china.org/melpa/")))
+(package-initialize)
+#+END_SRC
+
+** use-package
+
+#+BEGIN_SRC emacs-lisp
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+#+END_SRC
+
+** solarized-theme
+
+#+BEGIN_SRC emacs-lisp
+(use-package solarized-theme
+  :ensure t
+  :config (load-theme 'solarized-light t))
+#+END_SRC
+
+** company
+
+#+BEGIN_SRC emacs-lisp
+(use-package company
+  :ensure t
+  :config (global-company-mode t)
+  :bind (("M-/" . company-dabbrev)))
+#+END_SRC
+
+** helm
+
+#+BEGIN_SRC emacs-lisp
+(use-package helm
+  :ensure t
+  :bind (("M-x" . helm-M-x)
+	 ("C-s" . helm-occur)
+	 ("C-x C-r" . helm-recentf)
+	 ("C-x C-f" . helm-find-files)))
+#+END_SRC
+
+** which-key
+
+#+BEGIN_SRC emacs-lisp
+(use-package which-key
+  :ensure t
+  :config (which-key-mode))
+#+END_SRC
+
+** neotree
+
+#+BEGIN_SRC emacs-lisp
+(use-package neotree
+  :ensure t
+  :bind (("C-x t" . neotree-toggle)))
+#+END_SRC
+
+** youdao-dictionary
+
+#+BEGIN_SRC emacs-lisp
+(use-package youdao-dictionary
+  :ensure t
+  :bind (("C-c d" . youdao-dictionary-search-at-point-tooltip)))
+#+END_SRC
+
+** google-this
+
+#+BEGIN_SRC emacs-lisp
+(use-package google-this
+  :ensure t)
+#+END_SRC
+
+** ace-window
+
+#+BEGIN_SRC emacs-lisp
+(use-package ace-window
+  :ensure t
+  :init
+  (progn
+    (global-set-key [remap other-window] 'ace-window)
+    (custom-set-faces
+     '(aw-leading-char-face
+       ((t (:inhrit ace-jump-face-foreground :height 3.0)))))
+    ))
+#+END_SRC
+
+** avy
+
+#+BEGIN_SRC emacs-lisp
+(use-package avy
+  :ensure t
+  :bind (("C-;" . avy-goto-char)))
+#+END_SRC
+
+** org-bullets
+
+#+BEGIN_SRC emacs-lisp
+(use-package org-bullets
+  :ensure t
+  :config
+  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+#+END_SRC

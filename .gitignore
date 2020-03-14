@@ -15,3 +15,5 @@ auto-save-list/
 elpa/
 recentf
 url/
+
+myinit.el

@@ -1,14 +1,12 @@
-;;load path
-(defun add-subdirs-to-load-path (dir)
-    "Recursive add directories to `load-path'."
-      (let ((default-directory (file-name-as-directory dir)))
-	    (add-to-list 'load-path dir)
-	        (normal-top-level-add-subdirs-to-load-path)))
+(require 'package)
+;;elpa
+(setq package-archives '(("gnu"   . "http://elpa.emacs-china.org/gnu/")
+			 ("melpa" . "http://elpa.emacs-china.org/melpa/")))
+(package-initialize)
 
-(add-subdirs-to-load-path "~/.emacs.d/lisp")
 
-;;requires
-(require 'init-config)
-(require 'init-ui)
-(require 'init-package)
-(require 'init-key-binding)
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+
+(org-babel-load-file (expand-file-name "/Users/jasontao/.emacs.d/myinit.org"))
