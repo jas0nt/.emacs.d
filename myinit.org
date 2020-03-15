@@ -23,14 +23,6 @@
 (setq make-backup-files nil)
 (setq auto-save-default nil)
 
-;;abbrev
-(setq-default abbrev-mode t)
-(setq abbrev-file-name
-    "~/.emacs.d/abbrev_defs")
-(define-abbrev-table 'global-abbrev-table '(
-					    ("j" "jason")
-					    ))
-
 ;;show recent file
 (recentf-mode 1)
 (setq recentf-max-menu-items 15)
@@ -44,9 +36,12 @@
 ;;replace Yes/No with y/n
 (fset 'yes-or-no-p 'y-or-n-p)
 
-;; lazy load
+;;lazy load
 (with-eval-after-load 'dired
     (define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file))
+    
+;;revert buffer
+(global-set-key (kbd "<f5>") 'revert-buffer)
 
 #+END_SRC
 
@@ -207,6 +202,7 @@
 #+END_SRC
 
 ** evil
+
 #+BEGIN_SRC emacs-lisp
 (use-package evil
   :ensure t
@@ -220,12 +216,14 @@
 #+END_SRC
 
 ** restclient
+
 #+BEGIN_SRC emacs-lisp
 (use-package restclient
   :ensure t)
 #+END_SRC
 
 ** undo-tree
+
 #+BEGIN_SRC emacs-lisp
 (use-package undo-tree
   :ensure t
@@ -234,6 +232,7 @@
 #+END_SRC
 
 ** hungry-delete & aggresive-indent
+
 #+BEGIN_SRC emacs-lisp
   (use-package hungry-delete
     :ensure t
@@ -246,6 +245,7 @@
 #+END_SRC
 
 ** expand-region
+
 #+BEGIN_SRC emacs-lisp
   (use-package expand-region
     :ensure t
