@@ -25,6 +25,8 @@
 
 ;;abbrev
 (setq-default abbrev-mode t)
+(setq abbrev-file-name
+    "~/.emacs.d/abbrev_defs")
 (define-abbrev-table 'global-abbrev-table '(
 					    ("j" "jason")
 					    ))
@@ -58,7 +60,7 @@
 (scroll-bar-mode -1)
 
 ;;hide menu bar
-(menu-bar-mode -1)
+;;(menu-bar-mode -1)
 
 ;;show line number
 (global-linum-mode t)
@@ -115,7 +117,7 @@
 #+BEGIN_SRC emacs-lisp
 (use-package solarized-theme
   :ensure t
-  :config (load-theme 'solarized-light t))
+  :config (load-theme 'solarized-dark t))
 #+END_SRC
 
 ** company
@@ -214,4 +216,18 @@
     ;;(setq evil-default-state 'emacs)
     (define-key evil-insert-state-map [escape] 'evil-normal-state)
     ))
+#+END_SRC
+
+** restclient
+#+BEGIN_SRC emacs-lisp
+(use-package restclient
+  :ensure t)
+#+END_SRC
+
+** undo-tree
+#+BEGIN_SRC emacs-lisp
+(use-package undo-tree
+  :ensure t
+  :init
+  (global-undo-tree-mode))
 #+END_SRC
