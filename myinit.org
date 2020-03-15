@@ -231,3 +231,15 @@
   :init
   (global-undo-tree-mode))
 #+END_SRC
+
+** hungry-delete & aggresive-indent
+#+BEGIN_SRC emacs-lisp
+  (use-package hungry-delete
+    :ensure t
+    :config
+    (global-hungry-delete-mode))
+  (use-package aggressive-indent
+    :ensure t
+    :config
+    (global-aggressive-indent-mode 1))
+#+END_SRC
