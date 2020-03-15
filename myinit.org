@@ -140,7 +140,8 @@
   :bind (("M-x" . helm-M-x)
 	 ("C-s" . helm-occur)
 	 ("C-x C-r" . helm-recentf)
-	 ("C-x C-f" . helm-find-files)))
+	 ("C-x C-f" . helm-find-files)
+	 ("M-y" . helm-show-kill-ring)))
 #+END_SRC
 
 ** which-key
@@ -242,4 +243,12 @@
     :ensure t
     :config
     (global-aggressive-indent-mode 1))
+#+END_SRC
+
+** expand-region
+#+BEGIN_SRC emacs-lisp
+  (use-package expand-region
+    :ensure t
+    :config
+    (global-set-key (kbd "C-=") 'er/expand-region))
 #+END_SRC
