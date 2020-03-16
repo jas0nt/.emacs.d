@@ -48,42 +48,46 @@
 * UI
 #+BEGIN_SRC emacs-lisp
 
-;;hide tool bar
-(tool-bar-mode -1)
+  ;;font
+  (add-to-list 'default-frame-alist
+	       '(font . "Source Code Pro-14"))
 
-;;hide scroll bar
-(scroll-bar-mode -1)
+  ;;hide tool bar
+  (tool-bar-mode -1)
 
-;;hide menu bar
-;;(menu-bar-mode -1)
+  ;;hide scroll bar
+  (scroll-bar-mode -1)
 
-;;show line number
-(global-linum-mode t)
+  ;;hide menu bar
+  ;;(menu-bar-mode -1)
 
-;;disable welcome page
-(setq inhibit-splash-screen t)
+  ;;show line number
+  (global-linum-mode t)
 
-;;default open with full screen
-(setq initial-frame-alist (quote ((fullscreen . maximized))))
+  ;;disable welcome page
+  (setq inhibit-splash-screen t)
 
-;;set cursor type
-(setq-default cursor-type 'box)
-(set-cursor-color "#ff69b4")
-(blink-cursor-mode 0)
+  ;;default open with full screen
+  (setq initial-frame-alist (quote ((fullscreen . maximized))))
 
-;;show match ()
-(add-hook 'emacs-lisp-mode-hook 'show-paren-mode)
+  ;;set cursor type
+  (setq-default cursor-type 'box)
+  (set-cursor-color "#ff69b4")
+  (blink-cursor-mode 0)
 
-;;show parent fun
-(defadvice show-paren-function (around fix-show-paren-function activate)
-  (cond ((looking-at-p "\\s(") ad-do-it)
-	(t (save-excursion
-	     (ignore-errors (backward-up-list))
-	     ad-do-it)))
-  )
+  ;;show match ()
+  (add-hook 'emacs-lisp-mode-hook 'show-paren-mode)
 
-;;highlight current line
-(global-hl-line-mode)
+  ;;show parent fun
+  (defadvice show-paren-function (around fix-show-paren-function activate)
+    (cond ((looking-at-p "\\s(") ad-do-it)
+	  (t (save-excursion
+	       (ignore-errors (backward-up-list))
+	       ad-do-it)))
+    )
+
+  ;;highlight current line
+  (global-hl-line-mode)
 
 #+END_SRC
 
