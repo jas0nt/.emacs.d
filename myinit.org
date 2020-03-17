@@ -113,11 +113,11 @@
 
 ** solarized-theme
 
-;;#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp
 (use-package solarized-theme
   :ensure t
   :config (load-theme 'solarized-dark t))
-;;#+END_SRC
+#+END_SRC
 
 ** company
 
@@ -255,4 +255,9 @@
     :ensure t
     :config
     (global-set-key (kbd "C-=") 'er/expand-region))
+#+END_SRC
+
+** aweshell
+#+BEGIN_SRC emacs-lisp
+  (require 'aweshell)
 #+END_SRC

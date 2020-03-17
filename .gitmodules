@@ -1,0 +1,3 @@
+[submodule "elisp/elisp/aweshell"]
+	path = elisp/elisp/aweshell
+	url = https://github.com/manateelazycat/aweshell.git

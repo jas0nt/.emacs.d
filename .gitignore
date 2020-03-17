@@ -20,3 +20,5 @@ myinit.el
 
 #restclient
 network-security.data
+
+eshell/
