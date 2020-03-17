@@ -87,7 +87,7 @@
     )
 
   ;;highlight current line
-  (global-hl-line-mode)
+  ;;(global-hl-line-mode)
 
 #+END_SRC
 
@@ -113,11 +113,11 @@
 
 ** solarized-theme
 
-#+BEGIN_SRC emacs-lisp
+;;#+BEGIN_SRC emacs-lisp
 (use-package solarized-theme
   :ensure t
   :config (load-theme 'solarized-dark t))
-#+END_SRC
+;;#+END_SRC
 
 ** company
 
