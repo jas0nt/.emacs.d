@@ -155,8 +155,7 @@
 
 #+BEGIN_SRC emacs-lisp
 (use-package neotree
-  :ensure t
-  :bind (("C-x t" . neotree-toggle)))
+  :ensure t)
 #+END_SRC
 
 ** youdao-dictionary
@@ -260,4 +259,6 @@
 ** aweshell
 #+BEGIN_SRC emacs-lisp
   (require 'aweshell)
+  (global-set-key (kbd "C-x t") 'aweshell-dedicated-toggle)
+  (global-set-key (kbd "C-x C-t") 'aweshell-new)
 #+END_SRC
