@@ -22,3 +22,5 @@ myinit.el
 network-security.data
 
 eshell/
+
+tramp
