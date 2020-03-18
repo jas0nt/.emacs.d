@@ -262,3 +262,4 @@
   (global-set-key (kbd "C-x t") 'aweshell-dedicated-toggle)
   (global-set-key (kbd "C-x C-t") 'aweshell-new)
 #+END_SRC
+
