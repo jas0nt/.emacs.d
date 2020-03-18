@@ -296,3 +296,17 @@
     :config
     (helm-projectile-on))
 #+END_SRC
+
+** dumb-jump
+#+BEGIN_SRC emacs-lisp
+  (use-package dumb-jump
+    :ensure t
+    :config
+    (progn
+      (dumb-jump-mode)
+      (setq dumb-jump-selector 'helm)
+      )
+    :bind (("C-c j g" . dumb-jump-go)
+	   ("C-c j b" . dumb-jump-back)
+	   ("C-c j q" . dumb-jump-quick-look)))
+#+END_SRC
