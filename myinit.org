@@ -257,9 +257,31 @@
 #+END_SRC
 
 ** aweshell
-#+BEGIN_SRC emacs-lisp
+;;#+BEGIN_SRC emacs-lisp
   (require 'aweshell)
   (global-set-key (kbd "C-x t") 'aweshell-dedicated-toggle)
   (global-set-key (kbd "C-x C-t") 'aweshell-new)
+;;#+END_SRC
+
+** better-shell
+#+BEGIN_SRC emacs-lisp
+  (use-package better-shell
+    :ensure t
+    :bind (("C-x t" . better-shell-shell)))
 #+END_SRC
 
+** projectile
+#+BEGIN_SRC emacs-lisp
+  (use-package projectile
+    :ensure t
+    :config
+    (projectile-global-mode)
+    (setq projectile-completion-system 'helm))
+
+  (use-package helm-projectile
+    :ensure t
+    :config
+    (helm-projectile-on)
+    :bind (("C-c p s" . helm-projectile-switch-project)
+	   ("C-c p f" . helm-projectile-find-file)))
+#+END_SRC

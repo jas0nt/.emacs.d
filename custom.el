@@ -5,7 +5,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (fish-completion expand-region aggressive-indent aggresive-indent hungry-delete neotree which-key restclient restclient-helm evil org-bullets ace-window google-this youdao-dictionary helm god-mode company use-package))))
+    (helm-projectile helm-projectil projectile better-shell expand-region aggressive-indent aggresive-indent hungry-delete neotree which-key restclient restclient-helm evil org-bullets ace-window google-this youdao-dictionary helm company use-package))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
