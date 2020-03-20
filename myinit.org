@@ -90,7 +90,7 @@
     )
 
   ;;highlight current line
-  ;;(global-hl-line-mode)
+  (global-hl-line-mode)
 
 #+END_SRC
 
