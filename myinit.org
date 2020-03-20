@@ -114,6 +114,12 @@
   (package-install 'use-package))
 #+END_SRC
 
+** try
+#+BEGIN_SRC emacs-lisp
+  (use-package try
+    :ensure t)
+#+END_SRC
+
 ** solarized-theme
 
 #+BEGIN_SRC emacs-lisp

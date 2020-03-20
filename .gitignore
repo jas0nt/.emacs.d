@@ -25,4 +25,5 @@ eshell/
 
 tramp
 
-projectile-bookmarks.eld
+/transient/
+/projectile-bookmarks.eld
