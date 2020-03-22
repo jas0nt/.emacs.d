@@ -48,6 +48,28 @@
 
 #+END_SRC
 
+* ibuffer
+#+BEGIN_SRC emacs-lisp
+  (setq ibuffer-saved-filter-groups
+	(quote (("default"
+		 ("dired" (mode . dired-mode))
+		 ("shell" (or (mode . eshell-mode) (mode . shell-mode)))
+		 ("programming" (or
+				 (mode . java-mode)
+				 (mode . python-mode)
+				 ))
+		 ("restclient" (mode . restclient-mode))
+		 ("org" (name . "^.*org$"))
+		 ("magit" (mode . magit-mode))
+		 ("emacs" (or
+			   (name . "^\\*scratch\\*$")
+			   (name . "^\\*Messages\\*$")))
+		 ))))
+  (add-hook 'ibuffer-mode-hook
+	    (lambda ()
+	      (ibuffer-auto-mode 1)
+	      (ibuffer-switch-to-saved-filter-groups "default")))
+#+END_SRC
 * UI
 #+BEGIN_SRC emacs-lisp
 
