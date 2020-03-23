@@ -52,6 +52,9 @@
 #+BEGIN_SRC emacs-lisp
   (setq ibuffer-saved-filter-groups
 	(quote (("default"
+		 ("emacs" (or
+			   (name . "^\\*scratch\\*$")
+			   (name . "^\\*Messages\\*$")))
 		 ("dired" (mode . dired-mode))
 		 ("shell" (or (mode . eshell-mode) (mode . shell-mode)))
 		 ("programming" (or
@@ -61,14 +64,11 @@
 		 ("restclient" (mode . restclient-mode))
 		 ("org" (name . "^.*org$"))
 		 ("magit" (mode . magit-mode))
-		 ("emacs" (or
-			   (name . "^\\*scratch\\*$")
-			   (name . "^\\*Messages\\*$")))
 		 ))))
-  (add-hook 'ibuffer-mode-hook
-	    (lambda ()
-	      (ibuffer-auto-mode 1)
-	      (ibuffer-switch-to-saved-filter-groups "default")))
+    (add-hook 'ibuffer-mode-hook
+	      (lambda ()
+		(ibuffer-auto-mode 1)
+		(ibuffer-switch-to-saved-filter-groups "default")))
 #+END_SRC
 * UI
 #+BEGIN_SRC emacs-lisp
@@ -216,15 +216,16 @@
 ** ace-window
 
 #+BEGIN_SRC emacs-lisp
-(use-package ace-window
-  :ensure t
-  :init
-  (progn
-    (global-set-key [remap other-window] 'ace-window)
-    (custom-set-faces
-     '(aw-leading-char-face
-       ((t (:inhrit ace-jump-face-foreground :height 3.0)))))
-    ))
+  (use-package ace-window
+    :ensure t
+    :init
+    (progn
+      (global-set-key [remap other-window] 'ace-window)
+      (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+      (custom-set-faces
+       '(aw-leading-char-face
+	 ((t (:inhrit ace-jump-face-foreground :height 3.0)))))
+      ))
 #+END_SRC
 
 ** avy
