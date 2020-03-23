@@ -53,8 +53,10 @@
   (setq ibuffer-saved-filter-groups
 	(quote (("default"
 		 ("emacs" (or
+			   (name . "^\\*dashboard\\*$")
 			   (name . "^\\*scratch\\*$")
-			   (name . "^\\*Messages\\*$")))
+			   (name . "^\\*Messages\\*$")
+			   ))
 		 ("dired" (mode . dired-mode))
 		 ("shell" (or (mode . eshell-mode) (mode . shell-mode)))
 		 ("programming" (or
@@ -65,10 +67,10 @@
 		 ("org" (name . "^.*org$"))
 		 ("magit" (mode . magit-mode))
 		 ))))
-    (add-hook 'ibuffer-mode-hook
-	      (lambda ()
-		(ibuffer-auto-mode 1)
-		(ibuffer-switch-to-saved-filter-groups "default")))
+      (add-hook 'ibuffer-mode-hook
+		(lambda ()
+		  (ibuffer-auto-mode 1)
+		  (ibuffer-switch-to-saved-filter-groups "default")))
 #+END_SRC
 * UI
 #+BEGIN_SRC emacs-lisp
@@ -361,5 +363,15 @@
 			    (projects . 5)
 			    (bookmarks . 5)
 			    ))
+    )
+#+END_SRC
+
+** beacon
+#+BEGIN_SRC emacs-lisp
+  (use-package beacon
+    :ensure t
+    :config
+    (beacon-mode 1)
+    (setq beacon-color "#00FF00")
     )
 #+END_SRC
