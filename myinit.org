@@ -255,15 +255,16 @@
 ** evil
 
 #+BEGIN_SRC emacs-lisp
-(use-package evil
-  :ensure t)
-  ;;:config
-  ;;(progn
-    ;;(evil-mode 1)
-    ;;(setcdr evil-insert-state-map nil)
-    ;;;;(setq evil-default-state 'emacs)
-    ;;(define-key evil-insert-state-map [escape] 'evil-normal-state)
-    ;;))
+  (use-package evil
+    :ensure t
+    :bind ("C-c C-e" . evil-local-mode))
+    ;;:config
+    ;;(progn
+      ;;(evil-mode 1)
+      ;;(setcdr evil-insert-state-map nil)
+      ;;;;(setq evil-default-state 'emacs)
+      ;;(define-key evil-insert-state-map [escape] 'evil-normal-state)
+      ;;))
 #+END_SRC
 
 ** restclient
@@ -399,5 +400,30 @@
     :config
     (rainbow-delimiters-mode)
     (add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
+    )
+#+END_SRC
+
+** meghanada
+#+BEGIN_SRC emacs-lisp
+  (use-package meghanada
+    :ensure t
+    :config
+    (add-hook 'java-mode-hook
+	      (lambda ()
+		;; meghanada-mode on
+		(meghanada-mode t)
+		;; enable telemetry
+		(meghanada-telemetry-enable t)
+		(flycheck-mode +1)
+		(setq c-basic-offset 2)
+		;; use code format
+		(add-hook 'before-save-hook 'meghanada-code-beautify-before-save)))
+    (cond
+     ((eq system-type 'windows-nt)
+      (setq meghanada-java-path (expand-file-name "bin/java.exe" (getenv "JAVA_HOME")))
+      (setq meghanada-maven-path "mvn.cmd"))
+     (t
+      (setq meghanada-java-path "java")
+      (setq meghanada-maven-path "mvn")))
     )
 #+END_SRC
