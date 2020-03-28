@@ -72,52 +72,6 @@
 		  (ibuffer-auto-mode 1)
 		  (ibuffer-switch-to-saved-filter-groups "default")))
 #+END_SRC
-* UI
-#+BEGIN_SRC emacs-lisp
-
-  ;;font
-  (add-to-list 'default-frame-alist
-	       '(font . "Source Code Pro-14"))
-
-  ;;hide tool bar
-  (tool-bar-mode -1)
-
-  ;;hide scroll bar
-  (scroll-bar-mode -1)
-
-  ;;hide menu bar
-  ;;(menu-bar-mode -1)
-
-  ;;show line number
-  (global-linum-mode t)
-
-  ;;disable welcome page
-  (setq inhibit-splash-screen t)
-
-  ;;default open with full screen
-  (setq initial-frame-alist (quote ((fullscreen . maximized))))
-
-  ;;set cursor type
-  (setq-default cursor-type 'box)
-  (set-cursor-color "#ff69b4")
-  (blink-cursor-mode 0)
-
-  ;;show match ()
-  (add-hook 'emacs-lisp-mode-hook 'show-paren-mode)
-
-  ;;show parent fun
-  (defadvice show-paren-function (around fix-show-paren-function activate)
-    (cond ((looking-at-p "\\s(") ad-do-it)
-	  (t (save-excursion
-	       (ignore-errors (backward-up-list))
-	       ad-do-it)))
-    )
-
-  ;;highlight current line
-  (global-hl-line-mode)
-
-#+END_SRC
-
 * Packages
 
 ** elpa
@@ -426,4 +380,49 @@
       (setq meghanada-java-path "java")
       (setq meghanada-maven-path "mvn")))
     )
+#+END_SRC
+* UI
+#+BEGIN_SRC emacs-lisp
+
+  ;;font
+  (add-to-list 'default-frame-alist
+	       '(font . "Source Code Pro-14"))
+
+  ;;hide tool bar
+  (tool-bar-mode -1)
+
+  ;;hide scroll bar
+  (scroll-bar-mode -1)
+
+  ;;hide menu bar
+  ;;(menu-bar-mode -1)
+
+  ;;show line number
+  (global-linum-mode t)
+
+  ;;disable welcome page
+  (setq inhibit-splash-screen t)
+
+  ;;default open with full screen
+  (setq initial-frame-alist (quote ((fullscreen . maximized))))
+
+  ;;set cursor type
+  (setq-default cursor-type 'box)
+  (set-cursor-color "#00ff00")
+  (blink-cursor-mode 0)
+
+  ;;show match ()
+  (add-hook 'emacs-lisp-mode-hook 'show-paren-mode)
+
+  ;;show parent fun
+  (defadvice show-paren-function (around fix-show-paren-function activate)
+    (cond ((looking-at-p "\\s(") ad-do-it)
+	  (t (save-excursion
+	       (ignore-errors (backward-up-list))
+	       ad-do-it)))
+    )
+
+  ;;highlight current line
+  (global-hl-line-mode)
+
 #+END_SRC
