@@ -211,14 +211,21 @@
 #+BEGIN_SRC emacs-lisp
   (use-package evil
     :ensure t
-    :bind ("C-c C-e" . evil-local-mode))
-    ;;:config
-    ;;(progn
-      ;;(evil-mode 1)
-      ;;(setcdr evil-insert-state-map nil)
-      ;;;;(setq evil-default-state 'emacs)
-      ;;(define-key evil-insert-state-map [escape] 'evil-normal-state)
-      ;;))
+    :bind ("C-c C-e" . evil-local-mode)
+    :config
+    (progn
+      (evil-mode 1)
+      (setcdr evil-insert-state-map nil)
+      (define-key evil-insert-state-map [escape] 'evil-normal-state)
+      (setq evil-insert-state-cursor '((bar . 5) "pink")
+	    evil-normal-state-cursor '(box "green"))
+      ))
+
+  (use-package evil-collection
+    :after evil
+    :ensure t
+    :config
+    (evil-collection-init))
 #+END_SRC
 
 ** restclient
@@ -309,6 +316,8 @@
 ** magit
 #+BEGIN_SRC emacs-lisp
   (use-package magit
+    :ensure t)
+  (use-package evil-magit
     :ensure t)
 #+END_SRC
 
