@@ -414,6 +414,37 @@
     :bind (("M-z" . zzz-to-char)))
 #+END_SRC
 
+** hydra
+#+BEGIN_SRC emacs-lisp
+  (use-package hydra
+    :ensure hydra
+    :init
+    (global-set-key
+     (kbd "C-x w")
+     (defhydra hydra-window ()
+       "window"
+       ("h" windmove-left)
+       ("j" windmove-down)
+       ("k" windmove-up)
+       ("l" windmove-right)
+       ("v" (lambda ()
+	      (interactive)
+	      (split-window-right)
+	      (windmove-right))
+	"vert")
+       ("x" (lambda ()
+	      (interactive)
+	      (split-window-below)
+	      (windmove-down))
+	"horz")
+       ("g" ace-window)
+       ("s" ace-swap-window)
+       ("d" ace-delete-window)
+       ("m" delete-other-windows "maximize" :color blue)
+       ("q" nil "cancel")
+       )))
+#+END_SRC
+
 * UI
 #+BEGIN_SRC emacs-lisp
 
