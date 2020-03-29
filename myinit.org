@@ -217,7 +217,6 @@
       (setcdr evil-insert-state-map nil)
       (define-key evil-insert-state-map [escape] 'evil-normal-state)
       ))
-
 #+END_SRC
 
 ** evil-leader
@@ -442,7 +441,34 @@
        ("d" ace-delete-window)
        ("m" delete-other-windows "maximize" :color blue)
        ("q" nil "cancel")
-       )))
+       ))
+
+    (global-set-key
+     (kbd "C->")
+     (defhydra hydra-multiple-cursors ()
+       "multiple-cursors"
+       ("m" mc/mark-next-like-this)
+       ("M" mc/mark-previous-like-this)
+       ("u" mc/unmark-next-like-this)
+       ("U" mc/unmark-previous-like-this)
+       ("s" mc/skip-to-next-like-this)
+       ("S" mc/skip-to-previous-like-this)
+     
+       ("w" mc/mark-next-like-this-word)
+       ("W" mc/mark-next-like-this-word)
+       ))
+    )
+#+END_SRC
+
+** multiple-cursors
+#+BEGIN_SRC emacs-lisp
+  (use-package multiple-cursors
+    :ensure t
+    :config
+    (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
+    (add-hook 'multiple-cursors-mode-enabled-hook (lambda () (global-hungry-delete-mode -1)))
+    (add-hook 'multiple-cursors-mode-disabled-hook (lambda () (global-hungry-delete-mode 1)))
+    )
 #+END_SRC
 
 * UI
