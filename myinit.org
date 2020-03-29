@@ -383,7 +383,7 @@
 #+END_SRC
 
 ** meghanada
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC #emacs-lisp
   (use-package meghanada
     :ensure t
     :config
@@ -406,6 +406,14 @@
       (setq meghanada-maven-path "mvn")))
     )
 #+END_SRC
+
+** zzz-to-char
+#+BEGIN_SRC emacs-lisp
+  (use-package zzz-to-char
+    :ensure t
+    :bind (("M-z" . zzz-to-char)))
+#+END_SRC
+
 * UI
 #+BEGIN_SRC emacs-lisp
 
