@@ -253,7 +253,8 @@
   (use-package company-restclient
     :ensure t
     :config
-    (add-to-list 'company-backends 'company-restclient))
+    (add-to-list 'company-backends 'company-restclient)
+    (add-to-list 'auto-mode-alist '("\\.http\\'" . restclient-mode)))
 #+END_SRC
 
 ** undo-tree
