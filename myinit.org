@@ -63,6 +63,9 @@
 		 ("programming" (or
 				 (mode . java-mode)
 				 (mode . python-mode)
+				 (name .  "^.*java")
+				 (name .  "^.*py")
+				 (name .  "^.*sql")
 				 ))
 		 ("restclient" (mode . restclient-mode))
 		 ("org" (name . "^.*org$"))
@@ -574,6 +577,18 @@
 
     ("q" exit)
     ("z" nil "leave"))
+#+END_SRC
+
+** yasnippet
+#+BEGIN_SRC emacs-lisp
+  (use-package yasnippet
+    :ensure t
+    :config
+    (yas-reload-all)
+    (add-hook 'prog-mode-hook #'yas-minor-mode))
+
+  (use-package yasnippet-snippets
+    :ensure t)
 #+END_SRC
 
 * UI
