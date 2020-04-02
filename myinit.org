@@ -101,9 +101,12 @@
 ** solarized-theme
 
 #+BEGIN_SRC emacs-lisp
-(use-package solarized-theme
-  :ensure t
-  :config (load-theme 'solarized-dark t))
+  (use-package solarized-theme
+    :ensure t
+    :config
+    (when (display-graphic-p)
+      (load-theme 'solarized-dark t))
+    )
 #+END_SRC
 
 ** company
@@ -193,9 +196,10 @@
 ** avy
 
 #+BEGIN_SRC emacs-lisp
-(use-package avy
-  :ensure t
-  :bind (("C-;" . avy-goto-char)))
+  (use-package avy
+    :ensure t
+    :bind (("C-x j" . avy-goto-char)
+	   ("C-x J" . avy-goto-char-2)))
 #+END_SRC
 
 ** org-bullets
@@ -212,7 +216,6 @@
 #+BEGIN_SRC emacs-lisp
     (use-package evil
       :ensure t
-      ;;:bind ("C-c C-e" . evil-local-mode)
       :init
       (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
       (setq evil-want-keybinding nil)
@@ -228,6 +231,9 @@
     (setq evil-collection-company-use-tng nil)
     :config
     (evil-collection-init))
+
+  (use-package evil-org
+    :ensure t)
 #+END_SRC
 
 ** evil-leader
@@ -244,13 +250,18 @@
       "fr" 'helm-recentf
       "fd" 'dired
 
-      "bb" 'ibuffer
+      "bb" 'helm-mini
+      "bB" 'ibuffer
 
       "d" 'youdao-dictionary-search-at-point-tooltip
 
       "jg" 'dumb-jump-go
       "jb" 'dumb-jump-back
       "jq" 'dumb-jump-quick-look
+      "jj" 'avy-goto-char
+      "jJ" 'avy-goto-char-2
+
+      "w" 'hydra-window
 
       "p" 'projectile-command-map
       ))
@@ -528,6 +539,8 @@
     )
 
   ;;highlight current line
-  (global-hl-line-mode)
+  (when (display-graphic-p)
+    (global-hl-line-mode))
+
 
 #+END_SRC
