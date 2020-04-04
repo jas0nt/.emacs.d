@@ -130,6 +130,14 @@
     (company-quickhelp-mode))
 #+END_SRC
 
+** company-tabnine
+#+BEGIN_SRC emacs-lisp
+  (use-package company-tabnine
+    :ensure t
+    :config
+    (add-to-list 'company-backends #'company-tabnine))
+#+END_SRC
+
 ** ag
 #+BEGIN_SRC emacs-lisp
   (use-package ag
