@@ -587,7 +587,6 @@
     ("z" nil "leave"))
 #+END_SRC
 
-
 ** yaml-mode
 #+BEGIN_SRC emacs-lisp
   (use-package yaml-mode
