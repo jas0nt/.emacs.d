@@ -113,6 +113,17 @@
       (load-theme 'solarized-dark t))
     )
 #+END_SRC
+
+** spacemacs-theme
+#+BEGIN_SRC emacs-lisp
+  (use-package spacemacs-common
+    :ensure spacemacs-theme
+    :config
+    (unless (display-graphic-p)
+      (load-theme 'spacemacs-dark t))
+    )
+#+END_SRC
+
 ** company
 
 #+BEGIN_SRC emacs-lisp
