@@ -294,7 +294,7 @@
       ;; search
       "ss" 'helm-occur
       "sg" 'google-this
-      "sd" 'youdao-dictionary-search-at-point-tooltip
+      "sd" 'youdao-dictionary-search-at-point+
 
       ;; window
       "w" 'hydra-window/body
