@@ -113,7 +113,6 @@
       (load-theme 'solarized-dark t))
     )
 #+END_SRC
-
 ** company
 
 #+BEGIN_SRC emacs-lisp
@@ -636,6 +635,7 @@
     :ensure t)
 #+END_SRC
 ** dired
+
 #+BEGIN_SRC emacs-lisp
   (setq dired-listing-switches "-alht")
   (use-package dired-icon
@@ -696,5 +696,6 @@
   (when (display-graphic-p)
     (global-hl-line-mode))
 
+  (setq visible-bell nil)
 
 #+END_SRC
