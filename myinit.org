@@ -256,24 +256,43 @@
     (evil-leader/set-leader "<SPC>")
     (evil-leader/set-key
       "<SPC>" 'helm-M-x
+
+      ;; file
       "ff" 'helm-find-files
       "fr" 'helm-recentf
       "fd" 'dired
+      "fs" 'save-buffer
+      "fS" 'save-some-buffers
 
+      ;; buffer
       "bb" 'helm-mini
       "bB" 'ibuffer
+      "bs" 'hydra-buffer/body
 
-      "d" 'youdao-dictionary-search-at-point-tooltip
+      "g" 'magit-status
 
+      ;; jump
       "jg" 'dumb-jump-go
       "jb" 'dumb-jump-back
       "jq" 'dumb-jump-quick-look
       "jj" 'avy-goto-char
       "jJ" 'avy-goto-char-2
+      "j." 'meghanada-jump-declaration
+      "j," 'meghanada-back-jump
 
-      "w" 'hydra-window
+      ;; search
+      "ss" 'helm-occur
+      "sg" 'google-this
+      "sd" 'youdao-dictionary-search-at-point-tooltip
 
+      ;; window
+      "w" 'hydra-window/body
+
+      ;; project
       "p" 'projectile-command-map
+
+      ;; zzz-to-char
+      "z" 'zzz-to-char
       ))
 #+END_SRC
 
@@ -418,9 +437,11 @@
 #+END_SRC
 
 ** meghanada
-#+BEGIN_SRC #emacs-lisp
+#+BEGIN_SRC emacs-lisp
   (use-package meghanada
     :ensure t
+    :bind (("C-c j ." . meghanada-jump-declaration)
+	   ("C-c j ," . meghanada-back-jump))
     :config
     (add-hook 'java-mode-hook
 	      (lambda ()
@@ -489,10 +510,17 @@
        ("U" mc/unmark-previous-like-this)
        ("s" mc/skip-to-next-like-this)
        ("S" mc/skip-to-previous-like-this)
-     
+
        ("w" mc/mark-next-like-this-word)
        ("W" mc/mark-next-like-this-word)
        ))
+
+    (defhydra hydra-buffer ()
+      "buffer"
+      ("j" switch-to-next-buffer)
+      ("k" switch-to-prev-buffer)
+      ("q" nil "cancel"))
+
     )
 #+END_SRC
 
