@@ -45,6 +45,54 @@
 
 #+END_SRC
 
+* UI
+#+BEGIN_SRC emacs-lisp
+
+  ;;font
+  (add-to-list 'default-frame-alist
+	       '(font . "Source Code Pro-14"))
+
+  ;;hide tool bar
+  (tool-bar-mode -1)
+
+  ;;hide scroll bar
+  (scroll-bar-mode -1)
+
+  ;;hide menu bar
+  ;;(menu-bar-mode -1)
+
+  ;;show line number
+  (global-linum-mode t)
+
+  ;;disable welcome page
+  (setq inhibit-splash-screen t)
+
+  ;;default open with full screen
+  (setq initial-frame-alist (quote ((fullscreen . maximized))))
+
+  ;;set cursor type
+  (setq-default cursor-type 'box)
+  (set-cursor-color "#00ff00")
+  (blink-cursor-mode 0)
+
+  ;;show match ()
+  (add-hook 'emacs-lisp-mode-hook 'show-paren-mode)
+
+  ;;show parent fun
+  (defadvice show-paren-function (around fix-show-paren-function activate)
+    (cond ((looking-at-p "\\s(") ad-do-it)
+	  (t (save-excursion
+	       (ignore-errors (backward-up-list))
+	       ad-do-it)))
+    )
+
+  ;;highlight current line
+  (when (display-graphic-p)
+    (global-hl-line-mode))
+
+  (setq visible-bell nil)
+
+#+END_SRC
 * ibuffer
 #+BEGIN_SRC emacs-lisp
   ;;buffer
@@ -104,8 +152,7 @@
 #+END_SRC
 
 ** solarized-theme
-
-#+BEGIN_SRC emacs-lisp
+##+BEGIN_SRC emacs-lisp
   (use-package solarized-theme
     :ensure t
     :config
@@ -115,13 +162,21 @@
 #+END_SRC
 
 ** spacemacs-theme
-#+BEGIN_SRC emacs-lisp
+##+BEGIN_SRC emacs-lisp
   (use-package spacemacs-common
     :ensure spacemacs-theme
     :config
     (unless (display-graphic-p)
       (load-theme 'spacemacs-dark t))
     )
+#+END_SRC
+
+** dracula-theme
+#+BEGIN_SRC emacs-lisp
+  (use-package dracula-theme
+    :ensure t
+    :config
+    (set-cursor-color "#00ff00"))
 #+END_SRC
 
 ** company
@@ -664,51 +719,3 @@
     (setq dired-k-human-readable t))
 #+END_SRC
 
-* UI
-#+BEGIN_SRC emacs-lisp
-
-  ;;font
-  (add-to-list 'default-frame-alist
-	       '(font . "Source Code Pro-14"))
-
-  ;;hide tool bar
-  (tool-bar-mode -1)
-
-  ;;hide scroll bar
-  (scroll-bar-mode -1)
-
-  ;;hide menu bar
-  ;;(menu-bar-mode -1)
-
-  ;;show line number
-  (global-linum-mode t)
-
-  ;;disable welcome page
-  (setq inhibit-splash-screen t)
-
-  ;;default open with full screen
-  (setq initial-frame-alist (quote ((fullscreen . maximized))))
-
-  ;;set cursor type
-  (setq-default cursor-type 'box)
-  (set-cursor-color "#00ff00")
-  (blink-cursor-mode 0)
-
-  ;;show match ()
-  (add-hook 'emacs-lisp-mode-hook 'show-paren-mode)
-
-  ;;show parent fun
-  (defadvice show-paren-function (around fix-show-paren-function activate)
-    (cond ((looking-at-p "\\s(") ad-do-it)
-	  (t (save-excursion
-	       (ignore-errors (backward-up-list))
-	       ad-do-it)))
-    )
-
-  ;;highlight current line
-  (when (display-graphic-p)
-    (global-hl-line-mode))
-
-  (setq visible-bell nil)
-
-#+END_SRC
