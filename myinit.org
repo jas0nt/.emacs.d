@@ -653,7 +653,8 @@
   (use-package dired-icon
     :ensure t
     :config
-    (add-hook 'dired-mode-hook 'dired-icon-mode))
+    (when (display-graphic-p)
+      (add-hook 'dired-mode-hook 'dired-icon-mode)))
 
   (use-package dired-k
     :ensure t
