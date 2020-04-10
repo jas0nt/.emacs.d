@@ -186,7 +186,7 @@
     :ensure t
     :config
     (setq company-idle-delay 0)
-    (setq company-minimum-prefix-length 3)
+    (setq company-minimum-prefix-length 2)
     (global-company-mode t)
     )
 
@@ -607,4 +607,14 @@
     (add-hook 'dired-initial-position-hook 'dired-k)
     (add-hook 'dired-after-readin-hook #'dired-k-no-revert)
     (setq dired-k-human-readable t))
+#+END_SRC
+** python
+#+BEGIN_SRC emacs-lisp
+  (use-package elpy
+    :ensure t
+    :init
+    (elpy-enable)
+    (setq elpy-rpc-python-command "python3")
+    (setq python-shell-interpreter "python3")
+    )
 #+END_SRC
