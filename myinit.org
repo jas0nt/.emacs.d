@@ -410,14 +410,6 @@
   (global-set-key (kbd "C-x t") 'aweshell-dedicated-toggle)
   (global-set-key (kbd "C-x C-t") 'aweshell-new)
 ;;#+END_SRC
-
-** better-shell
-#+BEGIN_SRC emacs-lisp
-  (use-package better-shell
-    :ensure t
-    :bind (("C-x t" . better-shell-shell)))
-#+END_SRC
-
 ** projectile
 #+BEGIN_SRC emacs-lisp
   (use-package projectile
@@ -541,15 +533,15 @@
      (kbd "C->")
      (defhydra hydra-multiple-cursors ()
        "multiple-cursors"
-       ("m" mc/mark-next-like-this)
-       ("M" mc/mark-previous-like-this)
-       ("u" mc/unmark-next-like-this)
-       ("U" mc/unmark-previous-like-this)
-       ("s" mc/skip-to-next-like-this)
-       ("S" mc/skip-to-previous-like-this)
+       ("m" mc/mark-next-like-this "mark-next-like-this")
+       ("M" mc/mark-previous-like-this "mark-previous-like-this")
+       ("u" mc/unmark-next-like-this "unmark-next-like-this")
+       ("U" mc/unmark-previous-like-this "unmark-previous-like-this")
+       ("s" mc/skip-to-next-like-this "skip-to-next-like-this")
+       ("S" mc/skip-to-previous-like-this "skip-to-previous-like-this")
 
-       ("w" mc/mark-next-like-this-word)
-       ("W" mc/mark-next-like-this-word)
+       ("w" mc/mark-next-like-this-word "mark-next-like-this-word")
+       ("W" mc/mark-next-like-this-word "mark-next-like-this-word")
        ))
 
     (defhydra hydra-buffer ()
@@ -609,7 +601,7 @@
     (setq dired-k-human-readable t))
 #+END_SRC
 ** python
-#+BEGIN_SRC emacs-lisp
+##+BEGIN_SRC emacs-lisp
   (use-package elpy
     :ensure t
     :init
