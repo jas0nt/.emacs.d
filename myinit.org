@@ -43,6 +43,9 @@
 ;;exec-path
 (add-to-list 'exec-path "/usr/local/bin")
 
+;;emacs deamon
+(server-start)
+
 #+END_SRC
 
 * UI
