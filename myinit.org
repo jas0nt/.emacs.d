@@ -286,10 +286,12 @@
 ** org-bullets
 
 #+BEGIN_SRC emacs-lisp
-(use-package org-bullets
-  :ensure t
-  :config
-  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+  (use-package org-bullets
+    :ensure t
+    :config
+    (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+    (setq org-bullets-bullet-list '("☰" "☷" "☯" "☭"))
+    (setq org-ellipsis " ▼ "))
 #+END_SRC
 
 ** evil
@@ -332,6 +334,7 @@
       "fd" 'dired
       "fs" 'save-buffer
       "fS" 'save-some-buffers
+      "ft" 'neotree-toggle
 
       ;; buffer
       "bb" 'helm-mini
