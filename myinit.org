@@ -354,6 +354,8 @@
       "wJ" 'evil-window-move-very-bottom
       "wK" 'evil-window-move-very-top
       "wL" 'evil-window-move-far-right
+      "wm" 'delete-other-windows
+      "wd" 'delete-window
 
       ;; project
       "p" 'projectile-command-map
