@@ -131,7 +131,6 @@
 * Packages
 
 ** elpa
-
 #+BEGIN_SRC emacs-lisp
 (require 'package)
 ;;elpa
@@ -141,7 +140,6 @@
 #+END_SRC
 
 ** use-package
-
 #+BEGIN_SRC emacs-lisp
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
@@ -183,7 +181,6 @@
 #+END_SRC
 
 ** company
-
 #+BEGIN_SRC emacs-lisp
   (use-package company
     :ensure t
@@ -214,15 +211,11 @@
 #+END_SRC
 
 ** helm
-
 #+BEGIN_SRC emacs-lisp
   (use-package helm
     :ensure t
     :bind (("M-x" . helm-M-x)
 	   ("C-s" . helm-occur)
-	   ("C-x C-r" . helm-recentf)
-	   ("C-x C-f" . helm-find-files)
-	   ("C-x C-b" . helm-mini)
 	   ("M-y" . helm-show-kill-ring)))
 
   (use-package helm-ag
@@ -230,7 +223,6 @@
 #+END_SRC
 
 ** which-key
-
 #+BEGIN_SRC emacs-lisp
 (use-package which-key
   :ensure t
@@ -238,29 +230,24 @@
 #+END_SRC
 
 ** neotree
-
 #+BEGIN_SRC emacs-lisp
 (use-package neotree
   :ensure t)
 #+END_SRC
 
 ** youdao-dictionary
-
 #+BEGIN_SRC emacs-lisp
 (use-package youdao-dictionary
-  :ensure t
-  :bind (("C-c d" . youdao-dictionary-search-at-point-tooltip)))
+  :ensure t)
 #+END_SRC
 
 ** google-this
-
 #+BEGIN_SRC emacs-lisp
 (use-package google-this
   :ensure t)
 #+END_SRC
 
 ** ace-window
-
 #+BEGIN_SRC emacs-lisp
   (use-package ace-window
     :ensure t
@@ -275,7 +262,6 @@
 #+END_SRC
 
 ** avy
-
 #+BEGIN_SRC emacs-lisp
   (use-package avy
     :ensure t
@@ -284,7 +270,6 @@
 #+END_SRC
 
 ** org-bullets
-
 #+BEGIN_SRC emacs-lisp
   (use-package org-bullets
     :ensure t
@@ -295,7 +280,6 @@
 #+END_SRC
 
 ** evil
-
 #+BEGIN_SRC emacs-lisp
   (use-package evil
     :ensure t
@@ -304,6 +288,7 @@
     (setq evil-want-keybinding nil)
     (setq evil-disable-insert-state-bindings t)
     (setq evil-want-C-i-jump nil)
+    (setq evil-want-C-u-scroll t)
     :config
     (evil-mode 1)
     )
@@ -339,6 +324,7 @@
       ;; buffer
       "bb" 'helm-mini
       "bB" 'ibuffer
+      "bx" 'kill-current-buffer
       "bs" 'hydra-buffer/body
 
       "g" 'magit-status
@@ -350,13 +336,24 @@
       "jj" 'avy-goto-char
       "jJ" 'avy-goto-char-2
 
+      ;; quit
+      "q" 'save-buffers-kill-terminal
+
       ;; search
       "ss" 'helm-occur
       "sg" 'google-this
       "sd" 'youdao-dictionary-search-at-point+
 
       ;; window
-      "w" 'hydra-window/body
+      "ww" 'hydra-window/body
+      "wh" 'evil-window-left
+      "wj" 'evil-window-down
+      "wk" 'evil-window-up
+      "wl" 'evil-window-right
+      "wH" 'evil-window-move-far-left
+      "wJ" 'evil-window-move-very-bottom
+      "wK" 'evil-window-move-very-top
+      "wL" 'evil-window-move-far-right
 
       ;; project
       "p" 'projectile-command-map
@@ -367,7 +364,6 @@
 #+END_SRC
 
 ** restclient
-
 #+BEGIN_SRC emacs-lisp
   (use-package restclient
     :ensure t
@@ -380,7 +376,6 @@
 #+END_SRC
 
 ** undo-tree
-
 #+BEGIN_SRC emacs-lisp
 (use-package undo-tree
   :ensure t
@@ -389,7 +384,6 @@
 #+END_SRC
 
 ** hungry-delete & aggresive-indent
-
 #+BEGIN_SRC emacs-lisp
   (use-package hungry-delete
     :ensure t
@@ -402,7 +396,6 @@
 #+END_SRC
 
 ** expand-region
-
 #+BEGIN_SRC emacs-lisp
   (use-package expand-region
     :ensure t
@@ -420,7 +413,6 @@
 #+BEGIN_SRC emacs-lisp
   (use-package projectile
     :ensure t
-    :bind ("C-c p" . projectile-command-map)
     :config
     (projectile-global-mode)
     (setq projectile-completion-system 'helm))
@@ -438,11 +430,7 @@
     :config
     (progn
       (dumb-jump-mode)
-      (setq dumb-jump-selector 'helm)
-      )
-    :bind (("C-c j g" . dumb-jump-go)
-	   ("C-c j b" . dumb-jump-back)
-	   ("C-c j q" . dumb-jump-quick-look)))
+      (setq dumb-jump-selector 'helm)))
 #+END_SRC
 
 ** magit
@@ -501,8 +489,7 @@
 ** zzz-to-char
 #+BEGIN_SRC emacs-lisp
   (use-package zzz-to-char
-    :ensure t
-    :bind (("M-z" . zzz-to-char)))
+    :ensure t)
 #+END_SRC
 
 ** hydra
@@ -590,7 +577,6 @@
     :ensure t)
 #+END_SRC
 ** dired
-
 #+BEGIN_SRC emacs-lisp
   (setq dired-listing-switches "-alht")
   (use-package dired-icon
