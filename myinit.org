@@ -137,7 +137,7 @@
 	      (ibuffer-switch-to-saved-filter-groups "default")))
 #+END_SRC
 * Packages
-
+  
 ** elpa
 #+BEGIN_SRC emacs-lisp
 (require 'package)
@@ -345,7 +345,8 @@
       "jJ" 'avy-goto-char-2
 
       ;; quit
-      "q" 'save-buffers-kill-terminal
+      "qq" 'save-buffers-kill-terminal
+      "qR" 'restart-emacs
 
       ;; search
       "ss" 'helm-occur
@@ -556,6 +557,10 @@
     )
 #+END_SRC
 
+** restart-emacs
+#+BEGIN_SRC emacs-lisp
+  (use-package restart-emacs :ensure t)
+#+END_SRC
 ** restclient
 #+BEGIN_SRC emacs-lisp
   (use-package restclient
