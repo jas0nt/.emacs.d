@@ -154,38 +154,49 @@
   (package-install 'use-package))
 #+END_SRC
 
-** try
+
+** ace-window
 #+BEGIN_SRC emacs-lisp
-  (use-package try
+  (use-package ace-window
+    :ensure t
+    :init
+    (progn
+      (global-set-key [remap other-window] 'ace-window)
+      (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+      (custom-set-faces
+       '(aw-leading-char-face
+	 ((t (:inhrit ace-jump-face-foreground :height 3.0)))))
+      ))
+#+END_SRC
+
+** ag
+#+BEGIN_SRC emacs-lisp
+  (use-package ag
     :ensure t)
 #+END_SRC
 
-** solarized-theme
-##+BEGIN_SRC emacs-lisp
-  (use-package solarized-theme
-    :ensure t
-    :config
-    (when (display-graphic-p)
-      (load-theme 'solarized-dark t))
-    )
-#+END_SRC
-
-** spacemacs-theme
-##+BEGIN_SRC emacs-lisp
-  (use-package spacemacs-common
-    :ensure spacemacs-theme
-    :config
-    (unless (display-graphic-p)
-      (load-theme 'spacemacs-dark t))
-    )
-#+END_SRC
-
-** dracula-theme
+** avy
 #+BEGIN_SRC emacs-lisp
-  (use-package dracula-theme
+  (use-package avy
+    :ensure t
+    :bind (("C-x j" . avy-goto-char)
+	   ("C-x J" . avy-goto-char-2)))
+#+END_SRC
+
+** aweshell
+;;#+BEGIN_SRC emacs-lisp
+  (require 'aweshell)
+  (global-set-key (kbd "C-x t") 'aweshell-dedicated-toggle)
+  (global-set-key (kbd "C-x C-t") 'aweshell-new)
+;;#+END_SRC
+** beacon
+#+BEGIN_SRC emacs-lisp
+  (use-package beacon
     :ensure t
     :config
-    (set-cursor-color "#00ff00"))
+    (beacon-mode 1)
+    (setq beacon-color "#00FF00")
+    )
 #+END_SRC
 
 ** company
@@ -212,89 +223,63 @@
     (add-to-list 'company-backends #'company-tabnine))
 #+END_SRC
 
-** ag
+** dashboard
 #+BEGIN_SRC emacs-lisp
-  (use-package ag
-    :ensure t)
-#+END_SRC
-
-** helm
-#+BEGIN_SRC emacs-lisp
-  (use-package helm
-    :ensure t
-    :bind (("M-x" . helm-M-x)
-	   ("C-s" . helm-occur)
-	   ("M-y" . helm-show-kill-ring)))
-
-  (use-package helm-ag
-    :ensure t)
-#+END_SRC
-
-** which-key
-#+BEGIN_SRC emacs-lisp
-  (use-package which-key
+  (use-package dashboard
     :ensure t
     :config
-    (which-key-mode)
-    ;; Allow C-h to trigger which-key before it is done automatically
-    (setq which-key-show-early-on-C-h t)
-    ;; make sure which-key doesn't show normally but refreshes quickly after it is
-    ;; triggered.
-    (setq which-key-idle-delay 10000)
-    (setq which-key-idle-secondary-delay 0.05)
-    (which-key-mode)
+    (dashboard-setup-startup-hook)
+    (setq dashboard-startup-banner 2)
+    (setq dashboard-items '((recents  . 10)
+			    (projects . 5)
+			    (bookmarks . 5)
+			    ))
     )
 #+END_SRC
 
-** neotree
+** dimmer
 #+BEGIN_SRC emacs-lisp
-(use-package neotree
-  :ensure t)
-#+END_SRC
-
-** youdao-dictionary
-#+BEGIN_SRC emacs-lisp
-(use-package youdao-dictionary
-  :ensure t)
-#+END_SRC
-
-** google-this
-#+BEGIN_SRC emacs-lisp
-(use-package google-this
-  :ensure t)
-#+END_SRC
-
-** ace-window
-#+BEGIN_SRC emacs-lisp
-  (use-package ace-window
-    :ensure t
-    :init
-    (progn
-      (global-set-key [remap other-window] 'ace-window)
-      (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
-      (custom-set-faces
-       '(aw-leading-char-face
-	 ((t (:inhrit ace-jump-face-foreground :height 3.0)))))
-      ))
-#+END_SRC
-
-** avy
-#+BEGIN_SRC emacs-lisp
-  (use-package avy
-    :ensure t
-    :bind (("C-x j" . avy-goto-char)
-	   ("C-x J" . avy-goto-char-2)))
-#+END_SRC
-
-** org-bullets
-#+BEGIN_SRC emacs-lisp
-  (use-package org-bullets
+  (use-package dimmer
     :ensure t
     :config
-    (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
-    ;(setq org-bullets-bullet-list '("☰" "☷" "☯" "☭"))
-    (setq org-bullets-bullet-list '("༆" "༄" "༅" "࿓"))
-    (setq org-ellipsis " ▼ "))
+    (dimmer-configure-which-key)
+    (dimmer-configure-helm)
+    (dimmer-mode t)
+    )
+#+END_SRC
+
+** dired
+#+BEGIN_SRC emacs-lisp
+  (setq dired-listing-switches "-alht")
+  (use-package dired-icon
+    :ensure t
+    :config
+    (when (display-graphic-p)
+      (add-hook 'dired-mode-hook 'dired-icon-mode)))
+
+  (use-package dired-k
+    :ensure t
+    :config
+    (add-hook 'dired-initial-position-hook 'dired-k)
+    (add-hook 'dired-after-readin-hook #'dired-k-no-revert)
+    (setq dired-k-human-readable t))
+#+END_SRC
+** dracula-theme
+#+BEGIN_SRC emacs-lisp
+  (use-package dracula-theme
+    :ensure t
+    :config
+    (set-cursor-color "#00ff00"))
+#+END_SRC
+
+** dumb-jump
+#+BEGIN_SRC emacs-lisp
+  (use-package dumb-jump
+    :ensure t
+    :config
+    (progn
+      (dumb-jump-mode)
+      (setq dumb-jump-selector 'helm)))
 #+END_SRC
 
 ** evil
@@ -392,26 +377,36 @@
       ))
 #+END_SRC
 
-** restclient
+** expand-region
 #+BEGIN_SRC emacs-lisp
-  (use-package restclient
-    :ensure t
-    :mode ("\\.http\\'" . restclient-mode)
-    )
-  (use-package company-restclient
+  (use-package expand-region
     :ensure t
     :config
-    (add-to-list 'company-backends 'company-restclient))
+    (global-set-key (kbd "C-=") 'er/expand-region))
 #+END_SRC
 
-** undo-tree
+** google-this
 #+BEGIN_SRC emacs-lisp
-(use-package undo-tree
-  :ensure t
-  :init
-  (global-undo-tree-mode))
+(use-package google-this
+  :ensure t)
 #+END_SRC
 
+** helm
+#+BEGIN_SRC emacs-lisp
+  (use-package helm
+    :ensure t
+    :bind (("M-x" . helm-M-x)
+	   ("C-s" . helm-occur)
+	   ("M-y" . helm-show-kill-ring)))
+
+  (use-package helm-ag
+    :ensure t)
+#+END_SRC
+
+** highlight-thing
+#+BEGIN_SRC emacs-lisp
+  (use-package highlight-thing :ensure t)
+#+END_SRC
 ** hungry-delete & aggresive-indent
 #+BEGIN_SRC emacs-lisp
   (use-package hungry-delete
@@ -422,103 +417,6 @@
     :ensure t
     :config
     (global-aggressive-indent-mode 1))
-#+END_SRC
-
-** expand-region
-#+BEGIN_SRC emacs-lisp
-  (use-package expand-region
-    :ensure t
-    :config
-    (global-set-key (kbd "C-=") 'er/expand-region))
-#+END_SRC
-
-** aweshell
-;;#+BEGIN_SRC emacs-lisp
-  (require 'aweshell)
-  (global-set-key (kbd "C-x t") 'aweshell-dedicated-toggle)
-  (global-set-key (kbd "C-x C-t") 'aweshell-new)
-;;#+END_SRC
-** projectile
-#+BEGIN_SRC emacs-lisp
-  (use-package projectile
-    :ensure t
-    :config
-    (projectile-global-mode)
-    (setq projectile-completion-system 'helm))
-
-  (use-package helm-projectile
-    :ensure t
-    :config
-    (helm-projectile-on))
-#+END_SRC
-
-** dumb-jump
-#+BEGIN_SRC emacs-lisp
-  (use-package dumb-jump
-    :ensure t
-    :config
-    (progn
-      (dumb-jump-mode)
-      (setq dumb-jump-selector 'helm)))
-#+END_SRC
-
-** magit
-#+BEGIN_SRC emacs-lisp
-  (use-package magit
-    :ensure t)
-  (use-package evil-magit
-    :ensure t)
-#+END_SRC
-
-** dashboard
-#+BEGIN_SRC emacs-lisp
-  (use-package dashboard
-    :ensure t
-    :config
-    (dashboard-setup-startup-hook)
-    (setq dashboard-startup-banner 2)
-    (setq dashboard-items '((recents  . 10)
-			    (projects . 5)
-			    (bookmarks . 5)
-			    ))
-    )
-#+END_SRC
-
-** beacon
-#+BEGIN_SRC emacs-lisp
-  (use-package beacon
-    :ensure t
-    :config
-    (beacon-mode 1)
-    (setq beacon-color "#00FF00")
-    )
-#+END_SRC
-
-** dimmer
-#+BEGIN_SRC emacs-lisp
-  (use-package dimmer
-    :ensure t
-    :config
-    (dimmer-configure-which-key)
-    (dimmer-configure-helm)
-    (dimmer-mode t)
-    )
-#+END_SRC
-
-** rainbow-delimiters
-#+BEGIN_SRC emacs-lisp
-  (use-package rainbow-delimiters
-    :ensure t
-    :config
-    (rainbow-delimiters-mode)
-    (add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
-    )
-#+END_SRC
-
-** zzz-to-char
-#+BEGIN_SRC emacs-lisp
-  (use-package zzz-to-char
-    :ensure t)
 #+END_SRC
 
 ** hydra
@@ -575,6 +473,14 @@
     )
 #+END_SRC
 
+** magit
+#+BEGIN_SRC emacs-lisp
+  (use-package magit
+    :ensure t)
+  (use-package evil-magit
+    :ensure t)
+#+END_SRC
+
 ** multiple-cursors
 #+BEGIN_SRC emacs-lisp
   (use-package multiple-cursors
@@ -583,6 +489,133 @@
     (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
     (add-hook 'multiple-cursors-mode-enabled-hook (lambda () (global-hungry-delete-mode -1)))
     (add-hook 'multiple-cursors-mode-disabled-hook (lambda () (global-hungry-delete-mode 1)))
+    )
+#+END_SRC
+
+** neotree
+#+BEGIN_SRC emacs-lisp
+(use-package neotree
+  :ensure t)
+#+END_SRC
+
+** org-bullets
+#+BEGIN_SRC emacs-lisp
+  (use-package org-bullets
+    :ensure t
+    :config
+    (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+    ;(setq org-bullets-bullet-list '("☰" "☷" "☯" "☭"))
+    (setq org-bullets-bullet-list '("༆" "༄" "༅" "࿓"))
+    (setq org-ellipsis " ▼ "))
+#+END_SRC
+
+** projectile
+#+BEGIN_SRC emacs-lisp
+  (use-package projectile
+    :ensure t
+    :config
+    (projectile-global-mode)
+    (setq projectile-completion-system 'helm))
+
+  (use-package helm-projectile
+    :ensure t
+    :config
+    (helm-projectile-on))
+#+END_SRC
+
+** python
+##+BEGIN_SRC emacs-lisp
+  (use-package elpy
+    :ensure t
+    :init
+    (elpy-enable)
+    (setq elpy-rpc-python-command "python3")
+    (setq python-shell-interpreter "python3")
+    )
+#+END_SRC
+** rainbow-delimiters
+#+BEGIN_SRC emacs-lisp
+  (use-package rainbow-delimiters
+    :ensure t
+    :config
+    (rainbow-delimiters-mode)
+    (add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
+    )
+#+END_SRC
+
+** restclient
+#+BEGIN_SRC emacs-lisp
+  (use-package restclient
+    :ensure t
+    :mode ("\\.http\\'" . restclient-mode)
+    )
+  (use-package company-restclient
+    :ensure t
+    :config
+    (add-to-list 'company-backends 'company-restclient))
+#+END_SRC
+
+** solarized-theme
+##+BEGIN_SRC emacs-lisp
+  (use-package solarized-theme
+    :ensure t
+    :config
+    (when (display-graphic-p)
+      (load-theme 'solarized-dark t))
+    )
+#+END_SRC
+
+** spacemacs-theme
+##+BEGIN_SRC emacs-lisp
+  (use-package spacemacs-common
+    :ensure spacemacs-theme
+    :config
+    (unless (display-graphic-p)
+      (load-theme 'spacemacs-dark t))
+    )
+#+END_SRC
+
+** try
+#+BEGIN_SRC emacs-lisp
+  (use-package try
+    :ensure t)
+#+END_SRC
+
+** undo-tree
+#+BEGIN_SRC emacs-lisp
+(use-package undo-tree
+  :ensure t
+  :init
+  (global-undo-tree-mode))
+#+END_SRC
+
+** vterm
+#+BEGIN_SRC emacs-lisp
+  (use-package vterm
+    :ensure t
+    :config
+    (setq vterm-shell "/usr/local/bin/fish")
+    )
+  (use-package exec-path-from-shell
+    :ensure t
+    :config
+    (when (memq window-system '(mac ns x))
+      (exec-path-from-shell-initialize))
+    )
+#+END_SRC
+** which-key
+#+BEGIN_SRC emacs-lisp
+  (use-package which-key
+    :ensure t
+    :config
+    (which-key-mode)
+    ;; Allow C-h to trigger which-key before it is done automatically
+    (setq which-key-show-early-on-C-h t)
+    ;; make sure which-key doesn't show normally but refreshes quickly after it is
+    ;; triggered.
+    (setq which-key-idle-delay 10000)
+    (setq which-key-idle-secondary-delay 0.05)
+    (which-key-mode)
     )
 #+END_SRC
 
@@ -605,47 +638,15 @@
   (use-package yasnippet-snippets
     :ensure t)
 #+END_SRC
-** dired
+** youdao-dictionary
 #+BEGIN_SRC emacs-lisp
-  (setq dired-listing-switches "-alht")
-  (use-package dired-icon
-    :ensure t
-    :config
-    (when (display-graphic-p)
-      (add-hook 'dired-mode-hook 'dired-icon-mode)))
+(use-package youdao-dictionary
+  :ensure t)
+#+END_SRC
 
-  (use-package dired-k
-    :ensure t
-    :config
-    (add-hook 'dired-initial-position-hook 'dired-k)
-    (add-hook 'dired-after-readin-hook #'dired-k-no-revert)
-    (setq dired-k-human-readable t))
-#+END_SRC
-** python
-##+BEGIN_SRC emacs-lisp
-  (use-package elpy
-    :ensure t
-    :init
-    (elpy-enable)
-    (setq elpy-rpc-python-command "python3")
-    (setq python-shell-interpreter "python3")
-    )
-#+END_SRC
-** vterm
+** zzz-to-char
 #+BEGIN_SRC emacs-lisp
-  (use-package vterm
-    :ensure t
-    :config
-    (setq vterm-shell "/usr/local/bin/fish")
-    )
-  (use-package exec-path-from-shell
-    :ensure t
-    :config
-    (when (memq window-system '(mac ns x))
-      (exec-path-from-shell-initialize))
-    )
+  (use-package zzz-to-char
+    :ensure t)
 #+END_SRC
-** highlight-thing
-#+BEGIN_SRC emacs-lisp
-  (use-package highlight-thing :ensure t)
-#+END_SRC
+
