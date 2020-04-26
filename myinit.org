@@ -645,3 +645,7 @@
       (exec-path-from-shell-initialize))
     )
 #+END_SRC
+** highlight-thing
+#+BEGIN_SRC emacs-lisp
+  (use-package highlight-thing :ensure t)
+#+END_SRC
