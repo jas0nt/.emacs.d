@@ -315,6 +315,11 @@
     (evil-leader/set-leader "<SPC>")
     (evil-leader/set-key
       "<SPC>" 'helm-M-x
+    
+      "ci" 'evilnc-comment-or-uncomment-lines
+      "cc" 'evilnc-copy-and-comment-lines
+      "cp" 'evilnc-comment-or-uncomment-paragraphs
+      "cr" 'comment-or-uncomment-region
 
       ;; file
       "ff" 'helm-find-files
@@ -349,10 +354,10 @@
 
       ;; terminal
       "'" '(lambda ()
-	      (interactive)
-	      (if (get-buffer "vterm")
-		  (switch-to-buffer "vterm")
-		(vterm)))
+	     (interactive)
+	     (if (get-buffer "vterm")
+		 (switch-to-buffer "vterm")
+	       (vterm)))
       "tt" 'vterm-other-window
 
       ;; window
@@ -377,6 +382,10 @@
       ))
 #+END_SRC
 
+** evil-nerd-commenter
+#+BEGIN_SRC emacs-lisp
+  (use-package evil-nerd-commenter :ensure t)
+#+END_SRC
 ** expand-region
 #+BEGIN_SRC emacs-lisp
   (use-package expand-region
@@ -473,6 +482,10 @@
     )
 #+END_SRC
 
+** ialign
+#+BEGIN_SRC emacs-lisp
+  (use-package ialign :ensure t)
+#+END_SRC
 ** magit
 #+BEGIN_SRC emacs-lisp
   (use-package magit
