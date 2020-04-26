@@ -232,9 +232,18 @@
 
 ** which-key
 #+BEGIN_SRC emacs-lisp
-(use-package which-key
-  :ensure t
-  :config (which-key-mode))
+  (use-package which-key
+    :ensure t
+    :config
+    (which-key-mode)
+    ;; Allow C-h to trigger which-key before it is done automatically
+    (setq which-key-show-early-on-C-h t)
+    ;; make sure which-key doesn't show normally but refreshes quickly after it is
+    ;; triggered.
+    (setq which-key-idle-delay 10000)
+    (setq which-key-idle-secondary-delay 0.05)
+    (which-key-mode)
+    )
 #+END_SRC
 
 ** neotree
@@ -354,12 +363,12 @@
       "sd" 'youdao-dictionary-search-at-point+
 
       ;; terminal
-      "tt" '(lambda ()
+      "'" '(lambda ()
 	      (interactive)
 	      (if (get-buffer "vterm")
 		  (switch-to-buffer "vterm")
 		(vterm)))
-      "tT" 'vterm-other-window
+      "tt" 'vterm-other-window
 
       ;; window
       "ww" 'hydra-window/body
@@ -375,7 +384,8 @@
       "wd" 'delete-window
 
       ;; project
-      "p" 'projectile-command-map
+      "pp" 'projectile-command-map
+      "p'" 'projectile-run-vterm
 
       ;; zzz-to-char
       "z" 'zzz-to-char
