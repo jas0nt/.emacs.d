@@ -95,6 +95,10 @@
 
   (setq visible-bell nil)
 
+  ;;Display lambda as λ
+  (global-prettify-symbols-mode 1)
+  (setq prettify-symbols-alist '(("lambda" . 955)))
+
 #+END_SRC
 * ibuffer
 #+BEGIN_SRC emacs-lisp
@@ -110,7 +114,11 @@
 			   (name . "^\\*Messages\\*$")
 			   ))
 		 ("dired" (mode . dired-mode))
-		 ("shell" (or (mode . eshell-mode) (mode . shell-mode)))
+		 ("shell" (or
+			   (mode . eshell-mode)
+			   (mode . shell-mode)
+			   (mode . vterm-mode)
+			   ))
 		 ("programming" (or
 				 (mode . java-mode)
 				 (mode . python-mode)
@@ -344,6 +352,14 @@
       "ss" 'helm-occur
       "sg" 'google-this
       "sd" 'youdao-dictionary-search-at-point+
+
+      ;; terminal
+      "tt" '(lambda ()
+	      (interactive)
+	      (if (get-buffer "vterm")
+		  (switch-to-buffer "vterm")
+		(vterm)))
+      "tT" 'vterm-other-window
 
       ;; window
       "ww" 'hydra-window/body
@@ -607,5 +623,15 @@
 #+END_SRC
 ** vterm
 #+BEGIN_SRC emacs-lisp
-  (use-package vterm :ensure t)
+  (use-package vterm
+    :ensure t
+    :config
+    (setq vterm-shell "/usr/local/bin/fish")
+    )
+  (use-package exec-path-from-shell
+    :ensure t
+    :config
+    (when (memq window-system '(mac ns x))
+      (exec-path-from-shell-initialize))
+    )
 #+END_SRC
