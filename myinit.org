@@ -282,7 +282,7 @@
     (setq evil-want-keybinding nil)
     (setq evil-disable-insert-state-bindings t)
     (setq evil-want-C-i-jump nil)
-    ;(setq evil-want-C-u-scroll t)
+    (setq evil-want-C-u-scroll t)
     :config
     (evil-mode 1)
     )
@@ -349,7 +349,8 @@
       "qR" 'restart-emacs
 
       ;; search
-      "ss" 'helm-occur
+      "ss" 'helm-swoop
+      "sS" 'helm-multi-swoop
       "sg" 'google-this
       "sd" 'youdao-dictionary-search-at-point+
 
@@ -377,6 +378,7 @@
       ;; project
       "pp" 'projectile-command-map
       "p'" 'projectile-run-vterm
+      "ps" 'helm-multi-swoop-projectile
 
       ;; zzz-to-char
       "z" 'zzz-to-char
@@ -401,16 +403,18 @@
   :ensure t)
 #+END_SRC
 
-** helm
+** helm-family
 #+BEGIN_SRC emacs-lisp
   (use-package helm
     :ensure t
     :bind (("M-x" . helm-M-x)
-	   ("C-s" . helm-occur)
 	   ("M-y" . helm-show-kill-ring)))
 
   (use-package helm-ag
     :ensure t)
+
+  (use-package helm-swoop :ensure t
+    :bind (("C-s" . helm-swoop)))
 #+END_SRC
 
 ** highlight-thing
