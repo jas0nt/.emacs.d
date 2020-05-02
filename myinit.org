@@ -495,6 +495,34 @@
     :ensure t)
 #+END_SRC
 
+** meghanada
+#+BEGIN_SRC emacs-lisp
+  (use-package meghanada
+    :ensure t
+    :bind (
+	   ("s-]" . meghanada-jump-declaration)
+	   ("s-[" . meghanada-back-jump)
+	   )
+    :config
+    (add-hook 'java-mode-hook
+	      (lambda ()
+		;; meghanada-mode on
+		(meghanada-mode t)
+		;; enable telemetry
+		(meghanada-telemetry-enable t)
+		(flycheck-mode +1)
+		(setq c-basic-offset 4)
+		;; use code format
+		(add-hook 'before-save-hook 'meghanada-code-beautify-before-save)))
+    (cond
+     ((eq system-type 'windows-nt)
+      (setq meghanada-java-path (expand-file-name "bin/java.exe" (getenv "JAVA_HOME")))
+      (setq meghanada-maven-path "mvn.cmd"))
+     (t
+      (setq meghanada-java-path "java")
+      (setq meghanada-maven-path "mvn")))
+    )
+#+END_SRC
 ** multiple-cursors
 #+BEGIN_SRC emacs-lisp
   (use-package multiple-cursors
@@ -648,56 +676,3 @@
     :ensure t)
 #+END_SRC
 
-** lsp-java
-##+BEGIN_SRC emacs-lisp
-  (require 'cc-mode)
-
-  (use-package lsp-mode :ensure t)
-  (use-package company-lsp :ensure t)
-  (use-package lsp-ui :ensure t)
-  (use-package lsp-java :ensure t
-    :config
-    (add-hook 'java-mode-hook 'lsp)
-    (require 'lsp-java-boot)
-    ;; to enable the lenses
-    (add-hook 'lsp-mode-hook #'lsp-lens-mode)
-    (add-hook 'java-mode-hook #'lsp-java-boot-lens-mode)
-    (setq lsp-java-format-settings-url "~/.emacs.d/eclipse.jdt.ls/eclipse-java-google-style.xml")
-    )
-
-  (use-package dap-mode
-    :ensure t :after lsp-mode
-    :config
-    (dap-mode t)
-    (dap-ui-mode t))
-
-  (use-package dap-java :after (lsp-java))
-#+END_SRC
-** meghanada
-#+BEGIN_SRC emacs-lisp
-  (use-package meghanada
-    :ensure t
-    :bind (
-	   ("s-]" . meghanada-jump-declaration)
-	   ("s-[" . meghanada-back-jump)
-	   )
-    :config
-    (add-hook 'java-mode-hook
-	      (lambda ()
-		;; meghanada-mode on
-		(meghanada-mode t)
-		;; enable telemetry
-		(meghanada-telemetry-enable t)
-		(flycheck-mode +1)
-		(setq c-basic-offset 4)
-		;; use code format
-		(add-hook 'before-save-hook 'meghanada-code-beautify-before-save)))
-    (cond
-     ((eq system-type 'windows-nt)
-      (setq meghanada-java-path (expand-file-name "bin/java.exe" (getenv "JAVA_HOME")))
-      (setq meghanada-maven-path "mvn.cmd"))
-     (t
-      (setq meghanada-java-path "java")
-      (setq meghanada-maven-path "mvn")))
-    )
-#+END_SRC
