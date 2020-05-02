@@ -46,6 +46,9 @@
 ;;emacs deamon
 (server-start)
 
+;;tab-with
+(setq tab-with 4)
+
 #+END_SRC
 
 * UI
@@ -279,7 +282,7 @@
     (setq evil-want-keybinding nil)
     (setq evil-disable-insert-state-bindings t)
     (setq evil-want-C-i-jump nil)
-    (setq evil-want-C-u-scroll t)
+    ;(setq evil-want-C-u-scroll t)
     :config
     (evil-mode 1)
     )
@@ -303,7 +306,7 @@
     (evil-leader/set-leader "<SPC>")
     (evil-leader/set-key
       "<SPC>" 'helm-M-x
-    
+
       ;; evil-nerd-commenter
       "ci" 'evilnc-comment-or-uncomment-lines
       "cc" 'evilnc-copy-and-comment-lines
@@ -333,6 +336,13 @@
       "jq" 'dumb-jump-quick-look
       "jj" 'avy-goto-char
       "jJ" 'avy-goto-char-2
+
+      ;; meghanada
+      "mf" 'meghanada-code-beautify
+      "mj" 'meghanada-jump-declaration
+      "mb" 'meghanada-back-jump
+      "mi" 'meghanada-import-at-point
+      "mI" 'meghanada-import-all
 
       ;; quit
       "qq" 'save-buffers-kill-terminal
@@ -638,3 +648,56 @@
     :ensure t)
 #+END_SRC
 
+** lsp-java
+##+BEGIN_SRC emacs-lisp
+  (require 'cc-mode)
+
+  (use-package lsp-mode :ensure t)
+  (use-package company-lsp :ensure t)
+  (use-package lsp-ui :ensure t)
+  (use-package lsp-java :ensure t
+    :config
+    (add-hook 'java-mode-hook 'lsp)
+    (require 'lsp-java-boot)
+    ;; to enable the lenses
+    (add-hook 'lsp-mode-hook #'lsp-lens-mode)
+    (add-hook 'java-mode-hook #'lsp-java-boot-lens-mode)
+    (setq lsp-java-format-settings-url "~/.emacs.d/eclipse.jdt.ls/eclipse-java-google-style.xml")
+    )
+
+  (use-package dap-mode
+    :ensure t :after lsp-mode
+    :config
+    (dap-mode t)
+    (dap-ui-mode t))
+
+  (use-package dap-java :after (lsp-java))
+#+END_SRC
+** meghanada
+#+BEGIN_SRC emacs-lisp
+  (use-package meghanada
+    :ensure t
+    :bind (
+	   ("s-]" . meghanada-jump-declaration)
+	   ("s-[" . meghanada-back-jump)
+	   )
+    :config
+    (add-hook 'java-mode-hook
+	      (lambda ()
+		;; meghanada-mode on
+		(meghanada-mode t)
+		;; enable telemetry
+		(meghanada-telemetry-enable t)
+		(flycheck-mode +1)
+		(setq c-basic-offset 4)
+		;; use code format
+		(add-hook 'before-save-hook 'meghanada-code-beautify-before-save)))
+    (cond
+     ((eq system-type 'windows-nt)
+      (setq meghanada-java-path (expand-file-name "bin/java.exe" (getenv "JAVA_HOME")))
+      (setq meghanada-maven-path "mvn.cmd"))
+     (t
+      (setq meghanada-java-path "java")
+      (setq meghanada-maven-path "mvn")))
+    )
+#+END_SRC
