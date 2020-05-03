@@ -103,6 +103,7 @@
 
   (setq ibuffer-saved-filter-groups
 	(quote (("default"
+		 ("org" (name . "^.*org$"))
 		 ("emacs" (or
 			   (name . "^\\*dashboard\\*$")
 			   (name . "^\\*scratch\\*$")
@@ -123,7 +124,6 @@
 				 (name .  "^.*html")
 				 ))
 		 ("restclient" (mode . restclient-mode))
-		 ("org" (name . "^.*org$"))
 		 ("magit" (mode . magit-mode))
 		 ))))
   (add-hook 'ibuffer-mode-hook
