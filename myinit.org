@@ -84,14 +84,6 @@
   ;;show match ()
   (add-hook 'emacs-lisp-mode-hook 'show-paren-mode)
 
-  ;;show parent fun
-  (defadvice show-paren-function (around fix-show-paren-function activate)
-    (cond ((looking-at-p "\\s(") ad-do-it)
-	  (t (save-excursion
-	       (ignore-errors (backward-up-list))
-	       ad-do-it)))
-    )
-
   ;;highlight current line
   (when (display-graphic-p)
     (global-hl-line-mode))
@@ -141,23 +133,6 @@
 #+END_SRC
 * Packages
   
-** elpa
-#+BEGIN_SRC emacs-lisp
-(require 'package)
-;;elpa
-(setq package-archives '(("gnu"   . "http://elpa.emacs-china.org/gnu/")
-			 ("melpa" . "http://elpa.emacs-china.org/melpa/")))
-(package-initialize)
-#+END_SRC
-
-** use-package
-#+BEGIN_SRC emacs-lisp
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
-#+END_SRC
-
-
 ** ace-window
 #+BEGIN_SRC emacs-lisp
   (use-package ace-window
