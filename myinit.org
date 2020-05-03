@@ -530,52 +530,50 @@
 
 * General Config
 #+BEGIN_SRC emacs-lisp
+  ;;custom file
+  (setq custom-file (expand-file-name "~/.emacs.d/custom.el" user-emacs-directory))
+  (load-file custom-file)
 
-;;custom file
-(setq custom-file (expand-file-name "~/.emacs.d/custom.el" user-emacs-directory))
-(load-file custom-file)
+  ;;ido mode
+  (setq indo-enable-flex-matching t)
+  (setq ido-everywhere t)
+  (ido-mode t)
 
-;;ido mode
-(setq indo-enable-flex-matching t)
-(setq ido-everywhere t)
-(ido-mode t)
+  ;;diable error tone
+  (setq ring-bell-function 'ignore)
 
-;;diable error tone
-(setq ring-bell-function 'ignore)
+  ;;no backup file
+  (setq make-backup-files nil)
+  (setq auto-save-default nil)
 
-;;no backup file
-(setq make-backup-files nil)
-(setq auto-save-default nil)
+  ;;show recent file
+  (recentf-mode 1)
+  (setq recentf-max-menu-items 15)
 
-;;show recent file
-(recentf-mode 1)
-(setq recentf-max-menu-items 15)
+  ;;delete selection
+  (delete-selection-mode 1)
 
-;;delete selection
-(delete-selection-mode 1)
+  ;;paste from clipboard
+  (setq x-select-enable-clipboard t)
 
-;;paste from clipboard
-(setq x-select-enable-clipboard t)
+  ;;replace Yes/No with y/n
+  (fset 'yes-or-no-p 'y-or-n-p)
 
-;;replace Yes/No with y/n
-(fset 'yes-or-no-p 'y-or-n-p)
+  ;;lazy load
+  (with-eval-after-load 'dired
+	(define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file))
 
-;;lazy load
-(with-eval-after-load 'dired
-    (define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file))
-    
-;;revert buffer
-(global-set-key (kbd "<f5>") 'revert-buffer)
+  ;;revert buffer
+  (global-set-key (kbd "<f5>") 'revert-buffer)
 
-;;exec-path
-(add-to-list 'exec-path "/usr/local/bin")
+  ;;exec-path
+  (add-to-list 'exec-path "/usr/local/bin")
 
-;;emacs deamon
-(server-start)
+  ;;emacs deamon
+  (server-start)
 
-;;tab-width
-(setq tab-width 4)
-
+  ;;tab-width
+  (setq tab-width 4)
 #+END_SRC
 
 * UI
@@ -583,7 +581,7 @@
 
   ;;font
   (add-to-list 'default-frame-alist
-	       '(font . "Source Code Pro-14"))
+			   '(font . "Source Code Pro-14"))
 
   ;;hide tool bar
   (tool-bar-mode -1)
@@ -613,14 +611,13 @@
 
   ;;highlight current line
   (when (display-graphic-p)
-    (global-hl-line-mode))
+	(global-hl-line-mode))
 
   (setq visible-bell nil)
 
   ;;Display lambda as λ
   (global-prettify-symbols-mode 1)
   (setq prettify-symbols-alist '(("lambda" . 955)))
-
 #+END_SRC
 * ibuffer
 #+BEGIN_SRC emacs-lisp
@@ -629,32 +626,32 @@
   (global-set-key (kbd "C-x b") 'ibuffer)
 
   (setq ibuffer-saved-filter-groups
-	(quote (("default"
-		 ("org" (name . "^.*org$"))
-		 ("emacs" (or
-			   (name . "^\\*dashboard\\*$")
-			   (name . "^\\*scratch\\*$")
-			   (name . "^\\*Messages\\*$")
-			   ))
-		 ("dired" (mode . dired-mode))
-		 ("shell" (or
-			   (mode . eshell-mode)
-			   (mode . shell-mode)
-			   (mode . vterm-mode)
-			   ))
-		 ("programming" (or
-				 (mode . java-mode)
-				 (mode . python-mode)
-				 (name .  "^.*java")
-				 (name .  "^.*py")
-				 (name .  "^.*sql")
-				 (name .  "^.*html")
-				 ))
-		 ("restclient" (mode . restclient-mode))
-		 ("magit" (mode . magit-mode))
-		 ))))
+		(quote (("default"
+				 ("org" (name . "^.*org$"))
+				 ("emacs" (or
+						   (name . "^\\*dashboard\\*$")
+						   (name . "^\\*scratch\\*$")
+						   (name . "^\\*Messages\\*$")
+						   ))
+				 ("dired" (mode . dired-mode))
+				 ("shell" (or
+						   (mode . eshell-mode)
+						   (mode . shell-mode)
+						   (mode . vterm-mode)
+						   ))
+				 ("programming" (or
+								 (mode . java-mode)
+								 (mode . python-mode)
+								 (name .  "^.*java")
+								 (name .  "^.*py")
+								 (name .  "^.*sql")
+								 (name .  "^.*html")
+								 ))
+				 ("restclient" (mode . restclient-mode))
+				 ("magit" (mode . magit-mode))
+				 ))))
   (add-hook 'ibuffer-mode-hook
-	    (lambda ()
-	      (ibuffer-auto-mode 1)
-	      (ibuffer-switch-to-saved-filter-groups "default")))
+			(lambda ()
+			  (ibuffer-auto-mode 1)
+			  (ibuffer-switch-to-saved-filter-groups "default")))
 #+END_SRC
