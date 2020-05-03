@@ -384,7 +384,7 @@
   (use-package helm-ag :ensure t)
 
   (use-package helm-swoop :ensure t
-    :bind (("C-s" . helm-swoop)))
+    :bind (("C-s" . helm-swoop-without-pre-input)))
 #+END_SRC
 
 ** highlight-thing
