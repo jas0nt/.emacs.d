@@ -293,6 +293,7 @@
       "ft" 'neotree-toggle
 
       ;; buffer
+      "<tab>" 'evil-switch-to-windows-last-buffer
       "bb" 'helm-mini
       "bB" 'ibuffer
       "bx" 'kill-current-buffer
