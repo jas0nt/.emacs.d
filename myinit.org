@@ -1,138 +1,7 @@
 #+STARTUP: overview 
 #+PROPERTY: header-args :comments yes :results silent
 
-* General Config
-#+BEGIN_SRC emacs-lisp
-
-;;custom file
-(setq custom-file (expand-file-name "~/.emacs.d/custom.el" user-emacs-directory))
-(load-file custom-file)
-
-;;ido mode
-(setq indo-enable-flex-matching t)
-(setq ido-everywhere t)
-(ido-mode t)
-
-;;diable error tone
-(setq ring-bell-function 'ignore)
-
-;;no backup file
-(setq make-backup-files nil)
-(setq auto-save-default nil)
-
-;;show recent file
-(recentf-mode 1)
-(setq recentf-max-menu-items 15)
-
-;;delete selection
-(delete-selection-mode 1)
-
-;;paste from clipboard
-(setq x-select-enable-clipboard t)
-
-;;replace Yes/No with y/n
-(fset 'yes-or-no-p 'y-or-n-p)
-
-;;lazy load
-(with-eval-after-load 'dired
-    (define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file))
-    
-;;revert buffer
-(global-set-key (kbd "<f5>") 'revert-buffer)
-
-;;exec-path
-(add-to-list 'exec-path "/usr/local/bin")
-
-;;emacs deamon
-(server-start)
-
-;;tab-with
-(setq tab-with 4)
-
-#+END_SRC
-
-* UI
-#+BEGIN_SRC emacs-lisp
-
-  ;;font
-  (add-to-list 'default-frame-alist
-	       '(font . "Source Code Pro-14"))
-
-  ;;hide tool bar
-  (tool-bar-mode -1)
-
-  ;;hide scroll bar
-  (scroll-bar-mode -1)
-
-  ;;hide menu bar
-  ;;(menu-bar-mode -1)
-
-  ;;show line number
-  (global-linum-mode t)
-
-  ;;disable welcome page
-  (setq inhibit-splash-screen t)
-
-  ;;default open with full screen
-  (setq initial-frame-alist (quote ((fullscreen . maximized))))
-
-  ;;set cursor type
-  (setq-default cursor-type 'box)
-  (set-cursor-color "#00ff00")
-  (blink-cursor-mode 0)
-
-  ;;show match ()
-  (add-hook 'emacs-lisp-mode-hook 'show-paren-mode)
-
-  ;;highlight current line
-  (when (display-graphic-p)
-    (global-hl-line-mode))
-
-  (setq visible-bell nil)
-
-  ;;Display lambda as λ
-  (global-prettify-symbols-mode 1)
-  (setq prettify-symbols-alist '(("lambda" . 955)))
-
-#+END_SRC
-* ibuffer
-#+BEGIN_SRC emacs-lisp
-  ;;buffer
-  (defalias 'list-buffers 'ibuffer)
-  (global-set-key (kbd "C-x b") 'ibuffer)
-
-  (setq ibuffer-saved-filter-groups
-	(quote (("default"
-		 ("org" (name . "^.*org$"))
-		 ("emacs" (or
-			   (name . "^\\*dashboard\\*$")
-			   (name . "^\\*scratch\\*$")
-			   (name . "^\\*Messages\\*$")
-			   ))
-		 ("dired" (mode . dired-mode))
-		 ("shell" (or
-			   (mode . eshell-mode)
-			   (mode . shell-mode)
-			   (mode . vterm-mode)
-			   ))
-		 ("programming" (or
-				 (mode . java-mode)
-				 (mode . python-mode)
-				 (name .  "^.*java")
-				 (name .  "^.*py")
-				 (name .  "^.*sql")
-				 (name .  "^.*html")
-				 ))
-		 ("restclient" (mode . restclient-mode))
-		 ("magit" (mode . magit-mode))
-		 ))))
-  (add-hook 'ibuffer-mode-hook
-	    (lambda ()
-	      (ibuffer-auto-mode 1)
-	      (ibuffer-switch-to-saved-filter-groups "default")))
-#+END_SRC
 * Packages
-  
 ** ace-window
 #+BEGIN_SRC emacs-lisp
   (use-package ace-window
@@ -310,12 +179,18 @@
       "jj" 'avy-goto-char
       "jJ" 'avy-goto-char-2
 
-      ;; meghanada
-      "mf" 'meghanada-code-beautify
-      "mj" 'meghanada-jump-declaration
-      "mb" 'meghanada-back-jump
-      "mi" 'meghanada-import-at-point
-      "mI" 'meghanada-import-all
+      ;; lsp
+      "lf" 'lsp-format-buffer
+      "lg" 'lsp-goto-implementation
+      "ld" 'lsp-find-definition
+      "li" 'lsp-java-organize-imports
+
+	  ;; dap
+      "dd" 'dap-java-debug
+      "dba" 'dap-breakpoint-add
+      "dbd" 'dap-breakpoint-delete
+      "dbD" 'dap-breakpoint-delete-all
+      "dh" 'dap-hydra
 
       ;; quit
       "qq" 'save-buffers-kill-terminal
@@ -463,6 +338,28 @@
 #+BEGIN_SRC emacs-lisp
   (use-package ialign :ensure t)
 #+END_SRC
+** lsp-java
+#+BEGIN_SRC emacs-lisp
+  (require 'cc-mode)
+
+  (use-package lsp-mode :ensure t)
+  (use-package lsp-ui :ensure t)
+  (use-package lsp-java :ensure t
+    :config
+    (add-hook 'java-mode-hook 'lsp)
+    (setq c-basic-offset 4)
+    (setq lsp-java-format-settings-url "~/.emacs.d/eclipse.jdt.ls/eclipse-java-google-style.xml")
+    )
+
+  (use-package dap-mode
+    :ensure t :after lsp-mode
+    :config
+    (dap-mode t)
+    (dap-ui-mode t))
+
+  (use-package dap-java :after (lsp-java))
+#+END_SRC
+
 ** magit
 #+BEGIN_SRC emacs-lisp
   (use-package magit :ensure t)
@@ -481,34 +378,6 @@
 
 #+END_SRC
 
-** meghanada
-#+BEGIN_SRC emacs-lisp
-  (use-package meghanada
-    :ensure t
-    :bind (
-	   ("s-]" . meghanada-jump-declaration)
-	   ("s-[" . meghanada-back-jump)
-	   )
-    :config
-    (add-hook 'java-mode-hook
-	      (lambda ()
-		;; meghanada-mode on
-		(meghanada-mode t)
-		;; enable telemetry
-		(meghanada-telemetry-enable t)
-		(flycheck-mode +1)
-		(setq c-basic-offset 4)
-		;; use code format
-		(add-hook 'before-save-hook 'meghanada-code-beautify-before-save)))
-    (cond
-     ((eq system-type 'windows-nt)
-      (setq meghanada-java-path (expand-file-name "bin/java.exe" (getenv "JAVA_HOME")))
-      (setq meghanada-maven-path "mvn.cmd"))
-     (t
-      (setq meghanada-java-path "java")
-      (setq meghanada-maven-path "mvn")))
-    )
-#+END_SRC
 ** multiple-cursors
 #+BEGIN_SRC emacs-lisp
   (use-package multiple-cursors
@@ -658,3 +527,134 @@
   (use-package zzz-to-char :ensure t)
 #+END_SRC
 
+
+* General Config
+#+BEGIN_SRC emacs-lisp
+
+;;custom file
+(setq custom-file (expand-file-name "~/.emacs.d/custom.el" user-emacs-directory))
+(load-file custom-file)
+
+;;ido mode
+(setq indo-enable-flex-matching t)
+(setq ido-everywhere t)
+(ido-mode t)
+
+;;diable error tone
+(setq ring-bell-function 'ignore)
+
+;;no backup file
+(setq make-backup-files nil)
+(setq auto-save-default nil)
+
+;;show recent file
+(recentf-mode 1)
+(setq recentf-max-menu-items 15)
+
+;;delete selection
+(delete-selection-mode 1)
+
+;;paste from clipboard
+(setq x-select-enable-clipboard t)
+
+;;replace Yes/No with y/n
+(fset 'yes-or-no-p 'y-or-n-p)
+
+;;lazy load
+(with-eval-after-load 'dired
+    (define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file))
+    
+;;revert buffer
+(global-set-key (kbd "<f5>") 'revert-buffer)
+
+;;exec-path
+(add-to-list 'exec-path "/usr/local/bin")
+
+;;emacs deamon
+(server-start)
+
+;;tab-width
+(setq tab-width 4)
+
+#+END_SRC
+
+* UI
+#+BEGIN_SRC emacs-lisp
+
+  ;;font
+  (add-to-list 'default-frame-alist
+	       '(font . "Source Code Pro-14"))
+
+  ;;hide tool bar
+  (tool-bar-mode -1)
+
+  ;;hide scroll bar
+  (scroll-bar-mode -1)
+
+  ;;hide menu bar
+  ;;(menu-bar-mode -1)
+
+  ;;show line number
+  (global-linum-mode t)
+
+  ;;disable welcome page
+  (setq inhibit-splash-screen t)
+
+  ;;default open with full screen
+  (setq initial-frame-alist (quote ((fullscreen . maximized))))
+
+  ;;set cursor type
+  (setq-default cursor-type 'box)
+  (set-cursor-color "#00ff00")
+  (blink-cursor-mode 0)
+
+  ;;show match ()
+  (add-hook 'emacs-lisp-mode-hook 'show-paren-mode)
+
+  ;;highlight current line
+  (when (display-graphic-p)
+    (global-hl-line-mode))
+
+  (setq visible-bell nil)
+
+  ;;Display lambda as λ
+  (global-prettify-symbols-mode 1)
+  (setq prettify-symbols-alist '(("lambda" . 955)))
+
+#+END_SRC
+* ibuffer
+#+BEGIN_SRC emacs-lisp
+  ;;buffer
+  (defalias 'list-buffers 'ibuffer)
+  (global-set-key (kbd "C-x b") 'ibuffer)
+
+  (setq ibuffer-saved-filter-groups
+	(quote (("default"
+		 ("org" (name . "^.*org$"))
+		 ("emacs" (or
+			   (name . "^\\*dashboard\\*$")
+			   (name . "^\\*scratch\\*$")
+			   (name . "^\\*Messages\\*$")
+			   ))
+		 ("dired" (mode . dired-mode))
+		 ("shell" (or
+			   (mode . eshell-mode)
+			   (mode . shell-mode)
+			   (mode . vterm-mode)
+			   ))
+		 ("programming" (or
+				 (mode . java-mode)
+				 (mode . python-mode)
+				 (name .  "^.*java")
+				 (name .  "^.*py")
+				 (name .  "^.*sql")
+				 (name .  "^.*html")
+				 ))
+		 ("restclient" (mode . restclient-mode))
+		 ("magit" (mode . magit-mode))
+		 ))))
+  (add-hook 'ibuffer-mode-hook
+	    (lambda ()
+	      (ibuffer-auto-mode 1)
+	      (ibuffer-switch-to-saved-filter-groups "default")))
+#+END_SRC

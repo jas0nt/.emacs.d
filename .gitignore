@@ -31,3 +31,8 @@ tramp
 /bookmarks
 /meghanada/
 /elpy/
+/.cache/
+/workspace/
+/eclipse.jdt.ls/test-runner/
+/.dap-breakpoints
+.lsp-session-*
