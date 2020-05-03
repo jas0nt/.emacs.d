@@ -299,7 +299,8 @@
       "bs" 'hydra-buffer/body
 
       ;; git
-      "g" 'magit-status
+      "gg" 'magit-status
+      "gd" 'hydra-diff-hl/body
 
       ;; jump
       "jg" 'dumb-jump-go
@@ -465,6 +466,18 @@
 #+BEGIN_SRC emacs-lisp
   (use-package magit :ensure t)
   (use-package evil-magit :ensure t)
+  (use-package diff-hl
+    :ensure t
+    :config
+    (global-diff-hl-mode)
+    (defhydra hydra-diff-hl ()
+      "buffer"
+      ("j" diff-hl-next-hunk)
+      ("k" diff-hl-previous-hunk)
+      ("x" diff-hl-revert-hunk)
+      ("q" nil "cancel"))
+    )
+
 #+END_SRC
 
 ** meghanada
