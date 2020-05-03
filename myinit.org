@@ -174,10 +174,7 @@
 
 ** avy
 #+BEGIN_SRC emacs-lisp
-  (use-package avy
-    :ensure t
-    :bind (("C-x j" . avy-goto-char)
-	   ("C-x J" . avy-goto-char-2)))
+  (use-package avy :ensure t)
 #+END_SRC
 
 ** beacon
@@ -284,8 +281,7 @@
     (setq evil-want-C-i-jump nil)
     (setq evil-want-C-u-scroll t)
     :config
-    (evil-mode 1)
-    )
+    (evil-mode 1))
 
   (use-package evil-collection
     :after (evil)
@@ -403,15 +399,14 @@
   :ensure t)
 #+END_SRC
 
-** helm-family
+** helm
 #+BEGIN_SRC emacs-lisp
   (use-package helm
     :ensure t
     :bind (("M-x" . helm-M-x)
 	   ("M-y" . helm-show-kill-ring)))
 
-  (use-package helm-ag
-    :ensure t)
+  (use-package helm-ag :ensure t)
 
   (use-package helm-swoop :ensure t
     :bind (("C-s" . helm-swoop)))
@@ -493,10 +488,8 @@
 #+END_SRC
 ** magit
 #+BEGIN_SRC emacs-lisp
-  (use-package magit
-    :ensure t)
-  (use-package evil-magit
-    :ensure t)
+  (use-package magit :ensure t)
+  (use-package evil-magit :ensure t)
 #+END_SRC
 
 ** meghanada
@@ -540,8 +533,7 @@
 
 ** neotree
 #+BEGIN_SRC emacs-lisp
-(use-package neotree
-  :ensure t)
+(use-package neotree :ensure t)
 #+END_SRC
 
 ** org-bullets
@@ -607,8 +599,7 @@
 
 ** try
 #+BEGIN_SRC emacs-lisp
-  (use-package try
-    :ensure t)
+  (use-package try :ensure t)
 #+END_SRC
 
 ** undo-tree
@@ -670,13 +661,11 @@
 #+END_SRC
 ** youdao-dictionary
 #+BEGIN_SRC emacs-lisp
-(use-package youdao-dictionary
-  :ensure t)
+(use-package youdao-dictionary :ensure t)
 #+END_SRC
 
 ** zzz-to-char
 #+BEGIN_SRC emacs-lisp
-  (use-package zzz-to-char
-    :ensure t)
+  (use-package zzz-to-char :ensure t)
 #+END_SRC
 
