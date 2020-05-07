@@ -31,6 +31,12 @@
     )
 #+END_SRC
 
+** bufler
+#+BEGIN_SRC emacs-lisp
+  (use-package bufler :ensure t)
+  (use-package helm-bufler :ensure t)
+#+END_SRC
+
 ** company
 #+BEGIN_SRC emacs-lisp
   (use-package company
@@ -136,103 +142,6 @@
     (evil-collection-init))
 #+END_SRC
 
-** evil-leader
-#+BEGIN_SRC emacs-lisp
-  (use-package evil-leader
-    :after evil
-    :ensure t
-    :config
-    (global-evil-leader-mode)
-    (evil-leader/set-leader "<SPC>")
-    (evil-leader/set-key
-      "<SPC>" 'helm-M-x
-
-      ;; evil-nerd-commenter
-      "ci" 'evilnc-comment-or-uncomment-lines
-      "cc" 'evilnc-copy-and-comment-lines
-      "cp" 'evilnc-comment-or-uncomment-paragraphs
-      "cr" 'comment-or-uncomment-region
-
-      ;; file
-      "ff" 'helm-find-files
-      "fr" 'helm-recentf
-      "fd" 'dired
-      "fs" 'save-buffer
-      "fS" 'save-some-buffers
-      "ft" 'neotree-toggle
-
-      ;; buffer
-      "<tab>" 'evil-switch-to-windows-last-buffer
-      "bb" 'helm-mini
-      "bB" 'ibuffer
-      "bx" 'kill-current-buffer
-      "bs" 'hydra-buffer/body
-
-      ;; git
-      "gg" 'magit-status
-      "gd" 'hydra-diff-hl/body
-
-      ;; jump
-      "jg" 'dumb-jump-go
-      "jb" 'dumb-jump-back
-      "jq" 'dumb-jump-quick-look
-      "jj" 'avy-goto-char
-      "jJ" 'avy-goto-char-2
-
-      ;; lsp
-      "lf" 'lsp-format-buffer
-      "lg" 'lsp-goto-implementation
-      "ld" 'lsp-find-definition
-      "li" 'lsp-java-organize-imports
-
-	  ;; dap
-      "dd" 'dap-java-debug
-      "dba" 'dap-breakpoint-add
-      "dbd" 'dap-breakpoint-delete
-      "dbD" 'dap-breakpoint-delete-all
-      "dh" 'dap-hydra
-
-      ;; quit
-      "qq" 'save-buffers-kill-terminal
-      "qR" 'restart-emacs
-
-      ;; search
-      "ss" 'helm-swoop
-      "sS" 'helm-multi-swoop
-      "sg" 'google-this
-      "sd" 'youdao-dictionary-search-at-point+
-
-      ;; terminal
-      "'" '(lambda ()
-	     (interactive)
-	     (if (get-buffer "vterm")
-		 (switch-to-buffer "vterm")
-	       (vterm)))
-      "tt" 'vterm-other-window
-
-      ;; window
-      "ww" 'hydra-window/body
-      "wh" 'evil-window-left
-      "wj" 'evil-window-down
-      "wk" 'evil-window-up
-      "wl" 'evil-window-right
-      "wH" 'evil-window-move-far-left
-      "wJ" 'evil-window-move-very-bottom
-      "wK" 'evil-window-move-very-top
-      "wL" 'evil-window-move-far-right
-      "wm" 'delete-other-windows
-      "wd" 'delete-window
-
-      ;; project
-      "pp" 'projectile-command-map
-      "p'" 'projectile-run-vterm
-      "ps" 'helm-multi-swoop-projectile
-
-      ;; zzz-to-char
-      "z" 'zzz-to-char
-      ))
-#+END_SRC
-
 ** evil-nerd-commenter
 #+BEGIN_SRC emacs-lisp
   (use-package evil-nerd-commenter :ensure t)
@@ -245,6 +154,11 @@
     (global-set-key (kbd "C-=") 'er/expand-region))
 #+END_SRC
 
+** general
+#+BEGIN_SRC emacs-lisp
+  (use-package general :ensure t)
+#+END_SRC
+
 ** google-this
 #+BEGIN_SRC emacs-lisp
 (use-package google-this
@@ -253,15 +167,11 @@
 
 ** helm
 #+BEGIN_SRC emacs-lisp
-  (use-package helm
-    :ensure t
-    :bind (("M-x" . helm-M-x)
-	   ("M-y" . helm-show-kill-ring)))
+  (use-package helm :ensure t)
 
   (use-package helm-ag :ensure t)
 
-  (use-package helm-swoop :ensure t
-    :bind (("C-s" . helm-swoop-without-pre-input)))
+  (use-package helm-swoop :ensure t)
 #+END_SRC
 
 ** highlight-thing
@@ -488,12 +398,7 @@
     :ensure t
     :config
     (which-key-mode)
-    ;; Allow C-h to trigger which-key before it is done automatically
-    (setq which-key-show-early-on-C-h t)
-    ;; make sure which-key doesn't show normally but refreshes quickly after it is
-    ;; triggered.
-    (setq which-key-idle-delay 10000)
-    (setq which-key-idle-secondary-delay 0.05)
+    (setq which-key-idle-delay 0.5)
     (which-key-mode)
     )
 #+END_SRC
@@ -527,8 +432,7 @@
   (use-package zzz-to-char :ensure t)
 #+END_SRC
 
-
-* General Config
+* Configs
 #+BEGIN_SRC emacs-lisp
   ;;custom file
   (setq custom-file (expand-file-name "~/.emacs.d/custom.el" user-emacs-directory))
@@ -619,39 +523,126 @@
   (global-prettify-symbols-mode 1)
   (setq prettify-symbols-alist '(("lambda" . 955)))
 #+END_SRC
-* ibuffer
+* Keybindings
 #+BEGIN_SRC emacs-lisp
-  ;;buffer
-  (defalias 'list-buffers 'ibuffer)
-  (global-set-key (kbd "C-x b") 'ibuffer)
+  (general-define-key
+   "M-x" 'helm-M-x
+   "C-s" 'helm-swoop-without-pre-input
+   "M-y" 'helm-show-kill-ring
+   "C-x C-b" 'helm-mini
+   "C-x b" 'bufler-list
+   "C-x C-f" 'helm-find-files
+   )
 
-  (setq ibuffer-saved-filter-groups
-		(quote (("default"
-				 ("org" (name . "^.*org$"))
-				 ("emacs" (or
-						   (name . "^\\*dashboard\\*$")
-						   (name . "^\\*scratch\\*$")
-						   (name . "^\\*Messages\\*$")
-						   ))
-				 ("dired" (mode . dired-mode))
-				 ("shell" (or
-						   (mode . eshell-mode)
-						   (mode . shell-mode)
-						   (mode . vterm-mode)
-						   ))
-				 ("programming" (or
-								 (mode . java-mode)
-								 (mode . python-mode)
-								 (name .  "^.*java")
-								 (name .  "^.*py")
-								 (name .  "^.*sql")
-								 (name .  "^.*html")
-								 ))
-				 ("restclient" (mode . restclient-mode))
-				 ("magit" (mode . magit-mode))
-				 ))))
-  (add-hook 'ibuffer-mode-hook
-			(lambda ()
-			  (ibuffer-auto-mode 1)
-			  (ibuffer-switch-to-saved-filter-groups "default")))
+  ;; (general-create-definer my-leader-def :prefix "SPC")
+  (general-define-key
+   :prefix "C-c"
+   ;; :keymaps '(normal visual emacs)
+   "SPC" 'helm-M-x
+
+   ;; evil-nerd-commenter
+   "ci" 'evilnc-comment-or-uncomment-lines
+   "cc" 'evilnc-copy-and-comment-lines
+   "cp" 'evilnc-comment-or-uncomment-paragraphs
+   "cr" 'comment-or-uncomment-region
+
+   ;; file
+   "ff" 'helm-find-files
+   "fr" 'helm-recentf
+   "fd" 'dired
+   "fs" 'save-buffer
+   "fS" 'save-some-buffers
+   "ft" 'neotree-toggle
+
+   ;; buffer
+   "<tab>" 'evil-switch-to-windows-last-buffer
+   "bb" 'helm-mini
+   "bB" 'bufler-list
+   "bx" 'kill-current-buffer
+   "bs" 'hydra-buffer/body
+
+   ;; git
+   "gg" 'magit-status
+   "gd" 'hydra-diff-hl/body
+
+   ;; jump
+   "jg" 'dumb-jump-go
+   "jb" 'dumb-jump-back
+   "jq" 'dumb-jump-quick-look
+   "jj" 'avy-goto-char
+   "jJ" 'avy-goto-char-2
+
+   ;; lsp
+   "lf" 'lsp-format-buffer
+   "lg" 'lsp-goto-implementation
+   "ld" 'lsp-find-definition
+   "li" 'lsp-java-organize-imports
+
+   ;; dap
+   "dd" 'dap-java-debug
+   "dba" 'dap-breakpoint-add
+   "dbd" 'dap-breakpoint-delete
+   "dbD" 'dap-breakpoint-delete-all
+   "dh" 'dap-hydra
+
+   ;; quit
+   "qq" 'save-buffers-kill-terminal
+   "qR" 'restart-emacs
+
+   ;; search
+   "ss" 'helm-swoop
+   "sS" 'helm-multi-swoop
+   "sg" 'google-this
+   "sd" 'youdao-dictionary-search-at-point+
+
+   ;; terminal
+   "t" '(lambda ()
+		  (interactive)
+		  (if (get-buffer "vterm")
+			  (switch-to-buffer "vterm")
+			(vterm)))
+   "T" 'vterm-other-window
+
+   ;; window
+   "ww" 'hydra-window/body
+   "wh" 'evil-window-left
+   "wj" 'evil-window-down
+   "wk" 'evil-window-up
+   "wl" 'evil-window-right
+   "wH" 'evil-window-move-far-left
+   "wJ" 'evil-window-move-very-bottom
+   "wK" 'evil-window-move-very-top
+   "wL" 'evil-window-move-far-right
+   "wm" 'delete-other-windows
+   "wd" 'delete-window
+
+   ;; project
+   "pp" 'projectile-command-map
+   "pt" 'projectile-run-vterm
+   "ps" 'helm-multi-swoop-projectile
+
+   ;; zzz-to-char
+   "z" 'zzz-to-char
+   )
+
+  ;; bufler-list-mode
+  (general-define-key
+   :states 'normal
+   :keymaps 'bufler-list-mode-map
+   "r" 'bufler-list
+   "d" '(lambda ()
+		  (interactive)
+		  (when
+			  (yes-or-no-p "kill buffer?")
+			(bufler-list-buffer-kill)))
+   "s" 'bufler-list-buffer-save
+   "RET" 'bufler-list-buffer-switch
+   )
+
+  ;; dashboard-mode
+  (general-define-key
+   :states 'normal
+   :keymaps 'dashboard-mode-map
+   "SPC SPC" 'helm-M-x
+   )
 #+END_SRC
