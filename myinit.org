@@ -479,7 +479,6 @@
 
 * UI
 #+BEGIN_SRC emacs-lisp
-
   ;;font
   (add-to-list 'default-frame-alist
 			   '(font . "Source Code Pro-14"))
