@@ -21,6 +21,10 @@
   (use-package avy :ensure t)
 #+END_SRC
 
+** aweshell
+#+BEGIN_SRC emacs-lisp
+  (require 'aweshell)
+#+END_SRC
 ** beacon
 #+BEGIN_SRC emacs-lisp
   (use-package beacon
@@ -597,12 +601,14 @@
 
 	;; terminal
 	"t" '(:wk "terminal")
-	"t" '(lambda ()
-		   (interactive)
-		   (if (get-buffer "vterm")
-			   (switch-to-buffer "vterm")
-			 (vterm)))
-	"T" 'vterm-other-window
+	"te" 'aweshell-dedicated-toggle
+	"tE" 'aweshell-new
+	"tt" '(lambda ()
+			(interactive)
+			(if (get-buffer "vterm")
+				(switch-to-buffer "vterm")
+			  (vterm)))
+	"tT" 'vterm
 
 	;; window
 	"w" '(:wk "window")
@@ -621,7 +627,7 @@
 	;; project
 	"p" '(:wk "project")
 	"pp" 'projectile-command-map
-	"p'" 'projectile-run-vterm
+	"pt" 'projectile-run-vterm
 	"ps" 'helm-multi-swoop-projectile
 
 	;; zzz-to-char
