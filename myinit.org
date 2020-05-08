@@ -577,6 +577,7 @@
 	;; dap
 	"d" '(:wk "dap")
 	"dd" 'dap-java-debug
+	"db" '(:wk "dap-breakpoint")
 	"dba" 'dap-breakpoint-add
 	"dbd" 'dap-breakpoint-delete
 	"dbD" 'dap-breakpoint-delete-all
