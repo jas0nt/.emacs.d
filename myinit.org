@@ -142,6 +142,15 @@
     (evil-collection-init))
 #+END_SRC
 
+** evil-leader
+#+BEGIN_SRC emacs-lisp
+  (use-package evil-leader
+	:after evil
+	:ensure t
+	:config
+	(global-evil-leader-mode))
+#+END_SRC
+
 ** evil-nerd-commenter
 #+BEGIN_SRC emacs-lisp
   (use-package evil-nerd-commenter :ensure t)
@@ -525,20 +534,9 @@
 #+END_SRC
 * Keybindings
 #+BEGIN_SRC emacs-lisp
-  (general-define-key
-   "M-x" 'helm-M-x
-   "C-s" 'helm-swoop-without-pre-input
-   "M-y" 'helm-show-kill-ring
-   "C-x C-b" 'helm-mini
-   "C-x b" 'bufler-list
-   "C-x C-f" 'helm-find-files
-   )
-
-  ;; (general-create-definer my-leader-def :prefix "SPC")
-  (general-define-key
-   :prefix "C-c"
-   ;; :keymaps '(normal visual emacs)
-   "SPC" 'helm-M-x
+  (evil-leader/set-leader "<SPC>")
+  (evil-leader/set-key
+   "<SPC>" 'helm-M-x
 
    ;; evil-nerd-commenter
    "ci" 'evilnc-comment-or-uncomment-lines
@@ -557,7 +555,7 @@
    ;; buffer
    "<tab>" 'evil-switch-to-windows-last-buffer
    "bb" 'helm-mini
-   "bB" 'bufler-list
+   "bB" 'bufler
    "bx" 'kill-current-buffer
    "bs" 'hydra-buffer/body
 
@@ -596,12 +594,12 @@
    "sd" 'youdao-dictionary-search-at-point+
 
    ;; terminal
-   "t" '(lambda ()
+   "'" '(lambda ()
 		  (interactive)
 		  (if (get-buffer "vterm")
 			  (switch-to-buffer "vterm")
 			(vterm)))
-   "T" 'vterm-other-window
+   "tt" 'vterm-other-window
 
    ;; window
    "ww" 'hydra-window/body
@@ -618,11 +616,20 @@
 
    ;; project
    "pp" 'projectile-command-map
-   "pt" 'projectile-run-vterm
+   "p'" 'projectile-run-vterm
    "ps" 'helm-multi-swoop-projectile
 
    ;; zzz-to-char
    "z" 'zzz-to-char
+   )
+
+  (general-define-key
+   "M-x" 'helm-M-x
+   "C-s" 'helm-swoop-without-pre-input
+   "M-y" 'helm-show-kill-ring
+   "C-x C-b" 'helm-mini
+   "C-x b" 'bufler-list
+   "C-x C-f" 'helm-find-files
    )
 
   ;; bufler-list-mode
@@ -639,10 +646,4 @@
    "RET" 'bufler-list-buffer-switch
    )
 
-  ;; dashboard-mode
-  (general-define-key
-   :states 'normal
-   :keymaps 'dashboard-mode-map
-   "SPC SPC" 'helm-M-x
-   )
 #+END_SRC
