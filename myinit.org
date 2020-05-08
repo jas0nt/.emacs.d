@@ -142,15 +142,6 @@
     (evil-collection-init))
 #+END_SRC
 
-** evil-leader
-#+BEGIN_SRC emacs-lisp
-  (use-package evil-leader
-	:after evil
-	:ensure t
-	:config
-	(global-evil-leader-mode))
-#+END_SRC
-
 ** evil-nerd-commenter
 #+BEGIN_SRC emacs-lisp
   (use-package evil-nerd-commenter :ensure t)
@@ -202,55 +193,55 @@
 ** hydra
 #+BEGIN_SRC emacs-lisp
   (use-package hydra
-    :ensure hydra
-    :init
-    (global-set-key
-     (kbd "C-x w")
-     (defhydra hydra-window ()
-       "window"
-       ("h" windmove-left)
-       ("j" windmove-down)
-       ("k" windmove-up)
-       ("l" windmove-right)
-       ("v" (lambda ()
-	      (interactive)
-	      (split-window-right)
-	      (windmove-right))
+	:ensure hydra
+	:init
+	(global-set-key
+	 (kbd "C-x w")
+	 (defhydra hydra-window ()
+	   "window"
+	   ("h" windmove-left)
+	   ("j" windmove-down)
+	   ("k" windmove-up)
+	   ("l" windmove-right)
+	   ("v" (lambda ()
+		  (interactive)
+		  (split-window-right)
+		  (windmove-right))
 	"vert")
-       ("x" (lambda ()
-	      (interactive)
-	      (split-window-below)
-	      (windmove-down))
+	   ("x" (lambda ()
+		  (interactive)
+		  (split-window-below)
+		  (windmove-down))
 	"horz")
-       ("g" ace-window)
-       ("s" ace-swap-window)
-       ("d" ace-delete-window)
-       ("m" delete-other-windows "maximize" :color blue)
-       ("q" nil "cancel")
-       ))
+	   ("g" ace-window)
+	   ("s" ace-swap-window)
+	   ("d" ace-delete-window)
+	   ("m" delete-other-windows "maximize" :color blue)
+	   ("q" nil "cancel")
+	   ))
 
-    (global-set-key
-     (kbd "C->")
-     (defhydra hydra-multiple-cursors ()
-       "multiple-cursors"
-       ("m" mc/mark-next-like-this "mark-next-like-this")
-       ("M" mc/mark-previous-like-this "mark-previous-like-this")
-       ("u" mc/unmark-next-like-this "unmark-next-like-this")
-       ("U" mc/unmark-previous-like-this "unmark-previous-like-this")
-       ("s" mc/skip-to-next-like-this "skip-to-next-like-this")
-       ("S" mc/skip-to-previous-like-this "skip-to-previous-like-this")
+	(global-set-key
+	 (kbd "C->")
+	 (defhydra hydra-multiple-cursors ()
+	   "multiple-cursors"
+	   ("m" mc/mark-next-like-this "mark-next-like-this")
+	   ("M" mc/mark-previous-like-this "mark-previous-like-this")
+	   ("u" mc/unmark-next-like-this "unmark-next-like-this")
+	   ("U" mc/unmark-previous-like-this "unmark-previous-like-this")
+	   ("s" mc/skip-to-next-like-this "skip-to-next-like-this")
+	   ("S" mc/skip-to-previous-like-this "skip-to-previous-like-this")
 
-       ("w" mc/mark-next-like-this-word "mark-next-like-this-word")
-       ("W" mc/mark-next-like-this-word "mark-next-like-this-word")
-       ))
+	   ("w" mc/mark-next-like-this-word "mark-next-like-this-word")
+	   ("W" mc/mark-next-like-this-word "mark-next-like-this-word")
+	   ))
 
-    (defhydra hydra-buffer ()
-      "buffer"
-      ("j" switch-to-next-buffer)
-      ("k" switch-to-prev-buffer)
-      ("q" nil "cancel"))
+	(defhydra hydra-buffer ()
+	  "buffer"
+	  ("j" switch-to-next-buffer)
+	  ("k" switch-to-prev-buffer)
+	  ("q" nil "cancel"))
 
-    )
+	)
 #+END_SRC
 
 ** ialign
@@ -476,9 +467,6 @@
   (with-eval-after-load 'dired
 	(define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file))
 
-  ;;revert buffer
-  (global-set-key (kbd "<f5>") 'revert-buffer)
-
   ;;exec-path
   (add-to-list 'exec-path "/usr/local/bin")
 
@@ -534,96 +522,114 @@
 #+END_SRC
 * Keybindings
 #+BEGIN_SRC emacs-lisp
-  (evil-leader/set-leader "<SPC>")
-  (evil-leader/set-key
-   "<SPC>" 'helm-M-x
+  (general-create-definer my-leader-def
+	:states '(normal insert visual emacs)
+	:keymaps 'override
+	:prefix "SPC"
+	:non-normal-prefix "C-,")
 
-   ;; evil-nerd-commenter
-   "ci" 'evilnc-comment-or-uncomment-lines
-   "cc" 'evilnc-copy-and-comment-lines
-   "cp" 'evilnc-comment-or-uncomment-paragraphs
-   "cr" 'comment-or-uncomment-region
+  (my-leader-def
+	"<SPC>" 'helm-M-x
 
-   ;; file
-   "ff" 'helm-find-files
-   "fr" 'helm-recentf
-   "fd" 'dired
-   "fs" 'save-buffer
-   "fS" 'save-some-buffers
-   "ft" 'neotree-toggle
+	;; evil-nerd-commenter
+	"c" '(:wk "evil-nerd-commenter")
+	"ci" 'evilnc-comment-or-uncomment-lines
+	"cc" 'evilnc-copy-and-comment-lines
+	"cp" 'evilnc-comment-or-uncomment-paragraphs
+	"cr" 'comment-or-uncomment-region
 
-   ;; buffer
-   "<tab>" 'evil-switch-to-windows-last-buffer
-   "bb" 'helm-mini
-   "bB" 'bufler
-   "bx" 'kill-current-buffer
-   "bs" 'hydra-buffer/body
+	;; file
+	"f" '(:wk "file")
+	"ff" 'helm-find-files
+	"fr" 'helm-recentf
+	"fd" 'dired
+	"fs" 'save-buffer
+	"fS" 'save-some-buffers
+	"ft" 'neotree-toggle
 
-   ;; git
-   "gg" 'magit-status
-   "gd" 'hydra-diff-hl/body
+	;; buffer
+	"b" '(:wk "buffer")
+	"<tab>" 'evil-switch-to-windows-last-buffer
+	"bb" 'helm-mini
+	"bB" 'bufler
+	"bx" 'kill-current-buffer
+	"bs" 'hydra-buffer/body
 
-   ;; jump
-   "jg" 'dumb-jump-go
-   "jb" 'dumb-jump-back
-   "jq" 'dumb-jump-quick-look
-   "jj" 'avy-goto-char
-   "jJ" 'avy-goto-char-2
+	;; git
+	"g" '(:wk "git")
+	"gg" 'magit-status
+	"gd" 'hydra-diff-hl/body
 
-   ;; lsp
-   "lf" 'lsp-format-buffer
-   "lg" 'lsp-goto-implementation
-   "ld" 'lsp-find-definition
-   "li" 'lsp-java-organize-imports
+	;; jump
+	"j" '(:wk "navigation")
+	"jg" 'dumb-jump-go
+	"jb" 'dumb-jump-back
+	"jq" 'dumb-jump-quick-look
+	"jj" 'avy-goto-char
+	"jJ" 'avy-goto-char-2
 
-   ;; dap
-   "dd" 'dap-java-debug
-   "dba" 'dap-breakpoint-add
-   "dbd" 'dap-breakpoint-delete
-   "dbD" 'dap-breakpoint-delete-all
-   "dh" 'dap-hydra
+	;; lsp
+	"l" '(:wk "lsp")
+	"lf" 'lsp-format-buffer
+	"lg" 'lsp-goto-implementation
+	"ld" 'lsp-find-definition
+	"li" 'lsp-java-organize-imports
 
-   ;; quit
-   "qq" 'save-buffers-kill-terminal
-   "qR" 'restart-emacs
+	;; dap
+	"d" '(:wk "dap")
+	"dd" 'dap-java-debug
+	"dba" 'dap-breakpoint-add
+	"dbd" 'dap-breakpoint-delete
+	"dbD" 'dap-breakpoint-delete-all
+	"dh" 'dap-hydra
 
-   ;; search
-   "ss" 'helm-swoop
-   "sS" 'helm-multi-swoop
-   "sg" 'google-this
-   "sd" 'youdao-dictionary-search-at-point+
+	;; quit
+	"q" '(:wk "quit")
+	"qq" 'save-buffers-kill-terminal
+	"qR" 'restart-emacs
 
-   ;; terminal
-   "'" '(lambda ()
-		  (interactive)
-		  (if (get-buffer "vterm")
-			  (switch-to-buffer "vterm")
-			(vterm)))
-   "tt" 'vterm-other-window
+	;; search
+	"s" '(:wk "search")
+	"ss" 'helm-swoop
+	"sS" 'helm-multi-swoop
+	"sg" 'google-this
+	"sd" 'youdao-dictionary-search-at-point+
 
-   ;; window
-   "ww" 'hydra-window/body
-   "wh" 'evil-window-left
-   "wj" 'evil-window-down
-   "wk" 'evil-window-up
-   "wl" 'evil-window-right
-   "wH" 'evil-window-move-far-left
-   "wJ" 'evil-window-move-very-bottom
-   "wK" 'evil-window-move-very-top
-   "wL" 'evil-window-move-far-right
-   "wm" 'delete-other-windows
-   "wd" 'delete-window
+	;; terminal
+	"t" '(:wk "terminal")
+	"t" '(lambda ()
+		   (interactive)
+		   (if (get-buffer "vterm")
+			   (switch-to-buffer "vterm")
+			 (vterm)))
+	"T" 'vterm-other-window
 
-   ;; project
-   "pp" 'projectile-command-map
-   "p'" 'projectile-run-vterm
-   "ps" 'helm-multi-swoop-projectile
+	;; window
+	"w" '(:wk "window")
+	"ww" 'hydra-window/body
+	"wh" 'evil-window-left
+	"wj" 'evil-window-down
+	"wk" 'evil-window-up
+	"wl" 'evil-window-right
+	"wH" 'evil-window-move-far-left
+	"wJ" 'evil-window-move-very-bottom
+	"wK" 'evil-window-move-very-top
+	"wL" 'evil-window-move-far-right
+	"wm" 'delete-other-windows
+	"wd" 'delete-window
 
-   ;; zzz-to-char
-   "z" 'zzz-to-char
-   )
+	;; project
+	"p" '(:wk "project")
+	"pp" 'projectile-command-map
+	"p'" 'projectile-run-vterm
+	"ps" 'helm-multi-swoop-projectile
+
+	;; zzz-to-char
+	"z" 'zzz-to-char
+	)
 
   (general-define-key
+   "<f5>" 'revert-buffer
    "M-x" 'helm-M-x
    "C-s" 'helm-swoop-without-pre-input
    "M-y" 'helm-show-kill-ring
