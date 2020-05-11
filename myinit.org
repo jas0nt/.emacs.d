@@ -603,12 +603,14 @@
 	"t" '(:wk "terminal")
 	"te" 'aweshell-dedicated-toggle
 	"tE" 'aweshell-new
-	"tt" '(lambda ()
-			(interactive)
-			(if (get-buffer "vterm")
-				(switch-to-buffer "vterm")
-			  (vterm)))
-	"tT" 'vterm
+	"tt" '((lambda ()
+			 (interactive)
+			 (if (get-buffer "vterm")
+				 (switch-to-buffer "vterm")
+			   (vterm)))
+		   :wk "vterm")
+	"tT" '(vterm
+		   :wk "vterm new")
 
 	;; window
 	"w" '(:wk "window")
