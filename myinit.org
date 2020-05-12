@@ -644,6 +644,8 @@
    "C-x C-b" 'helm-mini
    "C-x b" 'bufler-list
    "C-x C-f" 'helm-find-files
+   "s-]" 'dumb-jump-go
+   "s-[" 'dumb-jump-back
    )
 
   ;; bufler-list-mode
