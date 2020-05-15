@@ -194,6 +194,10 @@
     (global-aggressive-indent-mode 1))
 #+END_SRC
 
+** htmlize
+#+BEGIN_SRC emacs-lisp
+  (use-package htmlize :ensre t)
+#+END_SRC
 ** hydra
 #+BEGIN_SRC emacs-lisp
   (use-package hydra
