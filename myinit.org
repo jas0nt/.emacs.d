@@ -182,6 +182,10 @@
 #+BEGIN_SRC emacs-lisp
   (use-package highlight-thing :ensure t)
 #+END_SRC
+** htmlize
+#+BEGIN_SRC emacs-lisp
+  (use-package htmlize :ensre t)
+#+END_SRC
 ** hungry-delete & aggresive-indent
 #+BEGIN_SRC emacs-lisp
   (use-package hungry-delete
@@ -194,10 +198,6 @@
     (global-aggressive-indent-mode 1))
 #+END_SRC
 
-** htmlize
-#+BEGIN_SRC emacs-lisp
-  (use-package htmlize :ensre t)
-#+END_SRC
 ** hydra
 #+BEGIN_SRC emacs-lisp
   (use-package hydra
