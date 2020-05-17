@@ -184,7 +184,7 @@
 #+END_SRC
 ** htmlize
 #+BEGIN_SRC emacs-lisp
-  (use-package htmlize :ensre t)
+  (use-package htmlize :ensure t)
 #+END_SRC
 ** hungry-delete & aggresive-indent
 #+BEGIN_SRC emacs-lisp
@@ -212,15 +212,15 @@
 	   ("k" windmove-up)
 	   ("l" windmove-right)
 	   ("v" (lambda ()
-		  (interactive)
-		  (split-window-right)
-		  (windmove-right))
-	"vert")
+			  (interactive)
+			  (split-window-right)
+			  (windmove-right))
+		"vert")
 	   ("x" (lambda ()
-		  (interactive)
-		  (split-window-below)
-		  (windmove-down))
-	"horz")
+			  (interactive)
+			  (split-window-below)
+			  (windmove-down))
+		"horz")
 	   ("g" ace-window)
 	   ("s" ace-swap-window)
 	   ("d" ace-delete-window)
@@ -627,6 +627,10 @@
 	"wJ" 'evil-window-move-very-bottom
 	"wK" 'evil-window-move-very-top
 	"wL" 'evil-window-move-far-right
+	"wg" 'ace-window
+	"ws" 'ace-swap-window
+	"w/" 'split-window-right
+	"w?" 'split-window-below
 	"wm" 'delete-other-windows
 	"wd" 'delete-window
 
