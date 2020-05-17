@@ -578,6 +578,7 @@
 	;; lsp
 	"l" '(:wk "lsp")
 	"lf" 'lsp-format-buffer
+	"lr" 'lsp-rename
 	"lg" 'lsp-goto-implementation
 	"ld" 'lsp-find-definition
 	"li" 'lsp-java-organize-imports
@@ -652,6 +653,7 @@
    "C-x C-b" 'helm-mini
    "C-x b" 'bufler-list
    "C-x C-f" 'helm-find-files
+   "s-w" 'kill-current-buffer
    "s-]" 'dumb-jump-go
    "s-[" 'dumb-jump-back
    )
