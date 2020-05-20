@@ -1,0 +1,14 @@
+;                                                                            _______ .___  ___.      ___       ______     _______.
+;                                                                           |   ____||   \/   |     /   \     /      |   /       |
+;                                                                           |  |__   |  \  /  |    /  ^  \   |  ,----'  |   (----`
+;                                                                           |   __|  |  |\/|  |   /  /_\  \  |  |        \   \
+;                                                                           |  |____ |  |  |  |  /  _____  \ |  `----.----)   |
+;                                                                           |_______||__|  |__| /__/     \__\ \______|_______/
+
+
+* Install
+#+BEGIN_SRC shell
+  `git clone https://github.com/jas0nt/.emacs.d.git ~/.emacs.d`
+#+END_SRC
+
+* [[myinit.org#keybindings][Keybindings]]
