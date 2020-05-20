@@ -36,3 +36,4 @@ tramp
 /eclipse.jdt.ls/test-runner/
 /.dap-breakpoints
 .lsp-session-*
+.mc-lists.el
