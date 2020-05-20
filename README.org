@@ -1,6 +1,6 @@
 * Install
 #+BEGIN_SRC shell
-  `git clone https://github.com/jas0nt/.emacs.d.git ~/.emacs.d`
+  git clone https://github.com/jas0nt/.emacs.d.git ~/.emacs.d
 #+END_SRC
 
 * [[myinit.org#keybindings][Keybindings]]
