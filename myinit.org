@@ -24,6 +24,7 @@
 ** aweshell
 #+BEGIN_SRC emacs-lisp
   (require 'aweshell)
+  (add-hook 'eshell-mode-hook (lambda () (setq-local company-tabnine-always-trigger nil)))
 #+END_SRC
 ** beacon
 #+BEGIN_SRC emacs-lisp
@@ -389,16 +390,18 @@
 ** vterm
 #+BEGIN_SRC emacs-lisp
   (use-package vterm
-    :ensure t
-    :config
-    (setq vterm-shell "/usr/local/bin/fish")
-    )
+	:ensure t
+	:config
+	(setq vterm-shell "/usr/local/bin/fish")
+	(add-hook 'vterm-mode-hook
+			  (lambda () (setq-local global-hl-line-mode nil)))
+	)
   (use-package exec-path-from-shell
-    :ensure t
-    :config
-    (when (memq window-system '(mac ns x))
-      (exec-path-from-shell-initialize))
-    )
+	:ensure t
+	:config
+	(when (memq window-system '(mac ns x))
+	  (exec-path-from-shell-initialize))
+	)
 #+END_SRC
 ** which-key
 #+BEGIN_SRC emacs-lisp
