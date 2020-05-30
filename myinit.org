@@ -339,14 +339,23 @@
 #+END_SRC
 
 ** python
-##+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp
   (use-package elpy
-    :ensure t
-    :init
-    (elpy-enable)
-    (setq elpy-rpc-python-command "python3")
-    (setq python-shell-interpreter "python3")
-    )
+	:ensure t
+	:init
+	(elpy-enable)
+	:config
+	(setq python-indent-offset 4)
+	(setq elpy-rpc-python-command "python3")
+	(setq python-shell-interpreter "python3")
+	)
+#+END_SRC
+** pyvenv
+#+BEGIN_SRC emacs-lisp
+  (use-package pyvenv
+	:ensure t
+	:config
+	(pyvenv-mode 1))
 #+END_SRC
 ** rainbow-delimiters
 #+BEGIN_SRC emacs-lisp
