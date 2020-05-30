@@ -651,11 +651,14 @@
   (general-define-key
    "<f5>" 'revert-buffer
    "M-x" 'helm-M-x
-   "C-s" 'helm-swoop-without-pre-input
    "M-y" 'helm-show-kill-ring
+   "M-RET" 'lsp-execute-code-action
+
+   "C-s" 'helm-swoop-without-pre-input
    "C-x C-b" 'helm-mini
    "C-x b" 'bufler-list
    "C-x C-f" 'helm-find-files
+
    "s-w" 'kill-current-buffer
    "s-]" 'dumb-jump-go
    "s-[" 'dumb-jump-back
