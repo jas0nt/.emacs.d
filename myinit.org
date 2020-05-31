@@ -591,6 +591,7 @@
 
 	;; file
 	"f" '(:wk "file")
+	"fe" '(lambda () (interactive) (find-file "~/.emacs.d/myinit.org"))
 	"ff" 'helm-find-files
 	"fr" 'helm-recentf
 	"fd" 'dired
