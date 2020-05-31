@@ -706,6 +706,16 @@
    "s-[" 'dumb-jump-back
    )
 
+  ;; swith vterm by <s-1> <s-2>...
+  (loop for i from 1 to 5
+		do (let ((key (concat "s-" (number-to-string i)))
+				 (buf-name (if (= i 1) "vterm" (concat "vterm<" (number-to-string i) ">"))))
+			 (general-define-key key `(lambda ()
+										(interactive)
+										(if (get-buffer ,buf-name)
+											(switch-to-buffer ,buf-name)
+										  (vterm))))))
+
   ;; bufler-list-mode
   (general-define-key
    :states 'normal
