@@ -324,6 +324,14 @@
     (setq org-ellipsis " ▼ "))
 #+END_SRC
 
+** popwin
+#+BEGIN_SRC emacs-lisp
+  (use-package popwin
+	:ensure t
+	:config
+	(popwin-mode t)
+	)
+#+END_SRC
 ** projectile
 #+BEGIN_SRC emacs-lisp
   (use-package projectile
