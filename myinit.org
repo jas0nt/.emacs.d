@@ -620,23 +620,6 @@
 	"jj" 'avy-goto-char
 	"jJ" 'avy-goto-char-2
 
-	;; lsp
-	"l" '(:wk "lsp")
-	"lf" 'lsp-format-buffer
-	"lr" 'lsp-rename
-	"lg" 'lsp-goto-implementation
-	"ld" 'lsp-find-definition
-	"li" 'lsp-java-organize-imports
-
-	;; dap
-	"d" '(:wk "dap")
-	"dd" 'dap-java-debug
-	"db" '(:wk "dap-breakpoint")
-	"dba" 'dap-breakpoint-add
-	"dbd" 'dap-breakpoint-delete
-	"dbD" 'dap-breakpoint-delete-all
-	"dh" 'dap-hydra
-
 	;; quit
 	"q" '(:wk "quit")
 	"qq" 'save-buffers-kill-terminal
