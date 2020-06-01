@@ -701,6 +701,7 @@
    "C-x b" 'bufler-list
    "C-x C-f" 'helm-find-files
 
+   "s-r" 'helm-mini
    "s-w" 'kill-current-buffer
    "s-]" 'dumb-jump-go
    "s-[" 'dumb-jump-back
