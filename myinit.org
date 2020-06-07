@@ -542,7 +542,7 @@
 #+BEGIN_SRC emacs-lisp
   ;;font
   (add-to-list 'default-frame-alist
-			   '(font . "Source Code Pro-14"))
+			   '(font . "Source Code Pro-15"))
 
   ;;hide tool bar
   (tool-bar-mode -1)
@@ -579,6 +579,11 @@
   ;;Display lambda as λ
   (global-prettify-symbols-mode 1)
   (setq prettify-symbols-alist '(("lambda" . 955)))
+
+  ;;no title bar
+  ;;(setq default-frame-alist '((undecorated . t)))
+  ;;(add-to-list 'default-frame-alist '(drag-internal-border . 1))
+  ;;(add-to-list 'default-frame-alist '(internal-border-width . 5))
 #+END_SRC
 * Keybindings
 #+BEGIN_SRC emacs-lisp
