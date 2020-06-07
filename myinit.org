@@ -16,6 +16,10 @@
       ))
 #+END_SRC
 
+** all-the-icons
+#+BEGIN_SRC emacs-lisp
+  (use-package all-the-icons :ensure t)
+#+END_SRC
 ** avy
 #+BEGIN_SRC emacs-lisp
   (use-package avy :ensure t)
@@ -74,6 +78,8 @@
 	(dashboard-setup-startup-hook)
 	(setq dashboard-center-content t)
 	(setq dashboard-startup-banner "~/.emacs.d/banners/dark_knight.png")
+	(setq dashboard-set-heading-icons t)
+	(setq dashboard-set-file-icons t)
 	;;(setq dashboard-startup-banner "~/.emacs.d/banners/pikachu.png")
 	(setq dashboard-image-banner-max-height 100)
 	;; (setq dashboard-startup-banner 'official)
