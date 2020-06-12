@@ -117,11 +117,11 @@
     (setq dired-k-human-readable t))
 #+END_SRC
 ** dracula-theme
-#+BEGIN_SRC emacs-lisp
+##+BEGIN_SRC emacs-lisp
   (use-package dracula-theme
-    :ensure t
-    :config
-    (set-cursor-color "#00ff00"))
+	:ensure t
+	:config
+	(set-cursor-color "#00ff00"))
 #+END_SRC
 
 ** dumb-jump
@@ -540,6 +540,10 @@
 
 * UI
 #+BEGIN_SRC emacs-lisp
+  ;;theme
+  (require 'lazycat-theme)
+  (lazycat-theme-load-dark)
+
   ;;font
   (add-to-list 'default-frame-alist
 			   '(font . "Source Code Pro-15"))
