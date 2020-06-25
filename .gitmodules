@@ -4,6 +4,3 @@
 [submodule "elisp/awesome-tab"]
 	path = elisp/awesome-tab
 	url = https://github.com/manateelazycat/awesome-tab.git
-[submodule "elisp/lazycat-theme"]
-	path = elisp/lazycat-theme
-	url = https://github.com/manateelazycat/lazycat-theme.git
