@@ -586,6 +586,7 @@
   ;;theme
   (require 'lazycat-theme)
   (lazycat-theme-load-dark)
+  (setq-default mode-line-format (remove 'mode-line-buffer-identification mode-line-format))
 
   ;;font
   (add-to-list 'default-frame-alist
