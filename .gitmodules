@@ -1,0 +1,9 @@
+[submodule "elisp/lazycat-theme"]
+	path = elisp/lazycat-theme
+	url = https://github.com/manateelazycat/lazycat-theme.git
+[submodule "elisp/aweshell"]
+	path = elisp/aweshell
+	url = https://github.com/manateelazycat/aweshell.git
+[submodule "elisp/awesome-tab"]
+	path = elisp/awesome-tab
+	url = https://github.com/manateelazycat/awesome-tab.git
