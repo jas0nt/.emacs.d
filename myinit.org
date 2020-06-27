@@ -31,7 +31,9 @@
 	:load-path "~/.emacs.d/elisp/awesome-tab"
 	:config
 	(awesome-tab-mode t)
-	(awesome-tab-build-helm-source))
+	(awesome-tab-build-helm-source)
+	(setq awesome-tab-show-tab-index t)
+	(setq awesome-tab-height 170))
 #+END_SRC
 ** aweshell
 #+BEGIN_SRC emacs-lisp
@@ -751,17 +753,17 @@
    "s-w" 'kill-current-buffer
    "s-]" 'dumb-jump-go
    "s-[" 'dumb-jump-back
-   )
 
-  ;; swith vterm by <s-1> <s-2>...
-  (loop for i from 1 to 5
-		do (let ((key (concat "s-" (number-to-string i)))
-				 (buf-name (if (= i 1) "vterm" (concat "vterm<" (number-to-string i) ">"))))
-			 (general-define-key key `(lambda ()
-										(interactive)
-										(if (get-buffer ,buf-name)
-											(switch-to-buffer ,buf-name)
-										  (vterm))))))
+   "s-1" 'awesome-tab-select-visible-tab
+   "s-2" 'awesome-tab-select-visible-tab
+   "s-3" 'awesome-tab-select-visible-tab
+   "s-4" 'awesome-tab-select-visible-tab
+   "s-5" 'awesome-tab-select-visible-tab
+   "s-6" 'awesome-tab-select-visible-tab
+   "s-7" 'awesome-tab-select-visible-tab
+   "s-8" 'awesome-tab-select-visible-tab
+   "s-9" 'awesome-tab-select-visible-tab
+   )
 
   ;; bufler-list-mode
   (general-define-key
