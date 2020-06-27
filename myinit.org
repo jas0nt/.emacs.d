@@ -588,6 +588,9 @@
   ;;theme
   (require 'lazycat-theme)
   (lazycat-theme-load-dark)
+  (require 'awesome-tray)
+  (awesome-tray-mode 1)
+  (setq awesome-tray-active-modules '("evil" "location" "parent-dir" "git" "mode-name" "date"))
   (setq-default mode-line-format (remove 'mode-line-buffer-identification mode-line-format))
 
   ;;font

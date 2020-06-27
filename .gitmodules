@@ -7,3 +7,6 @@
 [submodule "elisp/awesome-tab"]
 	path = elisp/awesome-tab
 	url = https://github.com/manateelazycat/awesome-tab.git
+[submodule "elisp/awesome-tray"]
+	path = elisp/awesome-tray
+	url = https://github.com/manateelazycat/awesome-tray.git
