@@ -441,7 +441,8 @@
   (use-package pyvenv
 	:ensure t
 	:config
-	(pyvenv-mode 1))
+	(pyvenv-mode 1)
+	(add-hook 'python-mode '(pyvenv-workon "p3")))
 #+END_SRC
 ** rainbow-delimiters
 #+BEGIN_SRC emacs-lisp
@@ -595,7 +596,7 @@
 
   ;;font
   (add-to-list 'default-frame-alist
-			   '(font . "Source Code Pro-15"))
+			   '(font . "Source Code Pro-14"))
 
   ;;hide tool bar
   (tool-bar-mode -1)
@@ -648,6 +649,21 @@
 
   (my-leader-def
 	"<SPC>" 'helm-M-x
+
+	;; single key
+	"r" 'helm-mini
+	"k" 'kill-current-buffer
+	"]" 'dumb-jump-go
+	"[" 'dumb-jump-back
+	"1" 'awesome-tab-select-visible-tab
+	"2" 'awesome-tab-select-visible-tab
+	"3" 'awesome-tab-select-visible-tab
+	"4" 'awesome-tab-select-visible-tab
+	"5" 'awesome-tab-select-visible-tab
+	"6" 'awesome-tab-select-visible-tab
+	"7" 'awesome-tab-select-visible-tab
+	"8" 'awesome-tab-select-visible-tab
+	"9" 'awesome-tab-select-visible-tab
 
 	;; evil-nerd-commenter
 	"c" '(:wk "evil-nerd-commenter")
@@ -751,21 +767,6 @@
    "C-x C-b" 'helm-mini
    "C-x b" 'bufler-list
    "C-x C-f" 'helm-find-files
-
-   "s-r" 'helm-mini
-   "s-w" 'kill-current-buffer
-   "s-]" 'dumb-jump-go
-   "s-[" 'dumb-jump-back
-
-   "s-1" 'awesome-tab-select-visible-tab
-   "s-2" 'awesome-tab-select-visible-tab
-   "s-3" 'awesome-tab-select-visible-tab
-   "s-4" 'awesome-tab-select-visible-tab
-   "s-5" 'awesome-tab-select-visible-tab
-   "s-6" 'awesome-tab-select-visible-tab
-   "s-7" 'awesome-tab-select-visible-tab
-   "s-8" 'awesome-tab-select-visible-tab
-   "s-9" 'awesome-tab-select-visible-tab
    )
 
   ;; bufler-list-mode
@@ -782,4 +783,13 @@
    "RET" 'bufler-list-buffer-switch
    )
 
+  ;; python-mode
+  (general-define-key
+   :states 'normal
+   :prefix "SPC"
+   :keymaps 'python-mode-map
+   "l" '(:wk "python")
+   "lf" 'elpy-format-code
+   "ld" 'elpy-goto-definition
+   )
 #+END_SRC
