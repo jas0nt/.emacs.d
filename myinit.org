@@ -681,6 +681,8 @@
 	"fs" 'save-buffer
 	"fS" 'save-some-buffers
 	"ft" 'neotree-toggle
+	"fp" '(lambda () (interactive) (when (file-exists-p (current-kill 0))
+							(find-file (current-kill 0))))
 
 	;; buffer
 	"b" '(:wk "buffer")
