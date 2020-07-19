@@ -126,14 +126,6 @@
     (add-hook 'dired-after-readin-hook #'dired-k-no-revert)
     (setq dired-k-human-readable t))
 #+END_SRC
-** dracula-theme
-##+BEGIN_SRC emacs-lisp
-  (use-package dracula-theme
-	:ensure t
-	:config
-	(set-cursor-color "#00ff00"))
-#+END_SRC
-
 ** dumb-jump
 #+BEGIN_SRC emacs-lisp
   (use-package dumb-jump
@@ -311,6 +303,24 @@
 #+BEGIN_SRC emacs-lisp
   (use-package ialign :ensure t)
 #+END_SRC
+** lsp-mode
+#+BEGIN_SRC emacs-lisp
+  (use-package lsp-mode
+	:hook (
+		   (python-mode . lsp)
+		   (lsp-mode . lsp-enable-which-key-integration))
+	:commands lsp)
+
+  (use-package lsp-ui :commands lsp-ui-mode)
+  (use-package helm-lsp :commands helm-lsp-workspace-symbol)
+
+  (use-package dap-mode
+	:ensure t
+	:config
+	(require 'dap-python)
+	(setq py-python-command "python3")
+	(setq python-shell-interpreter "python3"))
+#+END_SRC
 ** magit
 #+BEGIN_SRC emacs-lisp
   (use-package magit :ensure t)
@@ -329,6 +339,16 @@
 
 #+END_SRC
 
+** markdown
+#+BEGIN_SRC emacs-lisp
+  (use-package markdown-mode
+	:ensure t
+	:commands (markdown-mode gfm-mode)
+	:mode (("README\\.md\\'" . gfm-mode)
+		   ("\\.md\\'" . markdown-mode)
+		   ("\\.markdown\\'" . markdown-mode))
+	:init (setq markdown-command "multimarkdown"))
+#+END_SRC
 ** multiple-cursors
 #+BEGIN_SRC emacs-lisp
   (use-package multiple-cursors
@@ -379,7 +399,7 @@
 #+END_SRC
 
 ** python
-#+BEGIN_SRC emacs-lisp
+##+BEGIN_SRC emacs-lisp
   (use-package python-mode :ensure t)
   (use-package elpy
 	:ensure t
@@ -543,12 +563,19 @@
 * UI
 #+BEGIN_SRC emacs-lisp
   ;;theme
+  ;; (use-package dracula-theme
+  ;;   :ensure t
+  ;;   :config
+  ;;   (set-cursor-color "#00ff00"))
+
   (require 'lazycat-theme)
   (lazycat-theme-load-dark)
+  ;; (setq-default mode-line-format (remove 'mode-line-buffer-identification mode-line-format))
+  (setq-default mode-line-format nil)
+
   (require 'awesome-tray)
   (awesome-tray-mode 1)
   (setq awesome-tray-active-modules '("evil" "location" "parent-dir" "git" "mode-name" "date"))
-  (setq-default mode-line-format (remove 'mode-line-buffer-identification mode-line-format))
 
   ;;font
   (add-to-list 'default-frame-alist
@@ -746,8 +773,15 @@
    :states 'normal
    :prefix "SPC"
    :keymaps 'python-mode-map
-   "l" '(:wk "python")
-   "lf" 'elpy-format-code
-   "ld" 'elpy-goto-definition
+   "l" '(:wk "lsp-python")
+   "lf" '(:wk "lsp-format")
+   "lff" 'lsp-format-buffer
+   "lfr" 'lsp-format-region
+   "lr" '(:wk "lsp-refactor")
+   "lrr" 'lsp-rename
+   "lro" 'lsp-organize-imports
+   "lg" '(:wk "lsp-goto")
+   "lgg" 'lsp-find-definition
+   "lgr" 'lsp-find-references
    )
 #+END_SRC
