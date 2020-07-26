@@ -26,7 +26,7 @@
 #+END_SRC
 
 ** awesome-tab
-#+BEGIN_SRC emacs-lisp
+##+BEGIN_SRC emacs-lisp
   (use-package awesome-tab
 	:load-path "~/.emacs.d/elisp/awesome-tab"
 	:config
@@ -303,24 +303,6 @@
 #+BEGIN_SRC emacs-lisp
   (use-package ialign :ensure t)
 #+END_SRC
-** lsp-mode
-#+BEGIN_SRC emacs-lisp
-  (use-package lsp-mode
-	:hook (
-		   (python-mode . lsp)
-		   (lsp-mode . lsp-enable-which-key-integration))
-	:commands lsp)
-
-  (use-package lsp-ui :commands lsp-ui-mode)
-  (use-package helm-lsp :commands helm-lsp-workspace-symbol)
-
-  (use-package dap-mode
-	:ensure t
-	:config
-	(require 'dap-python)
-	(setq py-python-command "python3")
-	(setq python-shell-interpreter "python3"))
-#+END_SRC
 ** magit
 #+BEGIN_SRC emacs-lisp
   (use-package magit :ensure t)
@@ -399,7 +381,7 @@
 #+END_SRC
 
 ** python
-##+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp
   (use-package python-mode :ensure t)
   (use-package elpy
 	:ensure t
@@ -665,7 +647,7 @@
 	"fS" 'save-some-buffers
 	"ft" 'neotree-toggle
 	"fp" '(lambda () (interactive) (when (file-exists-p (current-kill 0))
-							(find-file (current-kill 0))))
+								(find-file (current-kill 0))))
 
 	;; buffer
 	"b" '(:wk "buffer")
@@ -710,6 +692,8 @@
 				 (switch-to-buffer "vterm")
 			   (vterm)))
 		   :wk "vterm")
+	"to" '(vterm-other-window
+		   :wk "vterm other window")
 	"tT" '(vterm
 		   :wk "vterm new")
 
@@ -773,15 +757,8 @@
    :states 'normal
    :prefix "SPC"
    :keymaps 'python-mode-map
-   "l" '(:wk "lsp-python")
-   "lf" '(:wk "lsp-format")
-   "lff" 'lsp-format-buffer
-   "lfr" 'lsp-format-region
-   "lr" '(:wk "lsp-refactor")
-   "lrr" 'lsp-rename
-   "lro" 'lsp-organize-imports
-   "lg" '(:wk "lsp-goto")
-   "lgg" 'lsp-find-definition
-   "lgr" 'lsp-find-references
+   "l" '(:wk "python")
+   "lf" 'elpy-format-code
+   "lg" 'elpy-goto-definition
    )
 #+END_SRC
