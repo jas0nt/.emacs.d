@@ -412,6 +412,10 @@
     )
 #+END_SRC
 
+** ranger
+#+BEGIN_SRC emacs-lisp
+  (use-package ranger :ensure t)
+#+END_SRC
 ** restart-emacs
 #+BEGIN_SRC emacs-lisp
   (use-package restart-emacs :ensure t)
@@ -550,14 +554,14 @@
   ;;   :config
   ;;   (set-cursor-color "#00ff00"))
 
+  (require 'awesome-tray)
+  (awesome-tray-mode 1)
+  (setq awesome-tray-active-modules '("evil" "location" "parent-dir" "git" "mode-name" "date"))
+
   (require 'lazycat-theme)
   (lazycat-theme-load-dark)
   ;; (setq-default mode-line-format (remove 'mode-line-buffer-identification mode-line-format))
   (setq-default mode-line-format nil)
-
-  (require 'awesome-tray)
-  (awesome-tray-mode 1)
-  (setq awesome-tray-active-modules '("evil" "location" "parent-dir" "git" "mode-name" "date"))
 
   ;;font
   (add-to-list 'default-frame-alist
@@ -760,5 +764,6 @@
    "l" '(:wk "python")
    "lf" 'elpy-format-code
    "lg" 'elpy-goto-definition
+   "lr" 'elpy-shell-send-buffer
    )
 #+END_SRC
