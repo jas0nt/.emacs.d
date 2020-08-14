@@ -544,6 +544,9 @@
 
   ;;tab-width
   (setq tab-width 4)
+
+  ;;cutom
+  (require 'iterm)
 #+END_SRC
 
 * UI
@@ -696,10 +699,10 @@
 				 (switch-to-buffer "vterm")
 			   (vterm)))
 		   :wk "vterm")
-	"to" '(vterm-other-window
-		   :wk "vterm other window")
-	"tT" '(vterm
-		   :wk "vterm new")
+	"to" '(vterm-other-window :wk "vterm other window")
+	"tT" '(vterm :wk "vterm new")
+	"ti" '(iterm-goto-filedir-or-home :wk "iterm goto dir")
+	"tI" '(iterm-focus :wk "iterm focus")
 
 	;; window
 	"w" '(:wk "window")
