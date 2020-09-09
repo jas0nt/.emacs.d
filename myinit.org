@@ -181,6 +181,16 @@
   :ensure t)
 #+END_SRC
 
+** go-translate
+#+BEGIN_SRC emacs-lisp
+  (use-package go-translate
+	:ensure t
+	:config
+	(setq go-translate-base-url "https://translate.google.cn")
+	(setq go-translate-inputs-function #'go-translate-inputs-current-or-prompt)
+	(setq go-translate-local-language "zh-CN"))
+#+END_SRC
+
 ** helm
 #+BEGIN_SRC emacs-lisp
   (use-package helm :ensure t)
