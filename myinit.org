@@ -393,25 +393,20 @@
 ** python
 #+BEGIN_SRC emacs-lisp
   (use-package python-mode :ensure t)
-  (use-package elpy
-	:ensure t
-	:custom (elpy-rpc-backend "jedi")
-	:init
-	(elpy-enable)
-	:config
-	(setq python-indent-offset 4)
-	(setq elpy-rpc-python-command "python3")
-	(setq python-shell-interpreter "python3")
-	)
-#+END_SRC
-** pyvenv
-#+BEGIN_SRC emacs-lisp
+
   (use-package pyvenv
 	:ensure t
 	:config
 	(pyvenv-mode 1)
 	(add-hook 'python-mode '(pyvenv-workon "p3")))
+
+  (use-package lsp-pyright
+	:ensure t
+	:hook (python-mode . (lambda ()
+						   (require 'lsp-pyright)
+						   (lsp))))  ; or lsp-deferred
 #+END_SRC
+
 ** rainbow-delimiters
 #+BEGIN_SRC emacs-lisp
   (use-package rainbow-delimiters
