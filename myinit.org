@@ -202,10 +202,6 @@
 #+BEGIN_SRC emacs-lisp
   (use-package highlight-thing :ensure t)
 #+END_SRC
-** htmlize
-#+BEGIN_SRC emacs-lisp
-  (use-package htmlize :ensure t)
-#+END_SRC
 ** hungry-delete & aggresive-indent
 #+BEGIN_SRC emacs-lisp
   (use-package hungry-delete
@@ -246,21 +242,6 @@
 	   ("d" ace-delete-window "del")
 	   ("m" delete-other-windows "maximize" :color blue)
 	   ("q" nil "cancel")
-	   ))
-
-	(global-set-key
-	 (kbd "C->")
-	 (defhydra hydra-multiple-cursors ()
-	   "multiple-cursors"
-	   ("m" mc/mark-next-like-this "mark-next-like-this")
-	   ("M" mc/mark-previous-like-this "mark-previous-like-this")
-	   ("u" mc/unmark-next-like-this "unmark-next-like-this")
-	   ("U" mc/unmark-previous-like-this "unmark-previous-like-this")
-	   ("s" mc/skip-to-next-like-this "skip-to-next-like-this")
-	   ("S" mc/skip-to-previous-like-this "skip-to-previous-like-this")
-
-	   ("w" mc/mark-next-like-this-word "mark-next-like-this-word")
-	   ("W" mc/mark-next-like-this-word "mark-next-like-this-word")
 	   ))
 
 	(defhydra hydra-buffer ()
@@ -353,17 +334,6 @@
 		   ("\\.markdown\\'" . markdown-mode))
 	:init (setq markdown-command "multimarkdown"))
 #+END_SRC
-** multiple-cursors
-#+BEGIN_SRC emacs-lisp
-  (use-package multiple-cursors
-    :ensure t
-    :config
-    (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
-    (add-hook 'multiple-cursors-mode-enabled-hook (lambda () (global-hungry-delete-mode -1)))
-    (add-hook 'multiple-cursors-mode-disabled-hook (lambda () (global-hungry-delete-mode 1)))
-    )
-#+END_SRC
-
 ** neotree
 #+BEGIN_SRC emacs-lisp
 (use-package neotree :ensure t)
@@ -429,10 +399,6 @@
     )
 #+END_SRC
 
-** ranger
-#+BEGIN_SRC emacs-lisp
-  (use-package ranger :ensure t)
-#+END_SRC
 ** restart-emacs
 #+BEGIN_SRC emacs-lisp
   (use-package restart-emacs :ensure t)
@@ -487,14 +453,6 @@
     (setq which-key-idle-delay 0.5)
     (which-key-mode)
     )
-#+END_SRC
-
-** yaml-mode
-#+BEGIN_SRC emacs-lisp
-  (use-package yaml-mode
-    :ensure t
-    :config
-    (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
 #+END_SRC
 
 ** yasnippet
