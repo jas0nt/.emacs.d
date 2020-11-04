@@ -415,6 +415,22 @@
     (add-to-list 'company-backends 'company-restclient))
 #+END_SRC
 
+** rime
+#+BEGIN_SRC emacs-lisp
+  (use-package rime
+	:ensure t
+	:config
+	(setq rime-librime-root "~/.emacs.d/librime/dist")
+	(setq rime-posframe-properties
+		  (list :background-color "#333333"
+				:foreground-color "#dcdccc"
+				:font "Source Code Pro-14"
+				:internal-border-width 10))
+
+	(setq default-input-method "rime"
+		  rime-show-candidate 'posframe))
+#+END_SRC
+
 ** try
 #+BEGIN_SRC emacs-lisp
   (use-package try :ensure t)
@@ -527,19 +543,11 @@
 * UI
 #+BEGIN_SRC emacs-lisp
   ;;theme
-  ;; (use-package dracula-theme
-  ;;   :ensure t
-  ;;   :config
-  ;;   (set-cursor-color "#00ff00"))
-
-  (require 'awesome-tray)
-  (awesome-tray-mode 1)
-  (setq awesome-tray-active-modules '("evil" "location" "parent-dir" "git" "mode-name" "date"))
-
-  (require 'lazycat-theme)
-  (lazycat-theme-load-dark)
-  ;; (setq-default mode-line-format (remove 'mode-line-buffer-identification mode-line-format))
-  (setq-default mode-line-format nil)
+  (use-package dracula-theme
+	:ensure t
+	:config
+	(set-cursor-color "#00ff00")
+	(load-theme 'dracula))
 
   ;;font
   (add-to-list 'default-frame-alist
@@ -600,7 +608,12 @@
 
 	;; single key
 	"r" 'helm-mini
-	"k" 'kill-current-buffer
+	"k" '(lambda ()
+		   (interactive)
+		   (progn
+			 (kill-current-buffer)
+			 (when (> (length (window-list)) 1)
+			   (delete-window))))
 	"]" 'dumb-jump-go
 	"[" 'dumb-jump-back
 	"1" 'awesome-tab-select-visible-tab

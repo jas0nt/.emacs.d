@@ -37,3 +37,5 @@ tramp
 /.dap-breakpoints
 .lsp-session-*
 .mc-lists.el
+
+librime/
