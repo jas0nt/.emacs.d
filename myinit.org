@@ -648,8 +648,7 @@
 	;; buffer
 	"b" '(:wk "buffer")
 	"<tab>" 'evil-switch-to-windows-last-buffer
-	"bb" 'helm-mini
-	"bB" 'bufler
+	"bb" 'bufler
 	"bx" 'kill-current-buffer
 	"bs" 'hydra-buffer/body
 
@@ -739,6 +738,12 @@
    :states 'normal
    :keymaps 'bufler-list-mode-map
    "r" 'bufler-list
+   "q" '(lambda ()
+		  (interactive)
+		  (progn
+			(kill-current-buffer)
+			(when (> (length (window-list)) 1)
+			  (delete-window))))
    "d" '(lambda ()
 		  (interactive)
 		  (when
