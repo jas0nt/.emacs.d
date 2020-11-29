@@ -763,8 +763,8 @@
    :prefix "SPC"
    :keymaps 'python-mode-map
    "l" '(:wk "python")
-   "lf" 'elpy-format-code
-   "lg" 'elpy-goto-definition
-   "lr" 'elpy-shell-send-buffer
+   "lf" 'lsp-format-buffer
+   "lr" 'lsp-rename
+   "ld" 'lsp-find-definition
    )
 #+END_SRC
