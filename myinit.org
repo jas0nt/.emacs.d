@@ -422,11 +422,11 @@
   (use-package rime
 	:ensure t
 	:config
-	;;(setq rime-librime-root "~/.emacs.d/librime/dist")
+	(setq rime-librime-root "~/.emacs.d/librime/dist")
 	(setq rime-posframe-properties
 		  (list :background-color "#333333"
 				:foreground-color "#dcdccc"
-				:font "JetBrains Mono-9"
+				:font "Source Code Pro-14"
 				:internal-border-width 10))
 
 	(setq default-input-method "rime"
@@ -451,7 +451,7 @@
   (use-package vterm
 	:ensure t
 	:config
-	(setq vterm-shell "/usr/bin/fish")
+	(setq vterm-shell "/usr/local/bin/fish")
 	(add-hook 'vterm-mode-hook
 			  (lambda () (setq-local global-hl-line-mode nil)))
 	)
@@ -553,7 +553,7 @@
 
   ;;font
   (add-to-list 'default-frame-alist
-			   '(font . "JetBrains Mono-11"))
+			   '(font . "Source Code Pro-14"))
 
   ;;hide tool bar
   (tool-bar-mode -1)
