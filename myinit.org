@@ -1,6 +1,16 @@
 #+STARTUP: overview 
 #+PROPERTY: header-args :comments yes :results silent
 
+* Variables
+#+BEGIN_SRC emacs-lisp
+  (setq is-on-linux (eq system-type 'gnu/linux))
+  (setq my-shell (if is-on-linux
+					 "/usr/bin/fish"
+				   "/usr/local/bin/fish"))
+  (setq my-font (if is-on-linux
+					"JetBrains Mono-9"
+				  "Source Code Pro-14"))
+#+END_SRC
 * Packages
 ** ace-window
 #+BEGIN_SRC emacs-lisp
@@ -446,11 +456,12 @@
   (use-package rime
 	:ensure t
 	:config
-	(setq rime-librime-root "~/.emacs.d/librime/dist")
+	(unless is-on-linux
+	  (setq rime-librime-root "~/.emacs.d/librime/dist"))
 	(setq rime-posframe-properties
 		  (list :background-color "#333333"
 				:foreground-color "#dcdccc"
-				:font "Source Code Pro-14"
+				:font my-font
 				:internal-border-width 10))
 
 	(setq default-input-method "rime"
@@ -482,7 +493,7 @@
   (use-package vterm
 	:ensure t
 	:config
-	(setq vterm-shell "/usr/local/bin/fish")
+	(setq vterm-shell my-shell)
 	(add-hook 'vterm-mode-hook
 			  (lambda () (setq-local global-hl-line-mode nil)))
 	)
@@ -584,7 +595,7 @@
 
   ;;font
   (add-to-list 'default-frame-alist
-			   '(font . "Source Code Pro-14"))
+			   `(font . ,my-font))
 
   ;;hide tool bar
   (tool-bar-mode -1)
