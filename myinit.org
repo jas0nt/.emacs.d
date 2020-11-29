@@ -258,15 +258,15 @@
 	  ("q" nil "cancel"))
 
 	(defhydra awesome-fast-switch (:hint nil)
-      "
-     ^^^^Fast Move             ^^^^Tab                    ^^Search            ^^Misc
-    -^^^^--------------------+-^^^^---------------------+-^^----------------+-^^---------------------------
-       ^_k_^   prev group    | _C-a_^^     select first | _b_ search buffer | _C-k_   kill buffer
-     _h_   _l_  switch tab   | _C-e_^^     select last  | _g_ search group  | _C-S-k_ kill others in group
-       ^_j_^   next group    | _C-j_^^     ace jump     | ^^                | ^^
-     ^^0 ~ 9^^ select window | _C-h_/_C-l_ move current | ^^                | ^^
-    -^^^^--------------------+-^^^^---------------------+-^^----------------+-^^---------------------------
-    "
+	  "
+	 ^^^^Fast Move             ^^^^Tab                    ^^Search            ^^Misc
+	-^^^^--------------------+-^^^^---------------------+-^^----------------+-^^---------------------------
+	   ^_k_^   prev group    | _C-a_^^     select first | _b_ search buffer | _C-k_   kill buffer
+	 _h_   _l_  switch tab   | _C-e_^^     select last  | _g_ search group  | _C-S-k_ kill others in group
+	   ^_j_^   next group    | _C-j_^^     ace jump     | ^^                | ^^
+	 ^^0 ~ 9^^ select window | _C-h_/_C-l_ move current | ^^                | ^^
+	-^^^^--------------------+-^^^^---------------------+-^^----------------+-^^---------------------------
+	"
 	  ("h" awesome-tab-backward-tab)
 	  ("j" awesome-tab-forward-group)
 	  ("k" awesome-tab-backward-group)
@@ -291,6 +291,16 @@
 	  ("C-k" kill-current-buffer)
 	  ("C-S-k" awesome-tab-kill-other-buffers-in-current-group)
 	  ("q" nil "quit"))
+
+	(defhydra hydra-workspace ()
+	  "workspace"
+	  ("g" perspeen-goto-ws "goto" :exit t)
+	  ("r" perspeen-rename-ws "rename" :exit t)
+	  ("j" perspeen-next-ws "next")
+	  ("k" perspeen-previous-ws "prev")
+	  ("c" perspeen-create-ws "create" :exit t)
+	  ("d" perspeen-delete-ws "del" :exit t)
+	  ("q" nil "cancel"))
 
 	)
 #+END_SRC
@@ -357,6 +367,15 @@
     (setq org-ellipsis " ▼ "))
 #+END_SRC
 
+** perspeen
+#+BEGIN_SRC emacs-lisp
+  (use-package perspeen
+	:ensure t
+	:init
+	(setq perspeen-use-tab nil)
+	:config
+	(perspeen-mode))
+#+END_SRC
 ** popwin
 #+BEGIN_SRC emacs-lisp
   (use-package popwin
@@ -714,7 +733,8 @@
 
 	;; window
 	"w" '(:wk "window")
-	"ww" 'hydra-window/body
+	"ww" 'hydra-workspace/body
+	"wW" 'hydra-window/body
 	"wt" 'awesome-fast-switch/body
 	"wh" 'evil-window-left
 	"wj" 'evil-window-down
