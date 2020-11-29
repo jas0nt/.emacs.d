@@ -675,6 +675,7 @@
 
 	;; search
 	"s" '(:wk "search")
+	"sa" 'helm-ag
 	"ss" 'helm-swoop
 	"sS" 'helm-multi-swoop
 	"sg" 'google-this
