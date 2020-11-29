@@ -10,3 +10,6 @@
 [submodule "elisp/awesome-tray"]
 	path = elisp/awesome-tray
 	url = https://github.com/manateelazycat/awesome-tray.git
+[submodule "elisp/company-english-helper"]
+	path = elisp/company-english-helper
+	url = https://github.com/manateelazycat/company-english-helper.git

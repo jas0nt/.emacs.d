@@ -72,6 +72,11 @@
     (company-quickhelp-mode))
 #+END_SRC
 
+** company-english-helper
+#+BEGIN_SRC emacs-lisp
+  (use-package company-english-helper
+	:load-path "~/.emacs.d/elisp/company-english-helper")
+#+END_SRC
 ** company-tabnine
 #+BEGIN_SRC emacs-lisp
   (use-package company-tabnine
@@ -433,6 +438,13 @@
 		  rime-show-candidate 'posframe))
 #+END_SRC
 
+** smartparens
+#+BEGIN_SRC emacs-lisp
+  (use-package smartparens
+	:ensure t
+	:hook ('prog-mode . 'smartparens-mode))
+#+END_SRC
+
 ** try
 #+BEGIN_SRC emacs-lisp
   (use-package try :ensure t)
@@ -695,6 +707,10 @@
 	"tT" '(vterm :wk "vterm new")
 	"ti" '(iterm-goto-filedir-or-home :wk "iterm goto dir")
 	"tI" '(iterm-focus :wk "iterm focus")
+
+	;; toggle
+	"T" '(:wk "toggle")
+	"Te" 'toggle-company-english-helper
 
 	;; window
 	"w" '(:wk "window")
