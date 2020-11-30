@@ -8,8 +8,8 @@
 					 "/usr/bin/fish"
 				   "/usr/local/bin/fish"))
   (setq my-font (if is-on-linux
-					"JetBrains Mono-9"
-				  "Source Code Pro-14"))
+					"Fira Code-9"
+				  "Fira Code-14"))
 #+END_SRC
 * Packages
 ** ace-window
