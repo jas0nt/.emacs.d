@@ -13,3 +13,6 @@
 [submodule "elisp/company-english-helper"]
 	path = elisp/company-english-helper
 	url = https://github.com/manateelazycat/company-english-helper.git
+[submodule "elisp/nano-emacs"]
+	path = elisp/nano-emacs
+	url = https://github.com/rougier/nano-emacs.git

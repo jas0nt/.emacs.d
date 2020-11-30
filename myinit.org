@@ -593,6 +593,9 @@
 	(set-cursor-color "#00ff00")
 	(load-theme 'dracula))
 
+  ;; (require 'nano)
+  ;; (require 'nano-theme-dark)
+
   ;;font
   (add-to-list 'default-frame-alist
 			   `(font . ,my-font))
