@@ -60,6 +60,11 @@
     )
 #+END_SRC
 
+** bongo
+#+BEGIN_SRC emacs-lisp
+  (use-package bongo :ensure t)
+#+END_SRC
+
 ** bufler
 #+BEGIN_SRC emacs-lisp
   (use-package bufler :ensure t)
@@ -713,6 +718,25 @@
 	"jj" 'avy-goto-char
 	"jJ" 'avy-goto-char-2
 
+	;; music
+	"m" '(:wk "music")
+	"mm" '(lambda ()
+			(interactive)
+			(if (get-buffer "*Bongo Playlist*")
+				(switch-to-buffer "*Bongo Playlist*")
+			  (let ((buffer (current-buffer))) 
+				(bongo) 
+				(setq bongo-insert-whole-directory-trees "ask") 
+				(bongo-insert-file "~/Music/my_music") 
+				(bongo-insert-enqueue-region (point-min) 
+											 (point-max)) 
+				(bongo-random-playback-mode)
+				(bongo-play-random) 
+				(switch-to-buffer buffer))))
+	"m <SPC>" 'bongo-pause/resume
+	"mn" 'bongo-play-random
+	"mp" 'bongo-play-previous
+
 	;; quit
 	"q" '(:wk "quit")
 	"qq" 'save-buffers-kill-terminal
@@ -804,8 +828,17 @@
 			  (yes-or-no-p "kill buffer?")
 			(bufler-list-buffer-kill)))
    "s" 'bufler-list-buffer-save
-   "RET" 'bufler-list-buffer-switch
-   )
+   "RET" 'bufler-list-buffer-switch)
+
+  ;; bongo-playlist-mode
+  (general-define-key
+   :states 'normal
+   :keymaps 'bongo-playlist-mode-map
+   "RET" 'bongo-play
+   "TAB" 'bongo-toggle-collapsed
+   "r" 'bongo-play-random
+   "s" 'bongo-pause/resume
+   "q" 'bongo-stop)
 
   ;; python-mode
   (general-define-key
@@ -815,6 +848,5 @@
    "l" '(:wk "python")
    "lf" 'lsp-format-buffer
    "lr" 'lsp-rename
-   "ld" 'lsp-find-definition
-   )
+   "ld" 'lsp-find-definition)
 #+END_SRC
