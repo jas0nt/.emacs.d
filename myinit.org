@@ -157,29 +157,37 @@
 ** evil
 #+BEGIN_SRC emacs-lisp
   (use-package evil
-    :ensure t
-    :init
-    (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
-    (setq evil-want-keybinding nil)
-    (setq evil-disable-insert-state-bindings t)
-    (setq evil-want-C-i-jump nil)
-    (setq evil-want-C-u-scroll t)
-    :config
-    (evil-mode 1))
+	:ensure t
+	:init
+	(setq evil-want-integration t) ;; This is optional since it's already set to t by default.
+	(setq evil-want-keybinding nil)
+	(setq evil-disable-insert-state-bindings t)
+	(setq evil-want-C-i-jump nil)
+	(setq evil-want-C-u-scroll t)
+	:config
+	(evil-mode 1))
 
   (use-package evil-collection
-    :after (evil)
-    :ensure t
-    :init
-    (setq evil-collection-company-use-tng nil)
-    :config
-    (evil-collection-init))
+	:after (evil)
+	:ensure t
+	:init
+	(setq evil-collection-company-use-tng nil)
+	:config
+	(evil-collection-init))
+
+  (use-package evil-nerd-commenter :ensure t)
+
+  (use-package evil-pinyin
+	:after (evil)
+	:ensure t
+	:init
+	(setq-default evil-pinyin-scheme 'simplified-xiaohe-all)
+	(setq-default evil-pinyin-with-search-rule 'always)
+	:config
+	(evil-select-search-module 'evil-search-module 'evil-search)
+	(global-evil-pinyin-mode))
 #+END_SRC
 
-** evil-nerd-commenter
-#+BEGIN_SRC emacs-lisp
-  (use-package evil-nerd-commenter :ensure t)
-#+END_SRC
 ** expand-region
 #+BEGIN_SRC emacs-lisp
   (use-package expand-region
