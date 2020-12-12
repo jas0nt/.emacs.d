@@ -17,6 +17,7 @@ recentf
 url/
 
 myinit.el
+custom.el
 
 #restclient
 network-security.data
