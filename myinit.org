@@ -11,25 +11,26 @@
 					"Fira Code-9"
 				  "Fira Code-14"))
 #+END_SRC
+
 * Packages
 ** ace-window
 #+BEGIN_SRC emacs-lisp
   (use-package ace-window
-    :ensure t
-    :init
-    (progn
-      (global-set-key [remap other-window] 'ace-window)
-      (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
-      (custom-set-faces
-       '(aw-leading-char-face
-	 ((t (:inhrit ace-jump-face-foreground :height 3.0)))))
-      ))
+	:ensure t
+	:init
+	(progn
+	  (global-set-key [remap other-window] 'ace-window)
+	  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+	  (custom-set-faces
+	   '(aw-leading-char-face
+		 ((t (:inhrit ace-jump-face-foreground :height 3.0)))))))
 #+END_SRC
 
 ** all-the-icons
 #+BEGIN_SRC emacs-lisp
   (use-package all-the-icons :ensure t)
 #+END_SRC
+
 ** avy
 #+BEGIN_SRC emacs-lisp
   (use-package avy :ensure t)
@@ -45,19 +46,22 @@
 	(setq awesome-tab-show-tab-index t)
 	(setq awesome-tab-height 170))
 #+END_SRC
+
 ** aweshell
 #+BEGIN_SRC emacs-lisp
-  (require 'aweshell)
-  (add-hook 'eshell-mode-hook (lambda () (setq-local company-tabnine-always-trigger nil)))
+  (use-package aweshell
+	:load-path "~/.emacs.d/elisp/aweshell"
+	:config
+	(add-hook 'eshell-mode-hook (lambda () (setq-local company-tabnine-always-trigger nil))))
 #+END_SRC
+
 ** beacon
 #+BEGIN_SRC emacs-lisp
   (use-package beacon
-    :ensure t
-    :config
-    (beacon-mode 1)
-    (setq beacon-color "#00FF00")
-    )
+	:ensure t
+	:config
+	(beacon-mode 1)
+	(setq beacon-color "#00FF00"))
 #+END_SRC
 
 ** bongo
@@ -74,17 +78,16 @@
 ** company
 #+BEGIN_SRC emacs-lisp
   (use-package company
-    :ensure t
-    :config
-    (setq company-idle-delay 0)
-    (setq company-minimum-prefix-length 2)
-    (global-company-mode t)
-    )
+	:ensure t
+	:config
+	(setq company-idle-delay 0)
+	(setq company-minimum-prefix-length 2)
+	(global-company-mode t))
 
   (use-package company-quickhelp
-    :ensure t
-    :config
-    (company-quickhelp-mode))
+	:ensure t
+	:config
+	(company-quickhelp-mode))
 #+END_SRC
 
 ** company-english-helper
@@ -92,6 +95,7 @@
   (use-package company-english-helper
 	:load-path "~/.emacs.d/elisp/company-english-helper")
 #+END_SRC
+
 ** company-tabnine
 #+BEGIN_SRC emacs-lisp
   (use-package company-tabnine
@@ -113,19 +117,17 @@
 	(setq dashboard-image-banner-max-height 200)
 	(setq dashboard-items '((recents  . 15)
 							(projects . 5)
-							(bookmarks . 5)
-							)))
+							(bookmarks . 5))))
 #+END_SRC
 
 ** dimmer
 #+BEGIN_SRC emacs-lisp
   (use-package dimmer
-    :ensure t
-    :config
-    (dimmer-configure-which-key)
-    (dimmer-configure-helm)
-    (dimmer-mode t)
-    )
+	:ensure t
+	:config
+	(dimmer-configure-which-key)
+	(dimmer-configure-helm)
+	(dimmer-mode t))
 #+END_SRC
 
 ** dired
@@ -144,6 +146,7 @@
     (add-hook 'dired-after-readin-hook #'dired-k-no-revert)
     (setq dired-k-human-readable t))
 #+END_SRC
+
 ** doom-modeline
 #+BEGIN_SRC emacs-lisp
   (use-package doom-modeline
@@ -251,6 +254,7 @@
 #+BEGIN_SRC emacs-lisp
   (use-package highlight-thing :ensure t)
 #+END_SRC
+
 ** hungry-delete & aggresive-indent
 #+BEGIN_SRC emacs-lisp
   (use-package hungry-delete
@@ -343,7 +347,6 @@
 	  ("c" perspeen-create-ws "create" :exit t)
 	  ("d" perspeen-delete-ws "del" :exit t)
 	  ("q" nil "cancel"))
-
 	)
 #+END_SRC
 
@@ -351,6 +354,13 @@
 #+BEGIN_SRC emacs-lisp
   (use-package ialign :ensure t)
 #+END_SRC
+
+** iterm
+#+BEGIN_SRC emacs-lisp
+  (use-package iterm
+	:load-path "~/.emacs.d/elisp/iterm")
+#+END_SRC
+
 ** lsp
 #+BEGIN_SRC emacs-lisp
   (use-package lsp-mode
@@ -368,18 +378,19 @@
 ** magit
 #+BEGIN_SRC emacs-lisp
   (use-package magit :ensure t)
+
   (use-package evil-magit :ensure t)
+
   (use-package diff-hl
-    :ensure t
-    :config
-    (global-diff-hl-mode)
-    (defhydra hydra-diff-hl ()
-      "buffer"
-      ("j" diff-hl-next-hunk)
-      ("k" diff-hl-previous-hunk)
-      ("x" diff-hl-revert-hunk)
-      ("q" nil "cancel"))
-    )
+	:ensure t
+	:config
+	(global-diff-hl-mode)
+	(defhydra hydra-diff-hl ()
+	  "git diff"
+	  ("j" diff-hl-next-hunk)
+	  ("k" diff-hl-previous-hunk)
+	  ("x" diff-hl-revert-hunk)
+	  ("q" nil "cancel")))
 
 #+END_SRC
 
@@ -393,6 +404,7 @@
 		   ("\\.markdown\\'" . markdown-mode))
 	:init (setq markdown-command "multimarkdown"))
 #+END_SRC
+
 ** neotree
 #+BEGIN_SRC emacs-lisp
 (use-package neotree :ensure t)
@@ -401,12 +413,12 @@
 ** org-bullets
 #+BEGIN_SRC emacs-lisp
   (use-package org-bullets
-    :ensure t
-    :config
-    (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
-    ;(setq org-bullets-bullet-list '("☰" "☷" "☯" "☭"))
-    (setq org-bullets-bullet-list '("༆" "༄" "༅" "࿓"))
-    (setq org-ellipsis " ▼ "))
+	:ensure t
+	:config
+	(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+	(setq org-bullets-bullet-list '("☰" "☷" "☯" "☭"))
+	;; (setq org-bullets-bullet-list '("༆" "༄" "༅" "࿓"))
+	(setq org-ellipsis " ▼ "))
 #+END_SRC
 
 ** perspeen
@@ -418,14 +430,15 @@
 	:config
 	(perspeen-mode))
 #+END_SRC
+
 ** popwin
 #+BEGIN_SRC emacs-lisp
   (use-package popwin
 	:ensure t
 	:config
-	(popwin-mode t)
-	)
+	(popwin-mode t))
 #+END_SRC
+
 ** projectile
 #+BEGIN_SRC emacs-lisp
   (use-package projectile
@@ -460,17 +473,17 @@
 ** rainbow-delimiters
 #+BEGIN_SRC emacs-lisp
   (use-package rainbow-delimiters
-    :ensure t
-    :config
-    (rainbow-delimiters-mode)
-    (add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
-    )
+	:ensure t
+	:config
+	(rainbow-delimiters-mode)
+	(add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
 #+END_SRC
 
 ** restart-emacs
 #+BEGIN_SRC emacs-lisp
   (use-package restart-emacs :ensure t)
 #+END_SRC
+
 ** restclient
 #+BEGIN_SRC emacs-lisp
   (use-package restclient
@@ -527,24 +540,22 @@
 	:config
 	(setq vterm-shell my-shell)
 	(add-hook 'vterm-mode-hook
-			  (lambda () (setq-local global-hl-line-mode nil)))
-	)
+			  (lambda () (setq-local global-hl-line-mode nil))))
   (use-package exec-path-from-shell
 	:ensure t
 	:config
 	(when (memq window-system '(mac ns x))
-	  (exec-path-from-shell-initialize))
-	)
+	  (exec-path-from-shell-initialize)))
 #+END_SRC
+
 ** which-key
 #+BEGIN_SRC emacs-lisp
   (use-package which-key
-    :ensure t
-    :config
-    (which-key-mode)
-    (setq which-key-idle-delay 0.5)
-    (which-key-mode)
-    )
+	:ensure t
+	:config
+	(which-key-mode)
+	(setq which-key-idle-delay 0.5)
+	(which-key-mode))
 #+END_SRC
 
 ** yasnippet
@@ -558,6 +569,7 @@
   (use-package yasnippet-snippets
     :ensure t)
 #+END_SRC
+
 ** youdao-dictionary
 #+BEGIN_SRC emacs-lisp
 (use-package youdao-dictionary :ensure t)
@@ -599,10 +611,6 @@
   ;;replace Yes/No with y/n
   (fset 'yes-or-no-p 'y-or-n-p)
 
-  ;;lazy load
-  (with-eval-after-load 'dired
-	(define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file))
-
   ;;exec-path
   (add-to-list 'exec-path "/usr/local/bin")
 
@@ -612,8 +620,6 @@
   ;;tab-width
   (setq tab-width 4)
 
-  ;;cutom
-  (require 'iterm)
 #+END_SRC
 
 * UI
@@ -674,12 +680,10 @@
   (global-prettify-symbols-mode 1)
   (setq prettify-symbols-alist '(("lambda" . 955)))
 
-  ;;no title bar
-  ;;(setq default-frame-alist '((undecorated . t)))
-  ;;(add-to-list 'default-frame-alist '(drag-internal-border . 1))
-  ;;(add-to-list 'default-frame-alist '(internal-border-width . 5))
 #+END_SRC
+
 * Keybindings
+** general
 #+BEGIN_SRC emacs-lisp
   (general-create-definer my-leader-def
 	:states '(normal insert visual emacs)
@@ -687,6 +691,20 @@
 	:prefix "SPC"
 	:non-normal-prefix "C-,")
 
+  (general-define-key
+   "<f5>" 'revert-buffer
+   "M-x" 'helm-M-x
+   "M-y" 'helm-show-kill-ring
+   "M-RET" 'lsp-execute-code-action
+
+   "C-s" 'helm-swoop-without-pre-input
+   "C-x C-b" 'helm-mini
+   "C-x b" 'bufler-list
+   "C-x C-f" 'helm-find-files)
+#+END_SRC
+
+** leader-keys
+#+BEGIN_SRC emacs-lisp
   (my-leader-def
 	"<SPC>" 'helm-M-x
 
@@ -736,7 +754,7 @@
 	"<tab>" 'evil-switch-to-windows-last-buffer
 	"bb" 'bufler
 	"bx" 'kill-current-buffer
-	"bs" 'hydra-buffer/body
+	"bs" '(hydra-buffer/body :wk "switch buffer")
 
 	;; git
 	"g" '(:wk "git")
@@ -850,20 +868,11 @@
 	;; zzz-to-char
 	"z" 'zzz-to-char
 	)
+#+END_SRC
 
-  (general-define-key
-   "<f5>" 'revert-buffer
-   "M-x" 'helm-M-x
-   "M-y" 'helm-show-kill-ring
-   "M-RET" 'lsp-execute-code-action
-
-   "C-s" 'helm-swoop-without-pre-input
-   "C-x C-b" 'helm-mini
-   "C-x b" 'bufler-list
-   "C-x C-f" 'helm-find-files
-   )
-
-  ;; bufler-list-mode
+** major-mode-keys
+*** bufler-list-mode
+#+BEGIN_SRC emacs-lisp
   (general-define-key
    :states 'normal
    :keymaps 'bufler-list-mode-map
@@ -881,13 +890,17 @@
 			(bufler-list-buffer-kill)))
    "s" 'bufler-list-buffer-save
    "RET" 'bufler-list-buffer-switch)
+#+END_SRC
 
-  ;; bongo-playlist-mode
+*** bongo-playlist-mode
+#+BEGIN_SRC emacs-lisp
   (general-define-key
    :states 'normal
    :keymaps 'bongo-playlist-mode-map
    "RET" 'bongo-play
    "TAB" 'bongo-toggle-collapsed
+   "J" 'bongo-next-header-line
+   "K" 'bongo-previous-header-line
    "r" 'bongo-play-random
    "s" 'bongo-pause/resume
    "f" 'bongo-seek-forward-10
@@ -895,8 +908,10 @@
    "b" 'bongo-seek-backward-10
    "B" 'bongo-seek-backward-60
    "q" 'bongo-stop)
+#+END_SRC
 
-  ;; python-mode
+*** python-mode
+#+BEGIN_SRC emacs-lisp
   (general-define-key
    :states 'normal
    :prefix "SPC"
