@@ -575,11 +575,6 @@
 (use-package youdao-dictionary :ensure t)
 #+END_SRC
 
-** zzz-to-char
-#+BEGIN_SRC emacs-lisp
-  (use-package zzz-to-char :ensure t)
-#+END_SRC
-
 * Configs
 #+BEGIN_SRC emacs-lisp
   ;;custom file
@@ -704,11 +699,10 @@
 #+END_SRC
 
 ** leader-keys
+*** a-key
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
 	"<SPC>" 'helm-M-x
-
-	;; single key
 	"r" 'helm-mini
 	"k" '((lambda ()
 			(interactive)
@@ -718,26 +712,36 @@
 				(delete-window))))
 		  :wk "kill-buffer")
 	"]" 'dumb-jump-go
-	"[" 'dumb-jump-back
-	"1" 'awesome-tab-select-visible-tab
-	"2" 'awesome-tab-select-visible-tab
-	"3" 'awesome-tab-select-visible-tab
-	"4" 'awesome-tab-select-visible-tab
-	"5" 'awesome-tab-select-visible-tab
-	"6" 'awesome-tab-select-visible-tab
-	"7" 'awesome-tab-select-visible-tab
-	"8" 'awesome-tab-select-visible-tab
-	"9" 'awesome-tab-select-visible-tab
+	"[" 'dumb-jump-back)
+#+END_SRC
 
-	;; evil-nerd-commenter
-	"c" '(:wk "evil-nerd-commenter")
+*** buffer
+#+BEGIN_SRC emacs-lisp
+  (my-leader-def
+	"b" '(:wk "buffer")
+
+	"<tab>" 'evil-switch-to-windows-last-buffer
+	"bb" 'bufler
+	"bx" 'kill-current-buffer
+	"bs" '(hydra-buffer/body :wk "switch buffer"))
+#+END_SRC
+
+*** commenter
+#+BEGIN_SRC emacs-lisp
+  (my-leader-def
+	"c" '(:wk "commenter")
+
 	"ci" 'evilnc-comment-or-uncomment-lines
 	"cc" 'evilnc-copy-and-comment-lines
 	"cp" 'evilnc-comment-or-uncomment-paragraphs
-	"cr" 'comment-or-uncomment-region
+	"cr" 'comment-or-uncomment-region)
+#+END_SRC
 
-	;; file
+*** file
+#+BEGIN_SRC emacs-lisp
+  (my-leader-def
 	"f" '(:wk "file")
+
 	"fe" '((lambda () (interactive) (find-file "~/.emacs.d/myinit.org"))
 		   :wk "open config")
 	"ff" 'helm-find-files
@@ -747,28 +751,33 @@
 	"fS" 'save-some-buffers
 	"ft" 'neotree-toggle
 	"fp" '(lambda () (interactive) (when (file-exists-p (current-kill 0))
-								(find-file (current-kill 0))))
+								(find-file (current-kill 0)))))
+#+END_SRC
 
-	;; buffer
-	"b" '(:wk "buffer")
-	"<tab>" 'evil-switch-to-windows-last-buffer
-	"bb" 'bufler
-	"bx" 'kill-current-buffer
-	"bs" '(hydra-buffer/body :wk "switch buffer")
-
-	;; git
+*** git
+#+BEGIN_SRC emacs-lisp
+  (my-leader-def
 	"g" '(:wk "git")
-	"gg" 'magit-status
-	"gd" 'hydra-diff-hl/body
 
-	;; jump
+	"gg" 'magit-status
+	"gd" 'hydra-diff-hl/body)
+#+END_SRC
+
+*** jump
+#+BEGIN_SRC emacs-lisp
+  (my-leader-def
 	"j" '(:wk "navigation")
+
 	"jg" 'dumb-jump-go
 	"jb" 'dumb-jump-back
 	"jq" 'dumb-jump-quick-look
 	"jj" 'avy-goto-char
-	"jJ" 'avy-goto-char-2
+	"jJ" 'avy-goto-char-2)
+#+END_SRC
 
+*** music
+#+BEGIN_SRC emacs-lisp
+  (my-leader-def
 	;; music
 	"m" '(:wk "music")
 	"mm" '((lambda ()
@@ -793,21 +802,42 @@
 	"mf" 'bongo-seek-forward-10
 	"mF" 'bongo-seek-forward-60
 	"mb" 'bongo-seek-backward-10
-	"mB" 'bongo-seek-backward-60
+	"mB" 'bongo-seek-backward-60)
+#+END_SRC
 
-	;; quit
+*** project
+#+BEGIN_SRC emacs-lisp
+  (my-leader-def
+	"p" '(:wk "project")
+
+	"pp" 'projectile-command-map
+	"pt" 'projectile-run-vterm
+	"ps" 'helm-multi-swoop-projectile)
+#+END_SRC
+
+*** quit
+#+BEGIN_SRC emacs-lisp
+  (my-leader-def
 	"q" '(:wk "quit")
 	"qq" 'save-buffers-kill-terminal
-	"qR" 'restart-emacs
+	"qR" 'restart-emacs)
+#+END_SRC
 
-	;; search
+*** search
+#+BEGIN_SRC emacs-lisp
+  (my-leader-def
 	"s" '(:wk "search")
+
 	"sa" 'helm-ag
 	"ss" 'helm-swoop
 	"sS" 'helm-multi-swoop
 	"sg" 'google-this
-	"sd" 'youdao-dictionary-search-at-point+
+	"sd" 'youdao-dictionary-search-at-point+)
+#+END_SRC
 
+*** terminal
+#+BEGIN_SRC emacs-lisp
+  (my-leader-def
 	;; terminal
 	"t" '(:wk "terminal")
 	"te" 'aweshell-dedicated-toggle
@@ -821,10 +851,14 @@
 	"to" '(vterm-other-window :wk "vterm other window")
 	"tT" '(vterm :wk "vterm new")
 	"ti" '(iterm-goto-filedir-or-home :wk "iterm goto dir")
-	"tI" '(iterm-focus :wk "iterm focus")
+	"tI" '(iterm-focus :wk "iterm focus"))
+#+END_SRC
 
-	;; toggle
+*** toggle
+#+BEGIN_SRC emacs-lisp
+  (my-leader-def
 	"T" '(:wk "toggle")
+
 	"Te" 'toggle-company-english-helper
 	"Tt" '((lambda ()
 			 (interactive)
@@ -837,10 +871,14 @@
 							   ((numberp (cadr alpha)) (cadr alpha)))
 						 100)
 					'(85 . 50) '(100 . 100)))))
-		   :wk "toggle-transparency")
+		   :wk "toggle-transparency"))
+#+END_SRC
 
-	;; window
+*** window
+#+BEGIN_SRC emacs-lisp
+  (my-leader-def
 	"w" '(:wk "window")
+
 	"ww" 'hydra-workspace/body
 	"wW" 'hydra-window/body
 	"wt" 'awesome-fast-switch/body
@@ -857,17 +895,7 @@
 	"w/" 'split-window-right
 	"w?" 'split-window-below
 	"wm" 'delete-other-windows
-	"wd" 'delete-window
-
-	;; project
-	"p" '(:wk "project")
-	"pp" 'projectile-command-map
-	"pt" 'projectile-run-vterm
-	"ps" 'helm-multi-swoop-projectile
-
-	;; zzz-to-char
-	"z" 'zzz-to-char
-	)
+	"wd" 'delete-window)
 #+END_SRC
 
 ** major-mode-keys
