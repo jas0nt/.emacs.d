@@ -410,6 +410,19 @@
 (use-package neotree :ensure t)
 #+END_SRC
 
+** org
+#+BEGIN_SRC emacs-lisp
+  (use-package org
+	:ensure t
+	:config
+	(setq org-startup-with-inline-images t)
+	(setq org-babel-python-command "python3")
+	(org-babel-do-load-languages
+	 'org-babel-load-languages
+	 '((python . t)
+	   (R . t))))
+#+END_SRC
+
 ** org-bullets
 #+BEGIN_SRC emacs-lisp
   (use-package org-bullets
@@ -470,6 +483,11 @@
 						   (lsp))))  ; or lsp-deferred
 #+END_SRC
 
+** r-lang
+#+BEGIN_SRC emacs-lisp
+  (use-package ess
+	:ensure t)
+#+END_SRC
 ** rainbow-delimiters
 #+BEGIN_SRC emacs-lisp
   (use-package rainbow-delimiters
@@ -615,16 +633,6 @@
   ;;tab-width
   (setq tab-width 4)
 
-#+END_SRC
-
-** Org-mode
-#+BEGIN_SRC emacs-lisp
-  (setq org-startup-with-inline-images t)
-  (setq org-babel-python-command "python3")
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((python . t)
-	 (R . t)))
 #+END_SRC
 
 * UI
