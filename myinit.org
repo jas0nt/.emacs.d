@@ -617,6 +617,16 @@
 
 #+END_SRC
 
+** Org-mode
+#+BEGIN_SRC emacs-lisp
+  (setq org-startup-with-inline-images t)
+  (setq org-babel-python-command "python3")
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((python . t)
+	 (R . t)))
+#+END_SRC
+
 * UI
 #+BEGIN_SRC emacs-lisp
   ;;theme
@@ -948,4 +958,16 @@
    "lf" 'lsp-format-buffer
    "lr" 'lsp-rename
    "ld" 'lsp-find-definition)
+#+END_SRC
+
+*** org-mode
+#+BEGIN_SRC emacs-lisp
+  (general-define-key
+   :states 'normal
+   :prefix "SPC"
+   :keymaps 'org-mode-map
+   "l" '(:wk "org")
+   "ll" 'org-babel-remove-result
+   "lr" 'org-ctrl-c-ctrl-c
+   "lt" 'org-insert-structure-template)
 #+END_SRC
