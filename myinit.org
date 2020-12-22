@@ -308,8 +308,6 @@
 #+BEGIN_SRC emacs-lisp
   (use-package magit :ensure t)
 
-  (use-package evil-magit :ensure t)
-
   (use-package diff-hl
 	:ensure t
 	:config
