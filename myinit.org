@@ -215,6 +215,28 @@
   (use-package helm-system-packages :ensure t)
 #+END_SRC
 
+** highlight-blocks
+#+BEGIN_SRC emacs-lisp
+  (use-package highlight-blocks
+	:ensure t
+	:config
+	(setq highlight-blocks--rainbow-colors
+		  '("#000000" "#2F4F4F" "#006600" "#6272A4" "#44475A" "#BD93F9"))
+
+	(setq highlight-blocks-max-face-count
+		  (length highlight-blocks--rainbow-colors))
+
+	(defun highlight-blocks--define-rainbow-colors (colors)
+	  (dotimes (i (length colors))
+		(face-spec-set
+		 (intern (format "highlight-blocks-depth-%d-face" (1+ i)))
+		 `((((class color) (background dark))  :background ,(nth i colors))
+		   (((class color) (background light)) :background ,(nth i colors)))
+		 'face-defface-spec)))
+
+	(highlight-blocks--define-rainbow-colors highlight-blocks--rainbow-colors))
+#+END_SRC
+
 ** highlight-thing
 #+BEGIN_SRC emacs-lisp
   (use-package highlight-thing :ensure t)
@@ -445,7 +467,7 @@
 				:internal-border-width 10))
 
 	(setq default-input-method "rime"
-		  rime-show-candidate 'posframe))
+		  rime-show-candidate 'minibuffer))
 #+END_SRC
 
 ** smartparens
@@ -795,6 +817,22 @@
 	"T" '(:wk "toggle")
 
 	"Te" 'toggle-company-english-helper
+
+	"Th" '(:wk "toggle-highlight")
+	"Thh" '((lambda ()
+			  (interactive)
+			  (if highlight-thing-mode
+				  (highlight-thing-mode -1)
+				(highlight-thing-mode 1)))
+			:wk "toggle-highlight-thing")
+
+	"Thb" '((lambda ()
+			  (interactive)
+			  (if highlight-blocks-mode
+				  (highlight-blocks-mode -1)
+				(highlight-blocks-mode 1)))
+			:wk "toggle-highlight-blocks")
+
 	"Tt" '((lambda ()
 			 (interactive)
 			 (let ((alpha (frame-parameter nil 'alpha)))
