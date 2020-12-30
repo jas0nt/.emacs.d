@@ -4,9 +4,9 @@
 * Variables
 #+BEGIN_SRC emacs-lisp
   (setq is-on-linux (eq system-type 'gnu/linux))
-  (setq my-shell (if is-on-linux
-					 "/usr/bin/fish"
-				   "/usr/local/bin/fish"))
+  ;; (setq my-shell (if is-on-linux
+  ;; 					 "/usr/bin/fish"
+  ;; 				   "/bin/zsh"))
   (setq my-font (if is-on-linux
 					"Fira Code-9"
 				  "Fira Code-14"))
@@ -495,7 +495,7 @@
   (use-package vterm
 	:ensure t
 	:config
-	(setq vterm-shell my-shell)
+	;; (setq vterm-shell my-shell)
 	(add-hook 'vterm-mode-hook
 			  (lambda () (setq-local global-hl-line-mode nil))))
   (use-package exec-path-from-shell
