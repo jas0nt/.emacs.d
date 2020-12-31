@@ -571,6 +571,14 @@
 
 #+END_SRC
 
+* org-capture
+#+begin_src emacs-lisp
+  (global-set-key (kbd "C-c c") 'org-capture)
+  (setq org-default-notes-file "~/org_note/inbox.org")
+  (setq org-capture-templates
+		'(("n" "note" entry (file+headline "~/mynote/note.org" "Note") "** %^{title}\n%U\n\n%c")
+		  ("c" "code" entry (file+headline "~/mynote/note.org" "Note") "** %^{title}\n%U\n\n#+begin_src\n%c\n#+end_src")))
+#+end_src
 * UI
 #+BEGIN_SRC emacs-lisp
   ;;theme
@@ -760,6 +768,12 @@
 	"mB" 'bongo-seek-backward-60)
 #+END_SRC
 
+*** note
+#+BEGIN_SRC emacs-lisp
+  (my-leader-def
+	"n" '(:wk "note")
+	"nn" 'org-capture)
+#+END_SRC
 *** project
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
