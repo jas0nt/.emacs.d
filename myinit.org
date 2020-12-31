@@ -4,12 +4,9 @@
 * Variables
 #+BEGIN_SRC emacs-lisp
   (setq is-on-linux (eq system-type 'gnu/linux))
-  ;; (setq my-shell (if is-on-linux
-  ;; 					 "/usr/bin/fish"
-  ;; 				   "/bin/zsh"))
   (setq my-font (if is-on-linux
-					"Fira Code-9"
-				  "Fira Code-14"))
+					"Source Code Pro-9"
+				  "Source Code Pro-14"))
 #+END_SRC
 
 * Packages
@@ -461,8 +458,8 @@
 	(unless is-on-linux
 	  (setq rime-librime-root "~/.emacs.d/librime/dist"))
 	(setq rime-posframe-properties
-		  (list :background-color "#333333"
-				:foreground-color "#dcdccc"
+		  (list :background-color "#282a36"
+				:foreground-color "#bd93f9"
 				:font my-font
 				:internal-border-width 10))
 
@@ -591,8 +588,9 @@
   ;; (require 'nano-theme-dark)
 
   ;;font
-  (add-to-list 'default-frame-alist
-			   `(font . ,my-font))
+  (add-to-list 'default-frame-alist `(font . ,my-font))
+  (unless is-on-linux
+	(set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
 
   ;;hide tool bar
   (tool-bar-mode -1)
