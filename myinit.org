@@ -8,7 +8,6 @@
 					"Source Code Pro-9"
 				  "Source Code Pro-14"))
 #+END_SRC
-
 * Packages
 ** ace-window
 #+BEGIN_SRC emacs-lisp
@@ -22,12 +21,10 @@
 	   '(aw-leading-char-face
 		 ((t (:inhrit ace-jump-face-foreground :height 3.0)))))))
 #+END_SRC
-
 ** all-the-icons
 #+BEGIN_SRC emacs-lisp
   (use-package all-the-icons :ensure t)
 #+END_SRC
-
 ** aweshell
 #+BEGIN_SRC emacs-lisp
   (use-package aweshell
@@ -35,7 +32,6 @@
 	:config
 	(add-hook 'eshell-mode-hook (lambda () (setq-local company-tabnine-always-trigger nil))))
 #+END_SRC
-
 ** beacon
 #+BEGIN_SRC emacs-lisp
   (use-package beacon
@@ -44,18 +40,28 @@
 	(beacon-mode 1)
 	(setq beacon-color "#00FF00"))
 #+END_SRC
-
 ** bongo
 #+BEGIN_SRC emacs-lisp
-  (use-package bongo :ensure t)
+  (use-package bongo
+	:ensure t
+	:config
+	(defhydra hydra-bongo ()
+	  ("m" (lambda () (interactive) (switch-to-buffer "*Bongo Playlist*")) "goto-bongo" :color blue)
+	  ("s" bongo-pause/resume "play/pause")
+	  ("r" bongo-play-random "play random")
+	  ("n" bongo-play-next "play next")
+	  ("p" bongo-play-previous "play previous")
+	  ("f" bongo-seek-forward-10 "forward")
+	  ("F" bongo-seek-forward-60 "Forward")
+	  ("b" bongo-seek-backward-10 "backward")
+	  ("B" bongo-seek-backward-60 "Backward")
+	  ("q" nil "Cancel")))
 #+END_SRC
-
 ** bufler
 #+BEGIN_SRC emacs-lisp
   (use-package bufler :ensure t)
   (use-package helm-bufler :ensure t)
 #+END_SRC
-
 ** company
 #+BEGIN_SRC emacs-lisp
   (use-package company
@@ -70,13 +76,11 @@
 	:config
 	(company-quickhelp-mode))
 #+END_SRC
-
 ** company-english-helper
 #+BEGIN_SRC emacs-lisp
   (use-package company-english-helper
 	:load-path "~/.emacs.d/elisp/company-english-helper")
 #+END_SRC
-
 ** company-tabnine
 #+BEGIN_SRC emacs-lisp
   (use-package company-tabnine
@@ -84,7 +88,6 @@
     :config
     (add-to-list 'company-backends #'company-tabnine))
 #+END_SRC
-
 ** dashboard
 #+BEGIN_SRC emacs-lisp
   (use-package dashboard
@@ -100,7 +103,6 @@
 							(projects . 5)
 							(bookmarks . 5))))
 #+END_SRC
-
 ** dimmer
 #+BEGIN_SRC emacs-lisp
   (use-package dimmer
@@ -110,24 +112,10 @@
 	(dimmer-configure-helm)
 	(dimmer-mode t))
 #+END_SRC
-
 ** dired
 #+BEGIN_SRC emacs-lisp
   (setq dired-listing-switches "-alht")
-  (use-package dired-icon
-    :ensure t
-    :config
-    (when (display-graphic-p)
-      (add-hook 'dired-mode-hook 'dired-icon-mode)))
-
-  (use-package dired-k
-    :ensure t
-    :config
-    (add-hook 'dired-initial-position-hook 'dired-k)
-    (add-hook 'dired-after-readin-hook #'dired-k-no-revert)
-    (setq dired-k-human-readable t))
 #+END_SRC
-
 ** dumb-jump
 #+BEGIN_SRC emacs-lisp
   (use-package dumb-jump
@@ -137,7 +125,6 @@
       (dumb-jump-mode)
       (setq dumb-jump-selector 'helm)))
 #+END_SRC
-
 ** evil
 #+BEGIN_SRC emacs-lisp
   (use-package evil
@@ -171,7 +158,6 @@
 	(evil-select-search-module 'evil-search-module 'evil-search)
 	(global-evil-pinyin-mode))
 #+END_SRC
-
 ** expand-region
 #+BEGIN_SRC emacs-lisp
   (use-package expand-region
@@ -179,28 +165,14 @@
     :config
     (global-set-key (kbd "C-=") 'er/expand-region))
 #+END_SRC
-
 ** general
 #+BEGIN_SRC emacs-lisp
   (use-package general :ensure t)
 #+END_SRC
-
 ** google-this
 #+BEGIN_SRC emacs-lisp
-(use-package google-this
-  :ensure t)
+  (use-package google-this :ensure t)
 #+END_SRC
-
-** go-translate
-#+BEGIN_SRC emacs-lisp
-  (use-package go-translate
-	:ensure t
-	:config
-	(setq go-translate-base-url "https://translate.google.cn")
-	(setq go-translate-inputs-function #'go-translate-inputs-current-or-prompt)
-	(setq go-translate-local-language "zh-CN"))
-#+END_SRC
-
 ** helm
 #+BEGIN_SRC emacs-lisp
   (use-package helm :ensure t)
@@ -208,10 +180,7 @@
   (use-package helm-ag :ensure t)
 
   (use-package helm-swoop :ensure t)
-
-  (use-package helm-system-packages :ensure t)
 #+END_SRC
-
 ** highlight-blocks
 #+BEGIN_SRC emacs-lisp
   (use-package highlight-blocks
@@ -233,12 +202,10 @@
 
 	(highlight-blocks--define-rainbow-colors highlight-blocks--rainbow-colors))
 #+END_SRC
-
 ** highlight-thing
 #+BEGIN_SRC emacs-lisp
   (use-package highlight-thing :ensure t)
 #+END_SRC
-
 ** hungry-delete & aggresive-indent
 #+BEGIN_SRC emacs-lisp
   (use-package hungry-delete
@@ -250,7 +217,6 @@
     :config
     (global-aggressive-indent-mode 1))
 #+END_SRC
-
 ** hydra
 #+BEGIN_SRC emacs-lisp
   (use-package hydra
@@ -297,18 +263,10 @@
 
 	)
 #+END_SRC
-
 ** ialign
 #+BEGIN_SRC emacs-lisp
   (use-package ialign :ensure t)
 #+END_SRC
-
-** iterm
-#+BEGIN_SRC emacs-lisp
-  (use-package iterm
-	:load-path "~/.emacs.d/elisp/iterm")
-#+END_SRC
-
 ** lsp
 #+BEGIN_SRC emacs-lisp
   (use-package lsp-mode
@@ -322,7 +280,6 @@
   (use-package helm-lsp :commands helm-lsp-workspace-symbol)
   (use-package dap-mode :ensure t)
 #+END_SRC
-
 ** magit
 #+BEGIN_SRC emacs-lisp
   (use-package magit :ensure t)
@@ -339,7 +296,6 @@
 	  ("q" nil "cancel")))
 
 #+END_SRC
-
 ** markdown
 #+BEGIN_SRC emacs-lisp
   (use-package markdown-mode
@@ -350,12 +306,10 @@
 		   ("\\.markdown\\'" . markdown-mode))
 	:init (setq markdown-command "multimarkdown"))
 #+END_SRC
-
 ** neotree
 #+BEGIN_SRC emacs-lisp
 (use-package neotree :ensure t)
 #+END_SRC
-
 ** org
 #+BEGIN_SRC emacs-lisp
   (use-package org
@@ -368,18 +322,6 @@
 	 '((python . t)
 	   (R . t))))
 #+END_SRC
-
-** org-bullets
-##+BEGIN_SRC emacs-lisp
-  (use-package org-bullets
-	:ensure t
-	:config
-	(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
-	(setq org-bullets-bullet-list '("☰" "☷" "☯" "☭"))
-	;; (setq org-bullets-bullet-list '("༆" "༄" "༅" "࿓"))
-	(setq org-ellipsis " ▼ "))
-#+END_SRC
-
 ** popwin
 #+BEGIN_SRC emacs-lisp
   (use-package popwin
@@ -387,7 +329,6 @@
 	:config
 	(popwin-mode t))
 #+END_SRC
-
 ** projectile
 #+BEGIN_SRC emacs-lisp
   (use-package projectile
@@ -401,7 +342,6 @@
     :config
     (helm-projectile-on))
 #+END_SRC
-
 ** python
 #+BEGIN_SRC emacs-lisp
   (use-package python-mode :ensure t)
@@ -418,11 +358,9 @@
 						   (require 'lsp-pyright)
 						   (lsp))))  ; or lsp-deferred
 #+END_SRC
-
 ** r-lang
 #+BEGIN_SRC emacs-lisp
-  (use-package ess
-	:ensure t)
+  (use-package ess :ensure t)
 #+END_SRC
 ** rainbow-delimiters
 #+BEGIN_SRC emacs-lisp
@@ -432,24 +370,20 @@
 	(rainbow-delimiters-mode)
 	(add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
 #+END_SRC
-
 ** restart-emacs
 #+BEGIN_SRC emacs-lisp
   (use-package restart-emacs :ensure t)
 #+END_SRC
-
 ** restclient
 #+BEGIN_SRC emacs-lisp
   (use-package restclient
     :ensure t
-    :mode ("\\.http\\'" . restclient-mode)
-    )
+    :mode ("\\.http\\'" . restclient-mode))
   (use-package company-restclient
     :ensure t
     :config
     (add-to-list 'company-backends 'company-restclient))
 #+END_SRC
-
 ** rime
 #+BEGIN_SRC emacs-lisp
   (use-package rime
@@ -466,19 +400,16 @@
 	(setq default-input-method "rime"
 		  rime-show-candidate 'minibuffer))
 #+END_SRC
-
 ** smartparens
 #+BEGIN_SRC emacs-lisp
   (use-package smartparens
 	:ensure t
 	:hook ('prog-mode . 'smartparens-mode))
 #+END_SRC
-
 ** try
 #+BEGIN_SRC emacs-lisp
   (use-package try :ensure t)
 #+END_SRC
-
 ** undo-tree
 #+BEGIN_SRC emacs-lisp
 (use-package undo-tree
@@ -486,7 +417,6 @@
   :init
   (global-undo-tree-mode))
 #+END_SRC
-
 ** vterm
 #+BEGIN_SRC emacs-lisp
   (use-package vterm
@@ -501,7 +431,6 @@
 	(when (memq window-system '(mac ns x))
 	  (exec-path-from-shell-initialize)))
 #+END_SRC
-
 ** which-key
 #+BEGIN_SRC emacs-lisp
   (use-package which-key
@@ -511,7 +440,6 @@
 	(setq which-key-idle-delay 0.5)
 	(which-key-mode))
 #+END_SRC
-
 ** yasnippet
 #+BEGIN_SRC emacs-lisp
   (use-package yasnippet
@@ -523,10 +451,9 @@
   (use-package yasnippet-snippets
     :ensure t)
 #+END_SRC
-
 ** youdao-dictionary
 #+BEGIN_SRC emacs-lisp
-(use-package youdao-dictionary :ensure t)
+  (use-package youdao-dictionary :ensure t)
 #+END_SRC
 
 * Configs
@@ -660,7 +587,6 @@
    "C-x b" 'bufler-list
    "C-x C-f" 'helm-find-files)
 #+END_SRC
-
 ** leader-keys
 *** a-key
 #+BEGIN_SRC emacs-lisp
@@ -677,7 +603,6 @@
 	"]" 'dumb-jump-go
 	"[" 'dumb-jump-back)
 #+END_SRC
-
 *** buffer
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
@@ -688,7 +613,6 @@
 	"bx" 'kill-current-buffer
 	"bs" '(hydra-buffer/body :wk "switch buffer"))
 #+END_SRC
-
 *** commenter
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
@@ -699,7 +623,6 @@
 	"cp" 'evilnc-comment-or-uncomment-paragraphs
 	"cr" 'comment-or-uncomment-region)
 #+END_SRC
-
 *** file
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
@@ -709,6 +632,7 @@
 		   :wk "open config")
 	"ff" 'helm-find-files
 	"fr" 'helm-recentf
+	"fR" 'revert-buffer
 	"fd" 'dired
 	"fs" 'save-buffer
 	"fS" 'save-some-buffers
@@ -716,7 +640,6 @@
 	"fp" '(lambda () (interactive) (when (file-exists-p (current-kill 0))
 								(find-file (current-kill 0)))))
 #+END_SRC
-
 *** git
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
@@ -725,7 +648,6 @@
 	"gg" 'magit-status
 	"gd" 'hydra-diff-hl/body)
 #+END_SRC
-
 *** jump
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
@@ -737,13 +659,13 @@
 	"jj" 'avy-goto-char
 	"jJ" 'avy-goto-char-2)
 #+END_SRC
-
 *** music
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
 	;; music
 	"m" '(:wk "music")
-	"mm" '((lambda ()
+	"mm" '(hydra-bongo/body :wk "music")
+	"mM" '((lambda ()
 			 (interactive)
 			 (if (get-buffer "*Bongo Playlist*")
 				 (switch-to-buffer "*Bongo Playlist*")
@@ -756,7 +678,7 @@
 				 (bongo-random-playback-mode)
 				 (bongo-play-random) 
 				 (switch-to-buffer buffer))))
-		   :wk "music")
+		   :wk "goto music")
 	"m <SPC>" 'bongo-pause/resume
 	"ms" 'bongo-pause/resume
 	"mr" 'bongo-play-random
@@ -767,7 +689,6 @@
 	"mb" 'bongo-seek-backward-10
 	"mB" 'bongo-seek-backward-60)
 #+END_SRC
-
 *** note
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
@@ -783,7 +704,6 @@
 	"pt" 'projectile-run-vterm
 	"ps" 'helm-multi-swoop-projectile)
 #+END_SRC
-
 *** quit
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
@@ -791,7 +711,6 @@
 	"qq" 'save-buffers-kill-terminal
 	"qR" 'restart-emacs)
 #+END_SRC
-
 *** search
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
@@ -803,7 +722,6 @@
 	"sg" 'google-this
 	"sd" 'youdao-dictionary-search-at-point+)
 #+END_SRC
-
 *** terminal
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
@@ -822,7 +740,6 @@
 	"ti" '(iterm-goto-filedir-or-home :wk "iterm goto dir")
 	"tI" '(iterm-focus :wk "iterm focus"))
 #+END_SRC
-
 *** toggle
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
@@ -858,7 +775,6 @@
 					'(85 . 50) '(100 . 100)))))
 		   :wk "toggle-transparency"))
 #+END_SRC
-
 *** window
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
@@ -903,7 +819,6 @@
    "s" 'bufler-list-buffer-save
    "RET" 'bufler-list-buffer-switch)
 #+END_SRC
-
 *** bongo-playlist-mode
 #+BEGIN_SRC emacs-lisp
   (general-define-key
@@ -921,7 +836,6 @@
    "B" 'bongo-seek-backward-60
    "q" 'bongo-stop)
 #+END_SRC
-
 *** python-mode
 #+BEGIN_SRC emacs-lisp
   (general-define-key
@@ -933,7 +847,6 @@
    "lr" 'lsp-rename
    "ld" 'lsp-find-definition)
 #+END_SRC
-
 *** org-mode
 #+BEGIN_SRC emacs-lisp
   (general-define-key
