@@ -577,6 +577,10 @@
 	:non-normal-prefix "C-,")
 
   (general-define-key
+   :states '(normal visual)
+   "." 'avy-goto-char)
+
+  (general-define-key
    "<f5>" 'revert-buffer
    "M-x" 'helm-M-x
    "M-y" 'helm-show-kill-ring
@@ -651,13 +655,14 @@
 *** jump
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	"j" '(:wk "navigation")
+	"j" '(:wk "jump")
 
 	"jg" 'dumb-jump-go
 	"jb" 'dumb-jump-back
 	"jq" 'dumb-jump-quick-look
-	"jj" 'avy-goto-char
-	"jJ" 'avy-goto-char-2)
+	"jj" 'avy-goto-char-timer
+	"jw" 'avy-goto-word-1
+	"jl" 'avy-goto-line)
 #+END_SRC
 *** music
 #+BEGIN_SRC emacs-lisp
@@ -834,7 +839,7 @@
    "F" 'bongo-seek-forward-60
    "b" 'bongo-seek-backward-10
    "B" 'bongo-seek-backward-60
-   "q" '(lambda() (interactive) (switch-to-buffer (other-buffer (current-buffer) 1)))
+   "q" 'evil-switch-to-windows-last-buffer
    "Q" 'bongo-stop)
 #+END_SRC
 *** python-mode
