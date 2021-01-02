@@ -664,8 +664,8 @@
   (my-leader-def
 	;; music
 	"m" '(:wk "music")
-	"mm" '(hydra-bongo/body :wk "music")
-	"mM" '((lambda ()
+	"mM" '(hydra-bongo/body :wk "music")
+	"mm" '((lambda ()
 			 (interactive)
 			 (if (get-buffer "*Bongo Playlist*")
 				 (switch-to-buffer "*Bongo Playlist*")
@@ -834,7 +834,8 @@
    "F" 'bongo-seek-forward-60
    "b" 'bongo-seek-backward-10
    "B" 'bongo-seek-backward-60
-   "q" 'bongo-stop)
+   "q" '(lambda() (interactive) (switch-to-buffer (other-buffer (current-buffer) 1)))
+   "Q" 'bongo-stop)
 #+END_SRC
 *** python-mode
 #+BEGIN_SRC emacs-lisp
