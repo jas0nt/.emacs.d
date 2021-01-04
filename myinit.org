@@ -635,10 +635,9 @@
   (my-leader-def
 	"c" '(:wk "commenter")
 
-	"ci" 'evilnc-comment-or-uncomment-lines
-	"cc" 'evilnc-copy-and-comment-lines
-	"cp" 'evilnc-comment-or-uncomment-paragraphs
-	"cr" 'comment-or-uncomment-region)
+	"cc" 'evilnc-comment-or-uncomment-lines
+	"cp" 'evilnc-copy-and-comment-lines
+	"cb" 'evilnc-comment-or-uncomment-paragraphs)
 #+END_SRC
 *** file
 #+BEGIN_SRC emacs-lisp
