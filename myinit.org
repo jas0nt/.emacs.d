@@ -114,7 +114,14 @@
 #+END_SRC
 ** dired
 #+BEGIN_SRC emacs-lisp
+  (when (string= system-type "darwin")       
+	(require 'dired-x)
+	(setq dired-guess-shell-alist-user '(("\\.*\\'" "open")))
+	(setq dired-use-ls-dired nil))
+
   (setq dired-listing-switches "-alht")
+
+  (use-package dired-ranger :ensure t)
 #+END_SRC
 ** dumb-jump
 #+BEGIN_SRC emacs-lisp
@@ -760,9 +767,7 @@
 			   (vterm)))
 		   :wk "vterm")
 	"to" '(vterm-other-window :wk "vterm other window")
-	"tT" '(vterm :wk "vterm new")
-	"ti" '(iterm-goto-filedir-or-home :wk "iterm goto dir")
-	"tI" '(iterm-focus :wk "iterm focus"))
+	"tT" '(vterm :wk "vterm new"))
 #+END_SRC
 *** toggle
 #+BEGIN_SRC emacs-lisp
@@ -860,6 +865,16 @@
    "B" 'bongo-seek-backward-60
    "q" 'evil-switch-to-windows-last-buffer
    "Q" 'bongo-stop)
+#+END_SRC
+*** dired-mode
+#+BEGIN_SRC emacs-lisp
+  (general-define-key
+   :states 'normal
+   :keymaps 'dired-mode-map
+   "O" 'dired-do-shell-command
+   "Y" 'dired-ranger-copy
+   "p" 'dired-ranger-paste
+   "P" 'dired-ranger-move)
 #+END_SRC
 *** python-mode
 #+BEGIN_SRC emacs-lisp
