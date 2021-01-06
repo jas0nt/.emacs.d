@@ -45,8 +45,23 @@
   (use-package bongo
 	:ensure t
 	:config
+	(setq bongo-logo nil)
+	(setq bongo-display-track-icons nil)
+	(setq bongo-prefer-library-buffers nil)
+	(setq bongo-insert-whole-directory-trees t)
+
+	(defun init-goto-bongo ()
+	  (interactive)
+	  (let ((bongo-playlist-buffer-name "*Bongo Playlist*"))
+		(unless (get-buffer bongo-playlist-buffer-name)
+		  (bongo)
+		  (bongo-insert-file "~/Music/my_music")
+		  (goto-char (point-min))
+		  (bongo-random-playback-mode))
+		(switch-to-buffer bongo-playlist-buffer-name)))
+
 	(defhydra hydra-bongo ()
-	  ("m" (lambda () (interactive) (switch-to-buffer "*Bongo Playlist*")) "goto-bongo" :color blue)
+	  ("m" init-goto-bongo "goto-bongo" :color blue)
 	  ("s" bongo-pause/resume "play/pause")
 	  ("r" bongo-play-random "play random")
 	  ("n" bongo-play-next "play next")
@@ -696,20 +711,7 @@
 	;; music
 	"m" '(:wk "music")
 	"mM" '(hydra-bongo/body :wk "music")
-	"mm" '((lambda ()
-			 (interactive)
-			 (if (get-buffer "*Bongo Playlist*")
-				 (switch-to-buffer "*Bongo Playlist*")
-			   (let ((buffer (current-buffer))) 
-				 (bongo) 
-				 (setq bongo-insert-whole-directory-trees "ask") 
-				 (bongo-insert-file "~/Music/my_music") 
-				 (bongo-insert-enqueue-region (point-min) 
-											  (point-max)) 
-				 (bongo-random-playback-mode)
-				 (bongo-play-random) 
-				 (switch-to-buffer buffer))))
-		   :wk "goto music")
+	"mm" '(init-goto-bongo :wk "goto music")
 	"m <SPC>" 'bongo-pause/resume
 	"ms" 'bongo-pause/resume
 	"mr" 'bongo-play-random
