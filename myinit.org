@@ -366,19 +366,25 @@
 #+END_SRC
 ** python
 #+BEGIN_SRC emacs-lisp
-  (use-package python-mode :ensure t)
+  (use-package python-mode
+	:ensure t
+	:config
+	(setq python-shell-interpreter "python3"))
 
   (use-package pyvenv
 	:ensure t
 	:config
-	(pyvenv-mode 1)
-	(add-hook 'python-mode '(pyvenv-workon "p3")))
+	(pyvenv-mode 1))
 
   (use-package lsp-pyright
 	:ensure t
 	:hook (python-mode . (lambda ()
 						   (require 'lsp-pyright)
-						   (lsp))))  ; or lsp-deferred
+						   (lsp)))
+	:init
+	(when (executable-find "python3")
+	  (setq lsp-pyright-python-executable-cmd "python3")))
+
 #+END_SRC
 ** quickrun
 #+BEGIN_SRC emacs-lisp
