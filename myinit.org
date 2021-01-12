@@ -767,7 +767,11 @@
 	"ss" 'helm-swoop
 	"sS" 'helm-multi-swoop
 	"sg" 'google-this
-	"sd" 'youdao-dictionary-search-at-point+)
+	"sd" '(lambda () (interactive)
+			(if (display-graphic-p)
+				(youdao-dictionary-search-at-point-posframe)
+			  (youdao-dictionary-search-at-point+)))
+	"sp" 'helm-projectile-ag)
 #+END_SRC
 *** terminal
 #+BEGIN_SRC emacs-lisp
@@ -778,12 +782,13 @@
 	"tE" 'aweshell-new
 	"tt" '((lambda ()
 			 (interactive)
-			 (if (get-buffer "vterm")
-				 (switch-to-buffer "vterm")
-			   (vterm)))
-		   :wk "vterm")
+			 (let ((buf-name "*ansi-term*"))
+			   (if (get-buffer buf-name)
+				   (switch-to-buffer buf-name)
+				 (ansi-term))))
+		   :wk "terminal")
 	"to" '(vterm-other-window :wk "vterm other window")
-	"tT" '(vterm :wk "vterm new"))
+	"tT" '(ansi-term :wk "new terminal"))
 #+END_SRC
 *** toggle
 #+BEGIN_SRC emacs-lisp
