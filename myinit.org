@@ -3,6 +3,7 @@
 
 * Variables
 #+BEGIN_SRC emacs-lisp
+  (setq my-leader-key ";")
   (setq is-on-linux (eq system-type 'gnu/linux))
   (setq my-font (if is-on-linux
 					"Source Code Pro-9"
@@ -619,8 +620,8 @@
   (general-create-definer my-leader-def
 	:states '(normal insert visual emacs)
 	:keymaps 'override
-	:prefix ";"
-	:non-normal-prefix ";")
+	:prefix my-leader-key
+	:non-normal-prefix my-leader-key)
 
   (general-define-key
    :states '(normal visual)
@@ -902,7 +903,7 @@
 #+BEGIN_SRC emacs-lisp
   (general-define-key
    :states 'normal
-   :prefix "SPC"
+   :prefix my-leader-key
    :keymaps 'python-mode-map
    "l" '(:wk "python")
    "lf" 'lsp-format-buffer
@@ -913,7 +914,7 @@
 #+BEGIN_SRC emacs-lisp
   (general-define-key
    :states 'normal
-   :prefix "SPC"
+   :prefix my-leader-key
    :keymaps 'org-mode-map
    "l" '(:wk "org")
    "ll" 'org-babel-remove-result
