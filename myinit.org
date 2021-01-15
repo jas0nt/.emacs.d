@@ -3,7 +3,7 @@
 
 * Variables
 #+BEGIN_SRC emacs-lisp
-  (setq my-leader-key ";")
+  (defconst my-leader-key "<SPC>")
   (setq is-on-linux (eq system-type 'gnu/linux))
   (setq my-font (if is-on-linux
 					"Source Code Pro-9"
@@ -460,15 +460,14 @@
 #+BEGIN_SRC emacs-lisp
   (use-package vterm
 	:ensure t
-	:config
-	;; (setq vterm-shell my-shell)
-	(add-hook 'vterm-mode-hook
-			  (lambda () (setq-local global-hl-line-mode nil))))
-  (use-package exec-path-from-shell
-	:ensure t
-	:config
-	(when (memq window-system '(mac ns x))
-	  (exec-path-from-shell-initialize)))
+	:hook (
+		   (vterm-mode . (lambda () (setq-local global-hl-line-mode nil)))))
+
+	(use-package exec-path-from-shell
+	  :ensure t
+	  :config
+	  (when (memq window-system '(mac ns x))
+		(exec-path-from-shell-initialize)))
 #+END_SRC
 ** which-key
 #+BEGIN_SRC emacs-lisp
@@ -621,10 +620,11 @@
 	:states '(normal insert visual emacs)
 	:keymaps 'override
 	:prefix my-leader-key
-	:non-normal-prefix my-leader-key)
+	:non-normal-prefix "C-,")
 
   (general-define-key
    :states '(normal visual)
+   ";" 'helm-mini
    "." 'avy-goto-char-timer)
 
   (general-define-key
@@ -633,7 +633,7 @@
    "M-y" 'helm-show-kill-ring
    "M-RET" 'lsp-execute-code-action
 
-   "C-;" 'toggle-input-method 
+   "C-;" 'toggle-input-method
    "C-s" 'helm-swoop-without-pre-input
    "C-x C-b" 'helm-mini
    "C-x b" 'bufler-list
@@ -643,10 +643,6 @@
 *** a-key
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	";" '((lambda () (interactive)
-			(insert ";"))
-		  :wk "insert ;")
-	"r" 'helm-mini
 	"<SPC>" 'helm-M-x
 	"q" '((lambda ()
 			(interactive)
@@ -784,7 +780,7 @@
 	"tE" 'aweshell-new
 	"tt" '((lambda ()
 			 (interactive)
-			 (let ((buf-name "*vterm*"))
+			 (let ((buf-name "vterm"))
 			   (if (get-buffer buf-name)
 				   (switch-to-buffer buf-name)
 				 (vterm))))
