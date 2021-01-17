@@ -4,6 +4,8 @@
 * Variables
 #+BEGIN_SRC emacs-lisp
   (defconst my-leader-key "<SPC>")
+  (defconst my-note-file "~/mynote/note.org")
+
   (setq is-on-linux (eq system-type 'gnu/linux))
   (setq my-font (if is-on-linux
 					"Source Code Pro-9"
@@ -159,7 +161,9 @@
 	(setq evil-want-C-i-jump nil)
 	(setq evil-want-C-u-scroll t)
 	:config
-	(evil-mode 1))
+	(evil-mode 1)
+	(setq evil-insert-state-cursor '(hollow "yellow")
+		  evil-normal-state-cursor '(box "green")))
 
   (use-package evil-collection
 	:after (evil)
@@ -349,7 +353,9 @@
 	(org-babel-do-load-languages
 	 'org-babel-load-languages
 	 '((python . t)
-	   (R . t))))
+	   (R . t)
+	   (sql . t)
+	   )))
 #+END_SRC
 ** popwin
 #+BEGIN_SRC emacs-lisp
@@ -539,10 +545,10 @@
 * org-capture
 #+begin_src emacs-lisp
   (global-set-key (kbd "C-c c") 'org-capture)
-  (setq org-default-notes-file "~/org_note/inbox.org")
   (setq org-capture-templates
-		'(("n" "note" entry (file+headline "~/mynote/note.org" "Note") "** %^{title}\n%U\n\n%c")
-		  ("c" "code" entry (file+headline "~/mynote/note.org" "Note") "** %^{title}\n%U\n\n#+begin_src\n%c\n#+end_src")))
+		'(("n" "new" entry (file+headline my-note-file "Note") "** %^{title}\n%U\n")
+		  ("p" "paste" entry (file+headline my-note-file "Note") "** %^{title}\n%U\n\n%c")
+		  ("c" "code" entry (file+headline my-note-file "Note") "** %^{title}\n%U\n\n#+begin_src\n%c\n#+end_src")))
 #+end_src
 * UI
 #+BEGIN_SRC emacs-lisp
@@ -624,7 +630,6 @@
 
   (general-define-key
    :states '(normal visual)
-   ";" 'helm-mini
    "." 'avy-goto-char-timer)
 
   (general-define-key
@@ -633,7 +638,7 @@
    "M-y" 'helm-show-kill-ring
    "M-RET" 'lsp-execute-code-action
 
-   "C-;" 'toggle-input-method
+   "C-;" 'helm-mini
    "C-s" 'helm-swoop-without-pre-input
    "C-x C-b" 'helm-mini
    "C-x b" 'bufler-list
@@ -680,6 +685,8 @@
 
 	"fe" '((lambda () (interactive) (find-file "~/.emacs.d/myinit.org"))
 		   :wk "open config")
+	"fE" '((lambda () (interactive) (org-babel-load-file (expand-file-name "~/.emacs.d/myinit.org")))
+		   :wk "reload config")
 	"ff" 'helm-find-files
 	"fr" 'helm-recentf
 	"fR" 'revert-buffer
@@ -738,7 +745,9 @@
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
 	"n" '(:wk "note")
-	"nn" 'org-capture)
+	"nn" 'org-capture
+	"nf" '((lambda () (interactive) (find-file my-note-file))
+		   :wk "open note"))
 #+END_SRC
 *** project
 #+BEGIN_SRC emacs-lisp
@@ -769,7 +778,8 @@
 			(if (display-graphic-p)
 				(youdao-dictionary-search-at-point-posframe)
 			  (youdao-dictionary-search-at-point+)))
-	"sp" 'helm-projectile-ag)
+	"sp" 'helm-projectile-ag
+	"sl" 'browse-url)
 #+END_SRC
 *** terminal
 #+BEGIN_SRC emacs-lisp
