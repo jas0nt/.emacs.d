@@ -60,7 +60,8 @@
 		  (bongo)
 		  (bongo-insert-file "~/Music/my_music")
 		  (goto-char (point-min))
-		  (bongo-random-playback-mode))
+		  (bongo-random-playback-mode)
+		  (add-hook 'helm-swoop-after-goto-line-action-hook #'bongo-play nil t))
 		(switch-to-buffer bongo-playlist-buffer-name)))
 
 	(defhydra hydra-bongo ()
