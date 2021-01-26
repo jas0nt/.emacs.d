@@ -16,3 +16,6 @@
 [submodule "elisp/nano-emacs"]
 	path = elisp/nano-emacs
 	url = https://github.com/rougier/nano-emacs.git
+[submodule "elisp/snails"]
+	path = elisp/snails
+	url = https://github.com/manateelazycat/snails.git

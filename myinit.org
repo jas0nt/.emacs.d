@@ -12,10 +12,13 @@
 				  "Source Code Pro-14"))
 #+END_SRC
 * Packages
+#+begin_src emacs-lisp
+  (require 'use-package-ensure)
+  (setq use-package-always-ensure t)
+#+end_src
 ** ace-window
 #+BEGIN_SRC emacs-lisp
   (use-package ace-window
-	:ensure t
 	:init
 	(progn
 	  (global-set-key [remap other-window] 'ace-window)
@@ -26,7 +29,7 @@
 #+END_SRC
 ** all-the-icons
 #+BEGIN_SRC emacs-lisp
-  (use-package all-the-icons :ensure t)
+  (use-package all-the-icons)
 #+END_SRC
 ** aweshell
 #+BEGIN_SRC emacs-lisp
@@ -38,7 +41,6 @@
 ** beacon
 #+BEGIN_SRC emacs-lisp
   (use-package beacon
-	:ensure t
 	:config
 	(beacon-mode 1)
 	(setq beacon-color "#00FF00"))
@@ -46,7 +48,6 @@
 ** bongo
 #+BEGIN_SRC emacs-lisp
   (use-package bongo
-	:ensure t
 	:config
 	(setq bongo-logo nil)
 	(setq bongo-display-track-icons nil)
@@ -78,20 +79,19 @@
 #+END_SRC
 ** bufler
 #+BEGIN_SRC emacs-lisp
-  (use-package bufler :ensure t)
-  (use-package helm-bufler :ensure t)
+  (use-package bufler)
+  (use-package helm-bufler)
 #+END_SRC
 ** company
 #+BEGIN_SRC emacs-lisp
   (use-package company
-	:ensure t
 	:config
 	(setq company-idle-delay 0)
 	(setq company-minimum-prefix-length 2)
+	(setq company-show-numbers t)
 	(global-company-mode t))
 
   (use-package company-quickhelp
-	:ensure t
 	:config
 	(company-quickhelp-mode))
 #+END_SRC
@@ -103,14 +103,12 @@
 ** company-tabnine
 #+BEGIN_SRC emacs-lisp
   (use-package company-tabnine
-    :ensure t
     :config
     (add-to-list 'company-backends #'company-tabnine))
 #+END_SRC
 ** dashboard
 #+BEGIN_SRC emacs-lisp
   (use-package dashboard
-	:ensure t
 	:config
 	(dashboard-setup-startup-hook)
 	(setq dashboard-center-content t)
@@ -125,7 +123,6 @@
 ** dimmer
 #+BEGIN_SRC emacs-lisp
   (use-package dimmer
-	:ensure t
 	:config
 	(dimmer-configure-which-key)
 	(dimmer-configure-helm)
@@ -139,13 +136,10 @@
 	(setq dired-use-ls-dired nil))
 
   (setq dired-listing-switches "-alht")
-
-  (use-package dired-ranger :ensure t)
 #+END_SRC
 ** dumb-jump
 #+BEGIN_SRC emacs-lisp
   (use-package dumb-jump
-    :ensure t
     :config
     (progn
       (dumb-jump-mode)
@@ -154,7 +148,6 @@
 ** evil
 #+BEGIN_SRC emacs-lisp
   (use-package evil
-	:ensure t
 	:init
 	(setq evil-want-integration t) ;; This is optional since it's already set to t by default.
 	(setq evil-want-keybinding nil)
@@ -168,17 +161,15 @@
 
   (use-package evil-collection
 	:after (evil)
-	:ensure t
 	:init
 	(setq evil-collection-company-use-tng nil)
 	:config
 	(evil-collection-init))
 
-  (use-package evil-nerd-commenter :ensure t)
+  (use-package evil-nerd-commenter)
 
   (use-package evil-pinyin
 	:after (evil)
-	:ensure t
 	:init
 	(setq-default evil-pinyin-scheme 'simplified-xiaohe-all)
 	(setq-default evil-pinyin-with-search-rule 'always)
@@ -189,21 +180,20 @@
 ** expand-region
 #+BEGIN_SRC emacs-lisp
   (use-package expand-region
-    :ensure t
     :config
     (global-set-key (kbd "C-=") 'er/expand-region))
 #+END_SRC
 ** general
 #+BEGIN_SRC emacs-lisp
-  (use-package general :ensure t)
+  (use-package general)
 #+END_SRC
 ** google-this
 #+BEGIN_SRC emacs-lisp
-  (use-package google-this :ensure t)
+  (use-package google-this)
 #+END_SRC
 ** helm
 #+BEGIN_SRC emacs-lisp
-  (use-package helm :ensure t
+  (use-package helm
 	:config
 	(defvar helm-source-emacs-commands
 	  (helm-build-sync-source "M-x"
@@ -222,14 +212,13 @@
 	(helm-mode))
 
 
-  (use-package helm-ag :ensure t)
+  (use-package helm-ag)
 
-  (use-package helm-swoop :ensure t)
+  (use-package helm-swoop)
 #+END_SRC
 ** highlight-blocks
 #+BEGIN_SRC emacs-lisp
   (use-package highlight-blocks
-	:ensure t
 	:config
 	(setq highlight-blocks--rainbow-colors
 		  '("#000000" "#2F4F4F" "#006600" "#6272A4" "#44475A" "#BD93F9"))
@@ -249,16 +238,14 @@
 #+END_SRC
 ** highlight-thing
 #+BEGIN_SRC emacs-lisp
-  (use-package highlight-thing :ensure t)
+  (use-package highlight-thing)
 #+END_SRC
 ** hungry-delete & aggresive-indent
 #+BEGIN_SRC emacs-lisp
   (use-package hungry-delete
-    :ensure t
     :config
     (global-hungry-delete-mode))
   (use-package aggressive-indent
-    :ensure t
     :config
     (global-aggressive-indent-mode 1))
 #+END_SRC
@@ -310,12 +297,11 @@
 #+END_SRC
 ** ialign
 #+BEGIN_SRC emacs-lisp
-  (use-package ialign :ensure t)
+  (use-package ialign)
 #+END_SRC
 ** lsp
 #+BEGIN_SRC emacs-lisp
   (use-package lsp-mode
-	:ensure t
 	:hook (
 		   (prog-mode . lsp)
 		   (lsp-mode . lsp-enable-which-key-integration))
@@ -324,7 +310,6 @@
   ;; optionally
   (use-package lsp-ui
 	:after (lsp-mode)
-	:ensure t
 	:commands lsp-ui-mode)
 
   (use-package helm-lsp
@@ -333,10 +318,9 @@
 #+END_SRC
 ** magit
 #+BEGIN_SRC emacs-lisp
-  (use-package magit :ensure t)
+  (use-package magit)
 
   (use-package diff-hl
-	:ensure t
 	:config
 	(global-diff-hl-mode)
 	(defhydra hydra-diff-hl ()
@@ -350,7 +334,6 @@
 ** markdown
 #+BEGIN_SRC emacs-lisp
   (use-package markdown-mode
-	:ensure t
 	:commands (markdown-mode gfm-mode)
 	:mode (("README\\.md\\'" . gfm-mode)
 		   ("\\.md\\'" . markdown-mode)
@@ -359,12 +342,11 @@
 #+END_SRC
 ** neotree
 #+BEGIN_SRC emacs-lisp
-(use-package neotree :ensure t)
+(use-package neotree)
 #+END_SRC
 ** org
 #+BEGIN_SRC emacs-lisp
   (use-package org
-	:ensure t
 	:config
 	(setq org-startup-with-inline-images t)
 	(setq org-babel-python-command "python3")
@@ -378,37 +360,31 @@
 ** popwin
 #+BEGIN_SRC emacs-lisp
   (use-package popwin
-	:ensure t
 	:config
 	(popwin-mode t))
 #+END_SRC
 ** projectile
 #+BEGIN_SRC emacs-lisp
   (use-package projectile
-    :ensure t
     :config
     (projectile-global-mode)
     (setq projectile-completion-system 'helm))
 
   (use-package helm-projectile
-    :ensure t
     :config
     (helm-projectile-on))
 #+END_SRC
 ** python
 #+BEGIN_SRC emacs-lisp
   (use-package python-mode
-	:ensure t
 	:config
 	(setq python-shell-interpreter "python3"))
 
   (use-package pyvenv
-	:ensure t
 	:config
 	(pyvenv-mode 1))
 
   (use-package lsp-pyright
-	:ensure t
 	:hook (python-mode . (lambda ()
 						   (require 'lsp-pyright)
 						   (lsp)))
@@ -419,38 +395,34 @@
 #+END_SRC
 ** quickrun
 #+BEGIN_SRC emacs-lisp
-  (use-package quickrun :ensure t)
+  (use-package quickrun)
 #+END_SRC
 ** r-lang
 #+BEGIN_SRC emacs-lisp
-  (use-package ess :ensure t)
+  (use-package ess)
 #+END_SRC
 ** rainbow-delimiters
 #+BEGIN_SRC emacs-lisp
   (use-package rainbow-delimiters
-	:ensure t
 	:config
 	(rainbow-delimiters-mode)
 	(add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
 #+END_SRC
 ** restart-emacs
 #+BEGIN_SRC emacs-lisp
-  (use-package restart-emacs :ensure t)
+  (use-package restart-emacs)
 #+END_SRC
 ** restclient
 #+BEGIN_SRC emacs-lisp
   (use-package restclient
-    :ensure t
     :mode ("\\.http\\'" . restclient-mode))
   (use-package company-restclient
-    :ensure t
     :config
     (add-to-list 'company-backends 'company-restclient))
 #+END_SRC
 ** rime
 #+BEGIN_SRC emacs-lisp
   (use-package rime
-	:ensure t
 	:config
 	(unless is-on-linux
 	  (setq rime-librime-root "~/.emacs.d/librime/dist"))
@@ -466,29 +438,25 @@
 ** smartparens
 #+BEGIN_SRC emacs-lisp
   (use-package smartparens
-	:ensure t
 	:hook ('prog-mode . 'smartparens-mode))
 #+END_SRC
 ** try
 #+BEGIN_SRC emacs-lisp
-  (use-package try :ensure t)
+  (use-package try)
 #+END_SRC
 ** undo-tree
 #+BEGIN_SRC emacs-lisp
 (use-package undo-tree
-  :ensure t
   :init
   (global-undo-tree-mode))
 #+END_SRC
 ** vterm
 #+BEGIN_SRC emacs-lisp
   (use-package vterm
-	:ensure t
 	:hook (
 		   (vterm-mode . (lambda () (setq-local global-hl-line-mode nil)))))
 
 	(use-package exec-path-from-shell
-	  :ensure t
 	  :config
 	  (when (memq window-system '(mac ns x))
 		(exec-path-from-shell-initialize)))
@@ -496,7 +464,6 @@
 ** which-key
 #+BEGIN_SRC emacs-lisp
   (use-package which-key
-	:ensure t
 	:config
 	(which-key-mode)
 	(setq which-key-idle-delay 0.5)
@@ -505,17 +472,15 @@
 ** yasnippet
 #+BEGIN_SRC emacs-lisp
   (use-package yasnippet
-    :ensure t
     :config
     (yas-reload-all)
     (add-hook 'prog-mode-hook #'yas-minor-mode))
 
-  (use-package yasnippet-snippets
-    :ensure t)
+  (use-package yasnippet-snippets)
 #+END_SRC
 ** youdao-dictionary
 #+BEGIN_SRC emacs-lisp
-  (use-package youdao-dictionary :ensure t)
+  (use-package youdao-dictionary)
 #+END_SRC
 
 * Configs
@@ -572,13 +537,11 @@
 #+BEGIN_SRC emacs-lisp
   ;;theme
   (use-package dracula-theme
-	:ensure t
 	:config
 	(set-cursor-color "#00ff00")
 	(load-theme 'dracula))
 
   (use-package doom-modeline
-	:ensure t
 	:init (doom-modeline-mode 1)
 	:config
 	(setq doom-modeline-major-mode-icon nil)
