@@ -408,6 +408,12 @@
 	(rainbow-delimiters-mode)
 	(add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
 #+END_SRC
+** ranger
+#+BEGIN_SRC emacs-lisp
+  (use-package ranger
+	:init
+	(setq ranger-preview-file nil))
+#+END_SRC
 ** restart-emacs
 #+BEGIN_SRC emacs-lisp
   (use-package restart-emacs)
@@ -453,6 +459,8 @@
 ** vterm
 #+BEGIN_SRC emacs-lisp
   (use-package vterm
+	:config
+	(setq vterm-shell (shell-command-to-string "which fish"))
 	:hook (
 		   (vterm-mode . (lambda () (setq-local global-hl-line-mode nil)))))
 
@@ -671,6 +679,7 @@
 	"fr" 'helm-recentf
 	"fR" 'revert-buffer
 	"fd" 'dired
+	"fD" 'ranger
 	"fs" 'save-buffer
 	"fS" 'save-some-buffers
 	"ft" 'neotree-toggle
