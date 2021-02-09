@@ -10,6 +10,9 @@
   (setq my-font (if is-on-linux
 					"Source Code Pro-9"
 				  "Source Code Pro-14"))
+
+  (setq my-shell (replace-regexp-in-string "\n$" "" 
+										   (shell-command-to-string "which fish")))
 #+END_SRC
 * Packages
 #+begin_src emacs-lisp
@@ -31,6 +34,12 @@
 #+BEGIN_SRC emacs-lisp
   (use-package all-the-icons)
 #+END_SRC
+** ansi-term
+#+begin_src emacs-lisp
+  (add-hook 'term-mode-hook (lambda ()
+							  (setq-local global-hl-line-mode nil)
+							  (setq-local mode-line-format nil)))
+#+end_src
 ** aweshell
 #+BEGIN_SRC emacs-lisp
   (use-package aweshell
@@ -112,10 +121,10 @@
 	:config
 	(dashboard-setup-startup-hook)
 	(setq dashboard-center-content t)
-	;;(setq dashboard-startup-banner "~/.emacs.d/banners/dark_knight.png")
+	(setq dashboard-startup-banner "~/.emacs.d/banners/dark_knight.png")
 	(setq dashboard-set-heading-icons t)
 	(setq dashboard-set-file-icons t)
-	(setq dashboard-image-banner-max-height 200)
+	(setq dashboard-image-banner-max-height 300)
 	(setq dashboard-items '((recents  . 15)
 							(projects . 5)
 							(bookmarks . 5))))
@@ -460,7 +469,7 @@
 #+BEGIN_SRC emacs-lisp
   (use-package vterm
 	:config
-	(setq vterm-shell (shell-command-to-string "which fish"))
+	(setq vterm-shell my-shell)
 	:hook (
 		   (vterm-mode . (lambda () (setq-local global-hl-line-mode nil)))))
 
@@ -779,13 +788,15 @@
 	"tE" 'aweshell-new
 	"tt" '((lambda ()
 			 (interactive)
-			 (let ((buf-name "vterm"))
+			 (let ((buf-name "*ansi-term*"))
 			   (if (get-buffer buf-name)
 				   (switch-to-buffer buf-name)
-				 (vterm))))
+				 (ansi-term my-shell))))
 		   :wk "terminal")
 	"to" '(vterm-other-window :wk "vterm other window")
-	"tT" '(vterm :wk "new terminal"))
+	"tT" '((lambda ()
+			 (interactive)
+			 (ansi-term my-shell)) :wk "new terminal"))
 #+END_SRC
 *** toggle
 #+BEGIN_SRC emacs-lisp
