@@ -45,7 +45,10 @@
   (use-package aweshell
 	:load-path "~/.emacs.d/elisp/aweshell"
 	:config
-	(add-hook 'eshell-mode-hook (lambda () (setq-local company-tabnine-always-trigger nil))))
+	(add-hook 'eshell-mode-hook (lambda ()
+								  (setq-local company-tabnine-always-trigger nil)
+								  (setq-local global-hl-line-mode nil)
+								  (setq-local mode-line-format nil))))
 #+END_SRC
 ** beacon
 #+BEGIN_SRC emacs-lisp
@@ -214,10 +217,10 @@
 		:coerce #'intern-soft
 		:action #'command-execute)
 	  "A simple helm source for Emacs commands.")
-	(setq helm-mini-default-sources '(helm-source-buffers-list
-									  helm-source-recentf
-									  helm-source-emacs-commands
-									  helm-source-buffer-not-found))
+	;; (setq helm-mini-default-sources '(helm-source-buffers-list
+	;; 									helm-source-recentf
+	;; 									helm-source-emacs-commands
+	;; 									helm-source-buffer-not-found))
 	(helm-mode))
 
 
@@ -628,7 +631,9 @@
 
   (general-define-key
    :states '(normal visual)
-   "." 'avy-goto-char-timer)
+   "." 'avy-goto-char-timer
+   "," 'evil-switch-to-windows-last-buffer
+   ";" 'helm-mini)
 
   (general-define-key
    "<f5>" 'revert-buffer
@@ -636,7 +641,8 @@
    "M-y" 'helm-show-kill-ring
    "M-RET" 'lsp-execute-code-action
 
-   "C-;" 'helm-mini
+   "C-," 'repeat-find-char-reverse
+   "C-;" 'repeat-find-char
    "C-s" 'helm-swoop-without-pre-input
    "C-x b" 'bufler-list
    "C-x C-f" 'helm-find-files)
@@ -645,7 +651,7 @@
 *** a-key
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	"<SPC>" 'helm-mini
+	"<SPC>" 'helm-M-x
 	"q" '((lambda ()
 			(interactive)
 			(progn
@@ -661,9 +667,7 @@
   (my-leader-def
 	"b" '(:wk "buffer")
 
-	"<tab>" 'evil-switch-to-windows-last-buffer
 	"bb" 'bufler
-	"bx" 'kill-current-buffer
 	"bs" '(hydra-buffer/body :wk "switch buffer"))
 #+END_SRC
 *** commenter
