@@ -34,12 +34,6 @@
 #+BEGIN_SRC emacs-lisp
   (use-package all-the-icons)
 #+END_SRC
-** ansi-term
-#+begin_src emacs-lisp
-  (add-hook 'term-mode-hook (lambda ()
-							  (setq-local global-hl-line-mode nil)
-							  (setq-local mode-line-format nil)))
-#+end_src
 ** aweshell
 #+BEGIN_SRC emacs-lisp
   (use-package aweshell
@@ -458,6 +452,19 @@
   (use-package smartparens
 	:hook ('prog-mode . 'smartparens-mode))
 #+END_SRC
+** term
+#+begin_src emacs-lisp
+  (add-hook 'term-mode-hook (lambda ()
+							  (setq-local global-hl-line-mode nil)
+							  (setq-local mode-line-format nil)))
+
+  (defun my-term ()
+	(interactive)
+	(let ((buf-name "*ansi-term*"))
+	  (if (get-buffer buf-name)
+		  (switch-to-buffer buf-name)
+		(ansi-term my-shell))))
+#+end_src
 ** try
 #+BEGIN_SRC emacs-lisp
   (use-package try)
@@ -489,6 +496,13 @@
 	(setq which-key-idle-delay 0.5)
 	(which-key-mode))
 #+END_SRC
+** whitespace
+#+begin_src emacs-lisp
+  (use-package whitespace
+	:hook ((prog-mode markdown-mode conf-mode) . whitespace-mode)
+	:config
+	(setq whitespace-style '(face trailing)))
+#+end_src
 ** yasnippet
 #+BEGIN_SRC emacs-lisp
   (use-package yasnippet
@@ -659,6 +673,7 @@
 			  (when (> (length (window-list)) 1)
 				(delete-window))))
 		  :wk "kill-buffer")
+	"'" 'my-term
 	"]" 'dumb-jump-go
 	"[" 'dumb-jump-back)
 #+END_SRC
@@ -790,14 +805,7 @@
 	"t" '(:wk "terminal")
 	"te" 'aweshell-dedicated-toggle
 	"tE" 'aweshell-new
-	"tt" '((lambda ()
-			 (interactive)
-			 (let ((buf-name "*ansi-term*"))
-			   (if (get-buffer buf-name)
-				   (switch-to-buffer buf-name)
-				 (ansi-term my-shell))))
-		   :wk "terminal")
-	"to" '(vterm-other-window :wk "vterm other window")
+	"tt" 'my-term
 	"tT" '((lambda ()
 			 (interactive)
 			 (ansi-term my-shell)) :wk "new terminal"))
@@ -891,6 +899,7 @@
    "J" 'bongo-next-header-line
    "K" 'bongo-previous-header-line
    "r" 'bongo-play-random
+   "c" 'bongo-recenter
    "s" 'bongo-pause/resume
    "f" 'bongo-seek-forward-10
    "F" 'bongo-seek-forward-60
