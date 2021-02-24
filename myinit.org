@@ -136,7 +136,7 @@
 #+END_SRC
 ** dired
 #+BEGIN_SRC emacs-lisp
-  (when (string= system-type "darwin")       
+  (when (string= system-type "darwin")
 	(require 'dired-x)
 	(setq dired-guess-shell-alist-user '(("\\.*\\'" "open")))
 	(setq dired-use-ls-dired nil))
@@ -221,26 +221,6 @@
   (use-package helm-ag)
 
   (use-package helm-swoop)
-#+END_SRC
-** highlight-blocks
-#+BEGIN_SRC emacs-lisp
-  (use-package highlight-blocks
-	:config
-	(setq highlight-blocks--rainbow-colors
-		  '("#000000" "#2F4F4F" "#006600" "#6272A4" "#44475A" "#BD93F9"))
-
-	(setq highlight-blocks-max-face-count
-		  (length highlight-blocks--rainbow-colors))
-
-	(defun highlight-blocks--define-rainbow-colors (colors)
-	  (dotimes (i (length colors))
-		(face-spec-set
-		 (intern (format "highlight-blocks-depth-%d-face" (1+ i)))
-		 `((((class color) (background dark))  :background ,(nth i colors))
-		   (((class color) (background light)) :background ,(nth i colors)))
-		 'face-defface-spec)))
-
-	(highlight-blocks--define-rainbow-colors highlight-blocks--rainbow-colors))
 #+END_SRC
 ** highlight-thing
 #+BEGIN_SRC emacs-lisp
@@ -397,7 +377,6 @@
 	:init
 	(when (executable-find "python3")
 	  (setq lsp-pyright-python-executable-cmd "python3")))
-
 #+END_SRC
 ** quickrun
 #+BEGIN_SRC emacs-lisp
@@ -587,6 +566,11 @@
   (set-frame-parameter (selected-frame) 'alpha '(90 90))
   (add-to-list 'default-frame-alist '(alpha 90 90))
 
+  ;; display time
+  (display-time-mode 1)
+  (setq display-time-24hr-format t)
+  (setq display-time-day-and-date t)
+
   ;; (require 'nano)
   ;; (require 'nano-theme-dark)
 
@@ -683,7 +667,21 @@
 	"b" '(:wk "buffer")
 
 	"bb" 'bufler
-	"bs" '(hydra-buffer/body :wk "switch buffer"))
+	"bs" '(hydra-buffer/body :wk "switch buffer")
+	"bS" '((lambda ()
+			"create a new scratch buffer to work in. (could be *scratch* - *scratchX*)"
+			(interactive)
+			(let ((n 0)
+				  bufname)
+			  (while (progn
+					   (setq bufname (concat "*scratch"
+											 (if (= n 0) "" (int-to-string n))
+											 "*"))
+					   (setq n (1+ n))
+					   (get-buffer bufname)))
+			  (switch-to-buffer (get-buffer-create bufname))
+			  (if (= n 1) (lisp-interaction-mode))))
+		  :wk "new scratch"))
 #+END_SRC
 *** commenter
 #+BEGIN_SRC emacs-lisp
@@ -704,6 +702,10 @@
 	"fE" '((lambda () (interactive) (org-babel-load-file (expand-file-name "~/.emacs.d/myinit.org")))
 		   :wk "reload config")
 	"ff" 'helm-find-files
+	"fF" '((lambda ()
+			 (interactive)
+			 (shell-command "open -R ."))
+		   :wk "open in Finder")
 	"fr" 'helm-recentf
 	"fR" 'revert-buffer
 	"fd" 'dired
@@ -817,20 +819,12 @@
 
 	"Te" 'toggle-company-english-helper
 
-	"Th" '(:wk "toggle-highlight")
-	"Thh" '((lambda ()
-			  (interactive)
-			  (if highlight-thing-mode
-				  (highlight-thing-mode -1)
-				(highlight-thing-mode 1)))
-			:wk "toggle-highlight-thing")
-
-	"Thb" '((lambda ()
-			  (interactive)
-			  (if highlight-blocks-mode
-				  (highlight-blocks-mode -1)
-				(highlight-blocks-mode 1)))
-			:wk "toggle-highlight-blocks")
+	"Th" '((lambda ()
+			 (interactive)
+			 (if highlight-thing-mode
+				 (highlight-thing-mode -1)
+			   (highlight-thing-mode 1)))
+		   :wk "toggle-highlight-thing")
 
 	"Tt" '((lambda ()
 			 (interactive)
@@ -940,3 +934,11 @@
    "lr" 'org-ctrl-c-ctrl-c
    "lt" 'org-insert-structure-template)
 #+END_SRC
+*** term-mode
+#+begin_src emacs-lisp
+  (general-define-key
+   :states 'normal
+   :keymaps 'term-mode-map
+   "q" '(term-interrupt-subjob
+		 :wd "quit"))
+#+end_src
