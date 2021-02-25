@@ -11,7 +11,7 @@
 					"Source Code Pro-9"
 				  "Source Code Pro-14"))
 
-  (setq my-shell (replace-regexp-in-string "\n$" "" 
+  (setq my-shell (replace-regexp-in-string "\n$" ""
 										   (shell-command-to-string "which fish")))
 #+END_SRC
 * Packages
@@ -119,9 +119,9 @@
 	(dashboard-setup-startup-hook)
 	(setq dashboard-center-content t)
 	(setq dashboard-startup-banner "~/.emacs.d/banners/dark_knight.png")
+	(setq dashboard-image-banner-max-height 300)
 	(setq dashboard-set-heading-icons t)
 	(setq dashboard-set-file-icons t)
-	(setq dashboard-image-banner-max-height 300)
 	(setq dashboard-items '((recents  . 15)
 							(projects . 5)
 							(bookmarks . 5))))
@@ -436,13 +436,6 @@
   (add-hook 'term-mode-hook (lambda ()
 							  (setq-local global-hl-line-mode nil)
 							  (setq-local mode-line-format nil)))
-
-  (defun my-term ()
-	(interactive)
-	(let ((buf-name "*ansi-term*"))
-	  (if (get-buffer buf-name)
-		  (switch-to-buffer buf-name)
-		(ansi-term my-shell))))
 #+end_src
 ** try
 #+BEGIN_SRC emacs-lisp
@@ -657,7 +650,10 @@
 			  (when (> (length (window-list)) 1)
 				(delete-window))))
 		  :wk "kill-buffer")
-	"'" 'my-term
+	"'" '((lambda ()
+			(interactive)
+			(term my-shell))
+		  :wk "term")
 	"]" 'dumb-jump-go
 	"[" 'dumb-jump-back)
 #+END_SRC
@@ -774,7 +770,9 @@
 	"p" '(:wk "project")
 
 	"pp" 'projectile-command-map
-	"pt" 'projectile-run-vterm
+	"pt" '((lambda () (interactive)
+			 (projectile-run-term my-term))
+		   :wk "project term")
 	"ps" 'helm-multi-swoop-projectile)
 #+END_SRC
 *** quit
@@ -807,10 +805,18 @@
 	"t" '(:wk "terminal")
 	"te" 'aweshell-dedicated-toggle
 	"tE" 'aweshell-new
-	"tt" 'my-term
-	"tT" '((lambda ()
+	"tt" '((lambda ()
 			 (interactive)
-			 (ansi-term my-shell)) :wk "new terminal"))
+			 (ansi-term my-shell)) :wk "new terminal")
+	"to" '((lambda ()
+			 (interactive)
+			 (let ((buffer-name (format "*term %s*" default-directory)))
+			   (unless (get-buffer buffer-name)
+				 (set-buffer (term-ansi-make-term buffer-name my-shell))
+				 (term-mode)
+				 (term-char-mode))
+			   (pop-to-buffer buffer-name)))
+		   :wk "term other window"))
 #+END_SRC
 *** toggle
 #+BEGIN_SRC emacs-lisp
@@ -911,6 +917,20 @@
    "Y" 'dired-ranger-copy
    "p" 'dired-ranger-paste
    "P" 'dired-ranger-move)
+#+END_SRC
+*** markdown-mode
+#+BEGIN_SRC emacs-lisp
+  (general-define-key
+   :states 'normal
+   :prefix my-leader-key
+   :keymaps 'markdown-mode-map
+   "l" '(:wk "md")
+   "lr" '((lambda ()
+			(interactive)
+			(shell-command
+			 (format "open %s"
+					 (shell-quote-argument (buffer-file-name)))))
+		  :wk "preview"))
 #+END_SRC
 *** python-mode
 #+BEGIN_SRC emacs-lisp
