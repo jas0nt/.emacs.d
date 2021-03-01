@@ -11,11 +11,29 @@
 					"Source Code Pro-9"
 				  "Source Code Pro-14"))
 
-  (setq my-shell (replace-regexp-in-string "\n$" ""
-										   (shell-command-to-string "which fish")))
+  (setq my-shell (if is-on-linux
+					 "/usr/bin/fish"
+				   "/usr/local/bin/fish"))
 #+END_SRC
 * Packages
 #+begin_src emacs-lisp
+  (require 'package)
+  (setq package-archives '(("gnu"   . "http://elpa.emacs-china.org/gnu/")
+						   ("melpa" . "http://elpa.emacs-china.org/melpa/")))
+  (package-initialize)
+  ;; install use-package
+  (unless (package-installed-p 'use-package)
+	(package-refresh-contents)
+	(package-install 'use-package))
+
+  ;; load path
+  (defun add-subdirs-to-load-path (dir)
+	"Recursive add directories to `load-path'."
+	(let ((default-directory (file-name-as-directory dir)))
+	  (add-to-list 'load-path dir)
+	  (normal-top-level-add-subdirs-to-load-path)))
+  (add-subdirs-to-load-path "~/.emacs.d/elisp/")
+
   (require 'use-package-ensure)
   (setq use-package-always-ensure t)
 #+end_src
@@ -197,6 +215,10 @@
 #+BEGIN_SRC emacs-lisp
   (use-package google-this)
 #+END_SRC
+** grip-mode
+#+begin_src emacs-lisp
+  (use-package grip-mode)
+#+end_src
 ** helm
 #+BEGIN_SRC emacs-lisp
   (use-package helm
@@ -319,6 +341,7 @@
 #+END_SRC
 ** markdown
 #+BEGIN_SRC emacs-lisp
+  (use-package markdown-preview-eww)
   (use-package markdown-mode
 	:commands (markdown-mode gfm-mode)
 	:mode (("README\\.md\\'" . gfm-mode)
@@ -925,12 +948,14 @@
    :prefix my-leader-key
    :keymaps 'markdown-mode-map
    "l" '(:wk "md")
+   "lp" 'markdown-live-preview-mode
+   "lP" '(grip-mode :wk "preview")
    "lr" '((lambda ()
 			(interactive)
 			(shell-command
 			 (format "open %s"
 					 (shell-quote-argument (buffer-file-name)))))
-		  :wk "preview"))
+		  :wk "open"))
 #+END_SRC
 *** python-mode
 #+BEGIN_SRC emacs-lisp
@@ -950,6 +975,7 @@
    :prefix my-leader-key
    :keymaps 'org-mode-map
    "l" '(:wk "org")
+   "lp" '(grip-mode :wk "preview")
    "ll" 'org-babel-remove-result
    "lr" 'org-ctrl-c-ctrl-c
    "lt" 'org-insert-structure-template)
