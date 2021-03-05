@@ -645,9 +645,10 @@
 
   (general-define-key
    :states '(normal visual)
-   "." 'avy-goto-char-timer
-   "," 'evil-switch-to-windows-last-buffer
-   ";" 'helm-mini)
+   "g." 'evil-avy-goto-char-timer
+   "go" 'helm-mini
+   "gl" 'evil-avy-goto-line
+   "gb" 'evil-switch-to-windows-last-buffer)
 
   (general-define-key
    "<f5>" 'revert-buffer
@@ -655,8 +656,6 @@
    "M-y" 'helm-show-kill-ring
    "M-RET" 'lsp-execute-code-action
 
-   "C-," 'repeat-find-char-reverse
-   "C-;" 'repeat-find-char
    "C-s" 'helm-swoop-without-pre-input
    "C-x b" 'bufler-list
    "C-x C-f" 'helm-find-files)
