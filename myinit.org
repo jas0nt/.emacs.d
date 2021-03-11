@@ -19,7 +19,8 @@
 #+begin_src emacs-lisp
   (require 'package)
   (setq package-archives '(("gnu"   . "http://elpa.emacs-china.org/gnu/")
-						   ("melpa" . "http://elpa.emacs-china.org/melpa/")))
+						   ("melpa" . "http://elpa.emacs-china.org/melpa/")
+						   ("melpa-stable" . "https://stable.melpa.org/packages/")))
   (package-initialize)
   ;; install use-package
   (unless (package-installed-p 'use-package)
@@ -645,10 +646,13 @@
 
   (general-define-key
    :states '(normal visual)
-   "g." 'evil-avy-goto-char-timer
-   "go" 'helm-mini
    "gl" 'evil-avy-goto-line
-   "gb" 'evil-switch-to-windows-last-buffer)
+   ";" 'helm-mini
+   "," 'evil-switch-to-windows-last-buffer
+   "." 'evil-avy-goto-char-timer
+   "g;" 'repeat-find-char
+   "g," 'repeat-find-char-reverse
+   "g." 'evil-repeat)
 
   (general-define-key
    "<f5>" 'revert-buffer
