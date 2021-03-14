@@ -53,16 +53,6 @@
 #+BEGIN_SRC emacs-lisp
   (use-package all-the-icons)
 #+END_SRC
-** aweshell
-#+BEGIN_SRC emacs-lisp
-  (use-package aweshell
-	:load-path "~/.emacs.d/elisp/aweshell"
-	:config
-	(add-hook 'eshell-mode-hook (lambda ()
-								  (setq-local company-tabnine-always-trigger nil)
-								  (setq-local global-hl-line-mode nil)
-								  (setq-local mode-line-format nil))))
-#+END_SRC
 ** beacon
 #+BEGIN_SRC emacs-lisp
   (use-package beacon
@@ -86,8 +76,8 @@
 		  (bongo)
 		  (bongo-insert-file "~/Music/my_music")
 		  (goto-char (point-min))
-		  (bongo-random-playback-mode)
-		  (add-hook 'helm-swoop-after-goto-line-action-hook #'bongo-play nil t))
+		  (bongo-random-playback-mode))
+		  ;; (add-hook 'helm-swoop-after-goto-line-action-hook #'bongo-play nil t))
 		(switch-to-buffer bongo-playlist-buffer-name)))
 
 	(defhydra hydra-bongo ()
@@ -131,28 +121,6 @@
     :config
     (add-to-list 'company-backends #'company-tabnine))
 #+END_SRC
-** dashboard
-#+BEGIN_SRC emacs-lisp
-  (use-package dashboard
-	:config
-	(dashboard-setup-startup-hook)
-	(setq dashboard-center-content t)
-	(setq dashboard-startup-banner "~/.emacs.d/banners/dark_knight.png")
-	(setq dashboard-image-banner-max-height 300)
-	(setq dashboard-set-heading-icons t)
-	(setq dashboard-set-file-icons t)
-	(setq dashboard-items '((recents  . 15)
-							(projects . 5)
-							(bookmarks . 5))))
-#+END_SRC
-** dimmer
-#+BEGIN_SRC emacs-lisp
-  (use-package dimmer
-	:config
-	(dimmer-configure-which-key)
-	(dimmer-configure-helm)
-	(dimmer-mode t))
-#+END_SRC
 ** dired
 #+BEGIN_SRC emacs-lisp
   (when (string= system-type "darwin")
@@ -161,14 +129,6 @@
 	(setq dired-use-ls-dired nil))
 
   (setq dired-listing-switches "-alht")
-#+END_SRC
-** dumb-jump
-#+BEGIN_SRC emacs-lisp
-  (use-package dumb-jump
-    :config
-    (progn
-      (dumb-jump-mode)
-      (setq dumb-jump-selector 'helm)))
 #+END_SRC
 ** evil
 #+BEGIN_SRC emacs-lisp
@@ -244,10 +204,6 @@
   (use-package helm-ag)
 
   (use-package helm-swoop)
-#+END_SRC
-** highlight-thing
-#+BEGIN_SRC emacs-lisp
-  (use-package highlight-thing)
 #+END_SRC
 ** hungry-delete & aggresive-indent
 #+BEGIN_SRC emacs-lisp
@@ -350,10 +306,6 @@
 		   ("\\.markdown\\'" . markdown-mode))
 	:init (setq markdown-command "multimarkdown"))
 #+END_SRC
-** neotree
-#+BEGIN_SRC emacs-lisp
-(use-package neotree)
-#+END_SRC
 ** org
 #+BEGIN_SRC emacs-lisp
   (use-package org
@@ -406,10 +358,6 @@
 #+BEGIN_SRC emacs-lisp
   (use-package quickrun)
 #+END_SRC
-** r-lang
-#+BEGIN_SRC emacs-lisp
-  (use-package ess)
-#+END_SRC
 ** rainbow-delimiters
 #+BEGIN_SRC emacs-lisp
   (use-package rainbow-delimiters
@@ -450,11 +398,6 @@
 	(setq default-input-method "rime"
 		  rime-show-candidate 'minibuffer))
 #+END_SRC
-** smartparens
-#+BEGIN_SRC emacs-lisp
-  (use-package smartparens
-	:hook ('prog-mode . 'smartparens-mode))
-#+END_SRC
 ** term
 #+begin_src emacs-lisp
   (add-hook 'term-mode-hook (lambda ()
@@ -492,13 +435,6 @@
 	(setq which-key-idle-delay 0.5)
 	(which-key-mode))
 #+END_SRC
-** whitespace
-#+begin_src emacs-lisp
-  (use-package whitespace
-	:hook ((prog-mode markdown-mode conf-mode) . whitespace-mode)
-	:config
-	(setq whitespace-style '(face trailing)))
-#+end_src
 ** yasnippet
 #+BEGIN_SRC emacs-lisp
   (use-package yasnippet
@@ -678,10 +614,11 @@
 		  :wk "kill-buffer")
 	"'" '((lambda ()
 			(interactive)
-			(term my-shell))
-		  :wk "term")
-	"]" 'dumb-jump-go
-	"[" 'dumb-jump-back)
+			(let ((buf-name "vterm"))
+			  (if (get-buffer buf-name)
+				  (switch-to-buffer buf-name)
+				(vterm))))
+		  :wk "term"))
 #+END_SRC
 *** buffer
 #+BEGIN_SRC emacs-lisp
@@ -734,7 +671,6 @@
 	"fD" 'ranger
 	"fs" 'save-buffer
 	"fS" 'save-some-buffers
-	"ft" 'neotree-toggle
 	"fp" '(lambda () (interactive) (when (file-exists-p (current-kill 0))
 								(find-file (current-kill 0)))))
 #+END_SRC
@@ -751,17 +687,14 @@
   (my-leader-def
 	"j" '(:wk "jump")
 
-	"jg" 'dumb-jump-go
-	"jb" 'dumb-jump-back
-	"jq" 'dumb-jump-quick-look
 	"jj" 'avy-goto-char-timer
 	"jw" 'avy-goto-word-1
 	"jl" 'avy-goto-line)
 #+END_SRC
-*** language
+*** lang
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	"l" '(:wk "language")
+	"l" '(:wk "lang")
 
 	"lR" 'quickrun)
 #+END_SRC
@@ -796,8 +729,7 @@
 	"p" '(:wk "project")
 
 	"pp" 'projectile-command-map
-	"pt" '((lambda () (interactive)
-			 (projectile-run-term my-term))
+	"pt" '(projectile-run-vterm
 		   :wk "project term")
 	"ps" 'helm-multi-swoop-projectile)
 #+END_SRC
@@ -829,19 +761,8 @@
   (my-leader-def
 	;; terminal
 	"t" '(:wk "terminal")
-	"te" 'aweshell-dedicated-toggle
-	"tE" 'aweshell-new
-	"tt" '((lambda ()
-			 (interactive)
-			 (ansi-term my-shell)) :wk "new terminal")
-	"to" '((lambda ()
-			 (interactive)
-			 (let ((buffer-name (format "*term %s*" default-directory)))
-			   (unless (get-buffer buffer-name)
-				 (set-buffer (term-ansi-make-term buffer-name my-shell))
-				 (term-mode)
-				 (term-char-mode))
-			   (pop-to-buffer buffer-name)))
+	"tt" '(vterm :wk "new terminal")
+	"to" '(vterm-other-window
 		   :wk "term other window"))
 #+END_SRC
 *** toggle
