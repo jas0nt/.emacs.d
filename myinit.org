@@ -68,6 +68,7 @@
 	(setq bongo-display-track-icons nil)
 	(setq bongo-prefer-library-buffers nil)
 	(setq bongo-insert-whole-directory-trees t)
+	(setq bongo-enabled-backends '(vlc))
 
 	(defun init-goto-bongo ()
 	  (interactive)
@@ -77,7 +78,6 @@
 		  (bongo-insert-file "~/Music/my_music")
 		  (goto-char (point-min))
 		  (bongo-random-playback-mode))
-		  ;; (add-hook 'helm-swoop-after-goto-line-action-hook #'bongo-play nil t))
 		(switch-to-buffer bongo-playlist-buffer-name)))
 
 	(defhydra hydra-bongo ()
@@ -417,6 +417,8 @@
 ** vterm
 #+BEGIN_SRC emacs-lisp
   (use-package vterm
+	:init
+	(setq vterm-always-compile-module t)
 	:config
 	(setq vterm-shell my-shell)
 	:hook (
