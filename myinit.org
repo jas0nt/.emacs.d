@@ -763,7 +763,9 @@
   (my-leader-def
 	;; terminal
 	"t" '(:wk "terminal")
-	"tt" '(vterm :wk "new terminal")
+	"tt" '((lambda ()
+			 (interactive) (vterm t))
+		   :wk "new terminal")
 	"to" '(vterm-other-window
 		   :wk "term other window"))
 #+END_SRC
