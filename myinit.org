@@ -38,6 +38,12 @@
   (require 'use-package-ensure)
   (setq use-package-always-ensure t)
 #+end_src
+** ace-pinyin
+#+BEGIN_SRC emacs-lisp
+  (use-package ace-pinyin
+	:config
+	(ace-pinyin-global-mode +1))
+#+END_SRC
 ** ace-window
 #+BEGIN_SRC emacs-lisp
   (use-package ace-window
@@ -161,6 +167,10 @@
 	:config
 	(evil-select-search-module 'evil-search-module 'evil-search)
 	(global-evil-pinyin-mode))
+
+  (use-package evil-exchange
+	:config
+	(evil-exchange-install))
 #+END_SRC
 ** expand-region
 #+BEGIN_SRC emacs-lisp
@@ -689,7 +699,9 @@
   (my-leader-def
 	"j" '(:wk "jump")
 
-	"jj" 'avy-goto-char-timer
+	"jj" 'avy-goto-char-2
+	"jJ" 'avy-goto-char
+	"jt" 'avy-goto-char-timer
 	"jw" 'avy-goto-word-1
 	"jl" 'avy-goto-line)
 #+END_SRC
