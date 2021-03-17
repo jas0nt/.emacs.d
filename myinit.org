@@ -72,8 +72,16 @@
 	:config
 	(setq bongo-logo nil)
 	(setq bongo-display-track-icons nil)
+	(setq bongo-display-track-lengths nil)
+	(setq bongo-display-header-icons nil)
+	(setq bongo-display-playback-mode-indicator t)
+	(setq bongo-header-line-mode nil)
+	(setq bongo-mode-line-indicator-mode nil)
+	(setq bongo-field-separator (propertize " · " 'face 'shadow))
+
 	(setq bongo-prefer-library-buffers nil)
 	(setq bongo-insert-whole-directory-trees t)
+	(setq bongo-join-inserted-tracks nil)
 	(setq bongo-enabled-backends '(vlc))
 
 	(defun init-goto-bongo ()
@@ -81,7 +89,7 @@
 	  (let ((bongo-playlist-buffer-name "*Bongo Playlist*"))
 		(unless (get-buffer bongo-playlist-buffer-name)
 		  (bongo)
-		  (bongo-insert-file "~/Music/my_music")
+		  (bongo-insert-directory-tree "~/Music/my_music")
 		  (goto-char (point-min))
 		  (bongo-random-playback-mode))
 		(switch-to-buffer bongo-playlist-buffer-name)))
@@ -868,7 +876,7 @@
    "F" 'bongo-seek-forward-60
    "b" 'bongo-seek-backward-10
    "B" 'bongo-seek-backward-60
-   "q" 'evil-switch-to-windows-last-buffer
+   "q" 'bongo-quit
    "Q" 'bongo-stop)
 #+END_SRC
 *** dired-mode
