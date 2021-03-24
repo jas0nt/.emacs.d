@@ -1,6 +1,33 @@
 #+STARTUP: overview 
 #+PROPERTY: header-args :comments yes :results silent
 
+* Init
+#+begin_src emacs-lisp
+  (setq gc-cons-threshold 100000000)
+
+  (defvar better-gc-cons-threshold 134217728 ; 128mb
+	"The default value to use for `gc-cons-threshold'.
+
+  If you experience freezing, decrease this.  If you experience stuttering, increase this.")
+
+  (add-hook 'emacs-startup-hook
+			(lambda ()
+			  (if (boundp 'after-focus-change-function)
+				  (add-function :after after-focus-change-function
+								(lambda ()
+								  (unless (frame-focus-state)
+									(garbage-collect))))
+				(add-hook 'after-focus-change-function 'garbage-collect))
+			  (defun gc-minibuffer-setup-hook ()
+				(setq gc-cons-threshold (* better-gc-cons-threshold 2)))
+
+			  (defun gc-minibuffer-exit-hook ()
+				(garbage-collect)
+				(setq gc-cons-threshold better-gc-cons-threshold))
+
+			  (add-hook 'minibuffer-setup-hook #'gc-minibuffer-setup-hook)
+			  (add-hook 'minibuffer-exit-hook #'gc-minibuffer-exit-hook)))
+#+end_src
 * Variables
 #+BEGIN_SRC emacs-lisp
   (defconst my-leader-key "<SPC>")
@@ -144,6 +171,11 @@
 
   (setq dired-listing-switches "-alht")
 #+END_SRC
+** discover-my-major
+#+begin_src emacs-lisp
+  (use-package discover-my-major
+	:bind ("C-h C-m" . discover-my-major))
+#+end_src
 ** evil
 #+BEGIN_SRC emacs-lisp
   (use-package evil
@@ -543,6 +575,9 @@
   (display-time-mode 1)
   (setq display-time-24hr-format t)
   (setq display-time-day-and-date t)
+
+  ;; display battery
+  (display-battery-mode 1)
 
   ;; (require 'nano)
   ;; (require 'nano-theme-dark)
