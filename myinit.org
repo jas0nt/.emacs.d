@@ -150,14 +150,10 @@
   (use-package company-quickhelp
 	:config
 	(company-quickhelp-mode))
-#+END_SRC
-** company-english-helper
-#+BEGIN_SRC emacs-lisp
+
   (use-package company-english-helper
 	:load-path "~/.emacs.d/elisp/company-english-helper")
-#+END_SRC
-** company-tabnine
-#+BEGIN_SRC emacs-lisp
+
   (use-package company-tabnine
     :config
     (add-to-list 'company-backends #'company-tabnine))
@@ -218,6 +214,12 @@
     :config
     (global-set-key (kbd "C-=") 'er/expand-region))
 #+END_SRC
+** find-file-in-project
+#+begin_src emacs-lisp
+ (use-package find-file-in-project
+   :config
+   (helm-mode 1))
+#+end_src
 ** general
 #+BEGIN_SRC emacs-lisp
   (use-package general)
@@ -226,10 +228,6 @@
 #+BEGIN_SRC emacs-lisp
   (use-package google-this)
 #+END_SRC
-** grip-mode
-#+begin_src emacs-lisp
-  (use-package grip-mode)
-#+end_src
 ** helm
 #+BEGIN_SRC emacs-lisp
   (use-package helm
@@ -252,7 +250,6 @@
 
 
   (use-package helm-ag)
-
   (use-package helm-swoop)
 #+END_SRC
 ** hungry-delete & aggresive-indent
@@ -508,7 +505,7 @@
   (load-file custom-file)
 
   ;;ido mode
-  (setq indo-enable-flex-matching t)
+  ;;(setq indo-enable-flex-matching t)
   ;;(setq ido-everywhere t)
   ;;(ido-mode t)
 
@@ -647,13 +644,9 @@
 
   (general-define-key
    "<f5>" 'revert-buffer
-   "M-x" 'helm-M-x
-   "M-y" 'helm-show-kill-ring
-   "M-RET" 'lsp-execute-code-action
-
    "C-s" 'helm-swoop-without-pre-input
-   "C-x b" 'bufler-list
-   "C-x C-f" 'helm-find-files)
+   "M-y" 'helm-show-kill-ring
+   "M-RET" 'lsp-execute-code-action)
 #+END_SRC
 ** leader-keys
 *** a-key
@@ -802,9 +795,10 @@
   (my-leader-def
 	"s" '(:wk "search")
 
-	"sa" 'helm-ag
+	"sr" 'helm-ag
+	"sf" 'find-file-in-project
 	"ss" 'helm-swoop
-	"sS" 'helm-multi-swoop
+	"sS" 'helm-multi-swoop-all
 	"sg" 'google-this
 	"sd" '(lambda () (interactive)
 			(if (display-graphic-p)
@@ -932,7 +926,6 @@
    :keymaps 'markdown-mode-map
    "l" '(:wk "md")
    "lp" 'markdown-live-preview-mode
-   "lP" '(grip-mode :wk "preview")
    "lr" '((lambda ()
 			(interactive)
 			(shell-command
