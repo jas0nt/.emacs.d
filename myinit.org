@@ -108,7 +108,7 @@
 
 	(setq bongo-prefer-library-buffers nil)
 	(setq bongo-insert-whole-directory-trees t)
-	(setq bongo-join-inserted-tracks nil)
+	;;(setq bongo-join-inserted-tracks nil)
 	(setq bongo-enabled-backends '(vlc))
 
 	(defun init-goto-bongo ()
@@ -299,6 +299,8 @@
 	:hook (
 		   (prog-mode . lsp)
 		   (lsp-mode . lsp-enable-which-key-integration))
+	:config
+	(setq lsp-enable-file-watchers nil)
 	:commands lsp)
 
   ;; optionally
