@@ -245,49 +245,7 @@
 #+END_SRC
 ** hydra
 #+BEGIN_SRC emacs-lisp
-  (use-package hydra
-	:ensure hydra
-	:init
-	(global-set-key
-	 (kbd "C-x w")
-	 (defhydra hydra-window ()
-	   "window"
-	   ("h" windmove-left)
-	   ("j" windmove-down)
-	   ("k" windmove-up)
-	   ("l" windmove-right)
-	   ("H" windmove-swap-states-left)
-	   ("J" windmove-swap-states-down)
-	   ("K" windmove-swap-states-up)
-	   ("L" windmove-swap-states-right)
-	   ("C-h" evil-window-move-far-left)
-	   ("C-j" evil-window-move-very-bottom)
-	   ("C-k" evil-window-move-very-top)
-	   ("C-l" evil-window-move-far-right)
-	   ("/" (lambda ()
-			  (interactive)
-			  (split-window-right)
-			  (windmove-right))
-		"v-split")
-	   ("?" (lambda ()
-			  (interactive)
-			  (split-window-below)
-			  (windmove-down))
-		"h-split")
-	   ("g" ace-window "goto")
-	   ("s" ace-swap-window "swap")
-	   ("d" ace-delete-window "del")
-	   ("m" delete-other-windows "maximize" :color blue)
-	   ("q" nil "cancel")
-	   ))
-
-	(defhydra hydra-buffer ()
-	  "buffer"
-	  ("j" switch-to-next-buffer)
-	  ("k" switch-to-prev-buffer)
-	  ("q" nil "cancel"))
-
-	)
+  (use-package hydra :ensure hydra)
 #+END_SRC
 ** ialign
 #+BEGIN_SRC emacs-lisp
@@ -385,22 +343,12 @@
 	(when (executable-find "python3")
 	  (setq lsp-pyright-python-executable-cmd "python3")))
 #+END_SRC
-** quickrun
-#+BEGIN_SRC emacs-lisp
-  (use-package quickrun)
-#+END_SRC
 ** rainbow-delimiters
 #+BEGIN_SRC emacs-lisp
   (use-package rainbow-delimiters
 	:config
 	(rainbow-delimiters-mode)
 	(add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
-#+END_SRC
-** ranger
-#+BEGIN_SRC emacs-lisp
-  (use-package ranger
-	:init
-	(setq ranger-preview-file nil))
 #+END_SRC
 ** restart-emacs
 #+BEGIN_SRC emacs-lisp
@@ -701,7 +649,6 @@
 	"fr" 'helm-recentf
 	"fR" 'revert-buffer
 	"fd" 'dired
-	"fD" 'ranger
 	"fs" 'save-buffer
 	"fS" 'save-some-buffers
 	"fp" '(lambda () (interactive) (when (file-exists-p (current-kill 0))
@@ -725,13 +672,6 @@
 	"jt" 'avy-goto-char-timer
 	"jw" 'avy-goto-word-1
 	"jl" 'avy-goto-line)
-#+END_SRC
-*** lang
-#+BEGIN_SRC emacs-lisp
-  (my-leader-def
-	"l" '(:wk "lang")
-
-	"lR" 'quickrun)
 #+END_SRC
 *** music
 #+BEGIN_SRC emacs-lisp
@@ -780,8 +720,10 @@
   (my-leader-def
 	"s" '(:wk "search")
 
+	"si" 'helm-imenu
 	"sr" 'helm-ag
 	"sf" 'find-file-in-project
+	"sL" 'helm-locate
 	"ss" 'helm-swoop
 	"sS" 'helm-multi-swoop-all
 	"sg" 'google-this
@@ -832,6 +774,36 @@
 #+END_SRC
 *** window
 #+BEGIN_SRC emacs-lisp
+  (defhydra hydra-window ()
+	"window"
+	("h" windmove-left)
+	("j" windmove-down)
+	("k" windmove-up)
+	("l" windmove-right)
+	("H" windmove-swap-states-left)
+	("J" windmove-swap-states-down)
+	("K" windmove-swap-states-up)
+	("L" windmove-swap-states-right)
+	("C-h" evil-window-move-far-left)
+	("C-j" evil-window-move-very-bottom)
+	("C-k" evil-window-move-very-top)
+	("C-l" evil-window-move-far-right)
+	("/" (lambda ()
+		   (interactive)
+		   (split-window-right)
+		   (windmove-right))
+	 "v-split")
+	("?" (lambda ()
+		   (interactive)
+		   (split-window-below)
+		   (windmove-down))
+	 "h-split")
+	("g" ace-window "goto")
+	("s" ace-swap-window "swap")
+	("d" ace-delete-window "del")
+	("m" delete-other-windows "maximize" :color blue)
+	("q" nil "cancel"))
+
   (my-leader-def
 	"w" '(:wk "window")
 
@@ -892,16 +864,6 @@
    "B" 'bongo-seek-backward-60
    "q" 'bongo-quit
    "Q" 'bongo-stop)
-#+END_SRC
-*** dired-mode
-#+BEGIN_SRC emacs-lisp
-  (general-define-key
-   :states 'normal
-   :keymaps 'dired-mode-map
-   "O" 'dired-do-shell-command
-   "Y" 'dired-ranger-copy
-   "p" 'dired-ranger-paste
-   "P" 'dired-ranger-move)
 #+END_SRC
 *** markdown-mode
 #+BEGIN_SRC emacs-lisp
