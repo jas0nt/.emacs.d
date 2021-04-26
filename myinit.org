@@ -64,6 +64,10 @@
 
   (require 'use-package-ensure)
   (setq use-package-always-ensure t)
+
+  (use-package quelpa-use-package
+	:init
+	(setq quelpa-update-melpa-p nil))
 #+end_src
 ** ace-pinyin
 #+BEGIN_SRC emacs-lisp
@@ -151,11 +155,12 @@
 	(company-quickhelp-mode))
 
   (use-package company-english-helper
-	:load-path "~/.emacs.d/elisp/company-english-helper")
+	:quelpa
+	(company-english-helper :fetcher github :repo "manateelazycat/company-english-helper"))
 
   (use-package company-tabnine
-    :config
-    (add-to-list 'company-backends #'company-tabnine))
+	:config
+	(add-to-list 'company-backends #'company-tabnine))
 #+END_SRC
 ** dired
 #+BEGIN_SRC emacs-lisp
@@ -800,6 +805,7 @@
 	 "h-split")
 	("g" ace-window "goto")
 	("s" ace-swap-window "swap")
+	("x" delete-window "x")
 	("d" ace-delete-window "del")
 	("m" delete-other-windows "maximize" :color blue)
 	("q" nil "cancel"))
