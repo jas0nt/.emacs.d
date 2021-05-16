@@ -60,7 +60,7 @@
 	(let ((default-directory (file-name-as-directory dir)))
 	  (add-to-list 'load-path dir)
 	  (normal-top-level-add-subdirs-to-load-path)))
-  (add-subdirs-to-load-path "~/.emacs.d/elisp/")
+  ;; (add-subdirs-to-load-path "~/.emacs.d/elisp/")
 
   (require 'use-package-ensure)
   (setq use-package-always-ensure t)
@@ -100,6 +100,7 @@
 ** bongo
 #+BEGIN_SRC emacs-lisp
   (use-package bongo
+	:if (eq system-type 'gnu/linux)
 	:config
 	(setq bongo-logo nil)
 	(setq bongo-display-track-icons nil)
@@ -148,6 +149,7 @@
 	(setq company-idle-delay 0)
 	(setq company-minimum-prefix-length 2)
 	(setq company-show-numbers t)
+
 	(global-company-mode t))
 
   (use-package company-quickhelp
@@ -158,9 +160,9 @@
 	:quelpa
 	(company-english-helper :fetcher github :repo "manateelazycat/company-english-helper"))
 
-  (use-package company-tabnine
-	:config
-	(add-to-list 'company-backends #'company-tabnine))
+  ;; (use-package company-tabnine
+  ;;   :config
+  ;;   (add-to-list 'company-backends #'company-tabnine))
 #+END_SRC
 ** dired
 #+BEGIN_SRC emacs-lisp
@@ -583,7 +585,9 @@
    "<f5>" 'revert-buffer
    "C-s" 'helm-swoop-without-pre-input
    "M-y" 'helm-show-kill-ring
-   "M-RET" 'lsp-execute-code-action)
+   "M-RET" 'lsp-execute-code-action
+
+   "C-." 'company-files)
 #+END_SRC
 ** leader-keys
 *** a-key
@@ -894,7 +898,7 @@
    :keymaps 'python-mode-map
    "l" '(:wk "python")
    "lf" 'lsp-format-buffer
-   "lr" 'lsp-rename
+   "lr" '(lsp-rename :wk "rename")
    "ld" 'lsp-find-definition)
 #+END_SRC
 *** org-mode
