@@ -60,14 +60,10 @@
 	(let ((default-directory (file-name-as-directory dir)))
 	  (add-to-list 'load-path dir)
 	  (normal-top-level-add-subdirs-to-load-path)))
-  ;; (add-subdirs-to-load-path "~/.emacs.d/elisp/")
+  (add-subdirs-to-load-path "~/.emacs.d/elisp/")
 
   (require 'use-package-ensure)
   (setq use-package-always-ensure t)
-
-  (use-package quelpa-use-package
-	:init
-	(setq quelpa-update-melpa-p nil))
 #+end_src
 ** ace-pinyin
 #+BEGIN_SRC emacs-lisp
@@ -157,8 +153,7 @@
 	(company-quickhelp-mode))
 
   (use-package company-english-helper
-	:quelpa
-	(company-english-helper :fetcher github :repo "manateelazycat/company-english-helper"))
+	:load-path "~/.emacs.d/elisp/company-english-helper")
 
   ;; (use-package company-tabnine
   ;;   :config
