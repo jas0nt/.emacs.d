@@ -3,7 +3,7 @@
 
 * Init
 #+begin_src emacs-lisp
-  (setq gc-cons-threshold 100000000)
+  (setq gc-cons-threshold most-positive-fixnum)
 
   (defvar better-gc-cons-threshold 134217728 ; 128mb
 	"The default value to use for `gc-cons-threshold'.
@@ -51,19 +51,17 @@
   (package-initialize)
   ;; install use-package
   (unless (package-installed-p 'use-package)
-	(package-refresh-contents)
-	(package-install 'use-package))
+    (package-refresh-contents)
+    (package-install 'use-package))
 
-  ;; load path
-  (defun add-subdirs-to-load-path (dir)
-	"Recursive add directories to `load-path'."
-	(let ((default-directory (file-name-as-directory dir)))
-	  (add-to-list 'load-path dir)
-	  (normal-top-level-add-subdirs-to-load-path)))
-  (add-subdirs-to-load-path "~/.emacs.d/elisp/")
+  (add-to-list 'load-path
+	       (expand-file-name (concat user-emacs-directory "elisp")))
 
-  (require 'use-package-ensure)
-  (setq use-package-always-ensure t)
+  (eval-and-compile
+    (setq use-package-always-ensure t
+	  use-package-always-demand nil
+	  use-package-expand-minimally t
+	  use-package-verbose t))
 #+end_src
 ** ace-pinyin
 #+BEGIN_SRC emacs-lisp
@@ -74,13 +72,13 @@
 ** ace-window
 #+BEGIN_SRC emacs-lisp
   (use-package ace-window
-	:init
-	(progn
-	  (global-set-key [remap other-window] 'ace-window)
-	  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
-	  (custom-set-faces
-	   '(aw-leading-char-face
-		 ((t (:inhrit ace-jump-face-foreground :height 3.0)))))))
+    :init
+    (progn
+      (global-set-key [remap other-window] 'ace-window)
+      (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+      (custom-set-faces
+       '(aw-leading-char-face
+	 ((t (:inhrit ace-jump-face-foreground :height 3.0)))))))
 #+END_SRC
 ** all-the-icons
 #+BEGIN_SRC emacs-lisp
@@ -89,50 +87,56 @@
 ** beacon
 #+BEGIN_SRC emacs-lisp
   (use-package beacon
-	:config
-	(beacon-mode 1)
-	(setq beacon-color "#00FF00"))
+    :config
+    (beacon-mode 1)
+    (setq beacon-color "#00FF00"))
+#+END_SRC
+** benchmark-init
+#+BEGIN_SRC emacs-lisp
+  (use-package benchmark-init
+    :init (benchmark-init/activate)
+    :hook (after-init . benchmark-init/deactivate))
 #+END_SRC
 ** bongo
 #+BEGIN_SRC emacs-lisp
   (use-package bongo
-	:if (eq system-type 'gnu/linux)
-	:config
-	(setq bongo-logo nil)
-	(setq bongo-display-track-icons nil)
-	(setq bongo-display-track-lengths nil)
-	(setq bongo-display-header-icons nil)
-	(setq bongo-display-playback-mode-indicator t)
-	(setq bongo-header-line-mode nil)
-	(setq bongo-mode-line-indicator-mode nil)
-	(setq bongo-field-separator (propertize " · " 'face 'shadow))
+    :if (eq system-type 'gnu/linux)
+    :config
+    (setq bongo-logo nil)
+    (setq bongo-display-track-icons nil)
+    (setq bongo-display-track-lengths nil)
+    (setq bongo-display-header-icons nil)
+    (setq bongo-display-playback-mode-indicator t)
+    (setq bongo-header-line-mode nil)
+    (setq bongo-mode-line-indicator-mode nil)
+    (setq bongo-field-separator (propertize " · " 'face 'shadow))
 
-	(setq bongo-prefer-library-buffers nil)
-	(setq bongo-insert-whole-directory-trees t)
-	;;(setq bongo-join-inserted-tracks nil)
-	(setq bongo-enabled-backends '(vlc))
+    (setq bongo-prefer-library-buffers nil)
+    (setq bongo-insert-whole-directory-trees t)
+    ;;(setq bongo-join-inserted-tracks nil)
+    (setq bongo-enabled-backends '(vlc))
 
-	(defun init-goto-bongo ()
-	  (interactive)
-	  (let ((bongo-playlist-buffer-name "*Bongo Playlist*"))
-		(unless (get-buffer bongo-playlist-buffer-name)
-		  (bongo)
-		  (bongo-insert-directory-tree "~/Music/my_music")
-		  (goto-char (point-min))
-		  (bongo-random-playback-mode))
-		(switch-to-buffer bongo-playlist-buffer-name)))
+    (defun init-goto-bongo ()
+      (interactive)
+      (let ((bongo-playlist-buffer-name "*Bongo Playlist*"))
+	(unless (get-buffer bongo-playlist-buffer-name)
+	  (bongo)
+	  (bongo-insert-directory-tree "~/Music/my_music")
+	  (goto-char (point-min))
+	  (bongo-random-playback-mode))
+	(switch-to-buffer bongo-playlist-buffer-name)))
 
-	(defhydra hydra-bongo ()
-	  ("m" init-goto-bongo "goto-bongo" :color blue)
-	  ("s" bongo-pause/resume "play/pause")
-	  ("r" bongo-play-random "play random")
-	  ("n" bongo-play-next "play next")
-	  ("p" bongo-play-previous "play previous")
-	  ("f" bongo-seek-forward-10 "forward")
-	  ("F" bongo-seek-forward-60 "Forward")
-	  ("b" bongo-seek-backward-10 "backward")
-	  ("B" bongo-seek-backward-60 "Backward")
-	  ("q" nil "Cancel")))
+    (defhydra hydra-bongo ()
+      ("m" init-goto-bongo "goto-bongo" :color blue)
+      ("s" bongo-pause/resume "play/pause")
+      ("r" bongo-play-random "play random")
+      ("n" bongo-play-next "play next")
+      ("p" bongo-play-previous "play previous")
+      ("f" bongo-seek-forward-10 "forward")
+      ("F" bongo-seek-forward-60 "Forward")
+      ("b" bongo-seek-backward-10 "backward")
+      ("B" bongo-seek-backward-60 "Backward")
+      ("q" nil "Cancel")))
 #+END_SRC
 ** bufler
 #+BEGIN_SRC emacs-lisp
@@ -141,19 +145,19 @@
 ** company
 #+BEGIN_SRC emacs-lisp
   (use-package company
-	:config
-	(setq company-idle-delay 0)
-	(setq company-minimum-prefix-length 2)
-	(setq company-show-numbers t)
+    :config
+    (setq company-idle-delay 0)
+    (setq company-minimum-prefix-length 2)
+    (setq company-show-numbers t)
 
-	(global-company-mode t))
+    (global-company-mode t))
 
   (use-package company-quickhelp
-	:config
-	(company-quickhelp-mode))
+    :config
+    (company-quickhelp-mode))
 
   (use-package company-english-helper
-	:load-path "~/.emacs.d/elisp/company-english-helper")
+    :load-path "~/.emacs.d/elisp/company-english-helper")
 
   ;; (use-package company-tabnine
   ;;   :config
@@ -162,52 +166,52 @@
 ** dired
 #+BEGIN_SRC emacs-lisp
   (when (string= system-type "darwin")
-	(require 'dired-x)
-	(setq dired-guess-shell-alist-user '(("\\.*\\'" "open")))
-	(setq dired-use-ls-dired nil))
+    (require 'dired-x)
+    (setq dired-guess-shell-alist-user '(("\\.*\\'" "open")))
+    (setq dired-use-ls-dired nil))
 
   (setq dired-listing-switches "-alht")
 #+END_SRC
 ** discover-my-major
 #+begin_src emacs-lisp
   (use-package discover-my-major
-	:bind ("C-h C-m" . discover-my-major))
+    :bind ("C-h C-m" . discover-my-major))
 #+end_src
 ** evil
 #+BEGIN_SRC emacs-lisp
   (use-package evil
-	:init
-	(setq evil-want-integration t) ;; This is optional since it's already set to t by default.
-	(setq evil-want-keybinding nil)
-	(setq evil-disable-insert-state-bindings t)
-	(setq evil-want-C-i-jump nil)
-	(setq evil-want-C-u-scroll t)
-	:config
-	(evil-mode 1)
-	(setq evil-insert-state-cursor '(hollow "yellow")
-		  evil-normal-state-cursor '(box "green")))
+    :init
+    (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
+    (setq evil-want-keybinding nil)
+    (setq evil-disable-insert-state-bindings t)
+    (setq evil-want-C-i-jump nil)
+    (setq evil-want-C-u-scroll t)
+    :config
+    (evil-mode 1)
+    (setq evil-insert-state-cursor '(hollow "yellow")
+	  evil-normal-state-cursor '(box "green")))
 
   (use-package evil-collection
-	:after (evil)
-	:init
-	(setq evil-collection-company-use-tng nil)
-	:config
-	(evil-collection-init))
+    :after (evil)
+    :init
+    (setq evil-collection-company-use-tng nil)
+    :config
+    (evil-collection-init))
 
   (use-package evil-nerd-commenter)
 
   (use-package evil-pinyin
-	:after (evil)
-	:init
-	(setq-default evil-pinyin-scheme 'simplified-xiaohe-all)
-	(setq-default evil-pinyin-with-search-rule 'always)
-	:config
-	(evil-select-search-module 'evil-search-module 'evil-search)
-	(global-evil-pinyin-mode))
+    :after (evil)
+    :init
+    (setq-default evil-pinyin-scheme 'simplified-xiaohe-all)
+    (setq-default evil-pinyin-with-search-rule 'always)
+    :config
+    (evil-select-search-module 'evil-search-module 'evil-search)
+    (global-evil-pinyin-mode))
 
   (use-package evil-exchange
-	:config
-	(evil-exchange-install))
+    :config
+    (evil-exchange-install))
 #+END_SRC
 ** expand-region
 #+BEGIN_SRC emacs-lisp
@@ -230,8 +234,8 @@
 ** helm
 #+BEGIN_SRC emacs-lisp
   (use-package helm
-	:config
-	(helm-mode))
+    :config
+    (helm-mode))
 
   (use-package helm-ag)
   (use-package helm-swoop)
@@ -256,65 +260,65 @@
 ** lsp
 #+BEGIN_SRC emacs-lisp
   (use-package lsp-mode
-	:hook (
-		   (prog-mode . lsp)
-		   (lsp-mode . lsp-enable-which-key-integration))
-	:config
-	(setq lsp-enable-file-watchers nil)
-	:commands lsp)
+    :hook (
+	   (prog-mode . lsp)
+	   (lsp-mode . lsp-enable-which-key-integration))
+    :config
+    (setq lsp-enable-file-watchers nil)
+    :commands lsp)
 
   ;; optionally
   (use-package lsp-ui
-	:after (lsp-mode)
-	:commands lsp-ui-mode)
+    :after (lsp-mode)
+    :commands lsp-ui-mode)
 
   (use-package helm-lsp
-	:after (lsp-mode)
-	:commands helm-lsp-workspace-symbol)
+    :after (lsp-mode)
+    :commands helm-lsp-workspace-symbol)
 #+END_SRC
 ** magit
 #+BEGIN_SRC emacs-lisp
   (use-package magit)
 
   (use-package diff-hl
-	:config
-	(global-diff-hl-mode)
-	(defhydra hydra-diff-hl ()
-	  "git diff"
-	  ("j" diff-hl-next-hunk)
-	  ("k" diff-hl-previous-hunk)
-	  ("x" diff-hl-revert-hunk)
-	  ("q" nil "cancel")))
+    :config
+    (global-diff-hl-mode)
+    (defhydra hydra-diff-hl ()
+      "git diff"
+      ("j" diff-hl-next-hunk)
+      ("k" diff-hl-previous-hunk)
+      ("x" diff-hl-revert-hunk)
+      ("q" nil "cancel")))
 
 #+END_SRC
 ** markdown
 #+BEGIN_SRC emacs-lisp
   (use-package markdown-preview-eww)
   (use-package markdown-mode
-	:commands (markdown-mode gfm-mode)
-	:mode (("README\\.md\\'" . gfm-mode)
-		   ("\\.md\\'" . markdown-mode)
-		   ("\\.markdown\\'" . markdown-mode))
-	:init (setq markdown-command "multimarkdown"))
+    :commands (markdown-mode gfm-mode)
+    :mode (("README\\.md\\'" . gfm-mode)
+	   ("\\.md\\'" . markdown-mode)
+	   ("\\.markdown\\'" . markdown-mode))
+    :init (setq markdown-command "multimarkdown"))
 #+END_SRC
 ** org
 #+BEGIN_SRC emacs-lisp
   (use-package org
-	:config
-	(setq org-startup-with-inline-images t)
-	(setq org-babel-python-command "python3")
-	(org-babel-do-load-languages
-	 'org-babel-load-languages
-	 '((python . t)
-	   (R . t)
-	   (sql . t)
-	   )))
+    :config
+    (setq org-startup-with-inline-images t)
+    (setq org-babel-python-command "python3")
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((python . t)
+       (R . t)
+       (sql . t)
+       )))
 #+END_SRC
 ** popwin
 #+BEGIN_SRC emacs-lisp
   (use-package popwin
-	:config
-	(popwin-mode t))
+    :config
+    (popwin-mode t))
 #+END_SRC
 ** projectile
 #+BEGIN_SRC emacs-lisp
@@ -330,27 +334,27 @@
 ** python
 #+BEGIN_SRC emacs-lisp
   (use-package python-mode
-	:config
-	(setq python-shell-interpreter "python3"))
+    :config
+    (setq python-shell-interpreter "python3"))
 
   (use-package pyvenv
-	:config
-	(pyvenv-mode 1))
+    :config
+    (pyvenv-mode 1))
 
   (use-package lsp-pyright
-	:hook (python-mode . (lambda ()
-						   (require 'lsp-pyright)
-						   (lsp)))
-	:init
-	(when (executable-find "python3")
-	  (setq lsp-pyright-python-executable-cmd "python3")))
+    :hook (python-mode . (lambda ()
+			   (require 'lsp-pyright)
+			   (lsp)))
+    :init
+    (when (executable-find "python3")
+      (setq lsp-pyright-python-executable-cmd "python3")))
 #+END_SRC
 ** rainbow-delimiters
 #+BEGIN_SRC emacs-lisp
   (use-package rainbow-delimiters
-	:config
-	(rainbow-delimiters-mode)
-	(add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
+    :config
+    (rainbow-delimiters-mode)
+    (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
 #+END_SRC
 ** restart-emacs
 #+BEGIN_SRC emacs-lisp
@@ -367,23 +371,23 @@
 ** rime
 #+BEGIN_SRC emacs-lisp
   (use-package rime
-	:config
-	(unless is-on-linux
-	  (setq rime-librime-root "~/.emacs.d/librime/dist"))
-	(setq rime-posframe-properties
-		  (list :background-color "#282a36"
-				:foreground-color "#bd93f9"
-				:font my-font
-				:internal-border-width 10))
+    :config
+    (unless is-on-linux
+      (setq rime-librime-root "~/.emacs.d/librime/dist"))
+    (setq rime-posframe-properties
+	  (list :background-color "#282a36"
+		:foreground-color "#bd93f9"
+		:font my-font
+		:internal-border-width 10))
 
-	(setq default-input-method "rime"
-		  rime-show-candidate 'minibuffer))
+    (setq default-input-method "rime"
+	  rime-show-candidate 'minibuffer))
 #+END_SRC
 ** term
 #+begin_src emacs-lisp
   (add-hook 'term-mode-hook (lambda ()
-							  (setq-local global-hl-line-mode nil)
-							  (setq-local mode-line-format nil)))
+			      (setq-local global-hl-line-mode nil)
+			      (setq-local mode-line-format nil)))
 #+end_src
 ** try
 #+BEGIN_SRC emacs-lisp
@@ -398,25 +402,27 @@
 ** vterm
 #+BEGIN_SRC emacs-lisp
   (use-package vterm
-	:init
-	(setq vterm-always-compile-module t)
-	:config
-	(setq vterm-shell my-shell)
-	:hook (
-		   (vterm-mode . (lambda () (setq-local global-hl-line-mode nil)))))
+    :init
+    (setq vterm-always-compile-module t)
+    :config
+    (setq vterm-shell my-shell)
+    :hook (
+	   (vterm-mode . (lambda () (setq-local global-hl-line-mode nil)))))
 
-	(use-package exec-path-from-shell
-	  :config
-	  (when (memq window-system '(mac ns x))
-		(exec-path-from-shell-initialize)))
+  (use-package exec-path-from-shell
+    :config
+    (when (memq window-system '(mac ns x))
+      (exec-path-from-shell-initialize)))
 #+END_SRC
 ** which-key
 #+BEGIN_SRC emacs-lisp
   (use-package which-key
-	:config
-	(which-key-mode)
-	(setq which-key-idle-delay 0.5)
-	(which-key-mode))
+    :after (god-mode)
+    :config
+    (which-key-mode)
+    (setq which-key-idle-delay 0.5)
+    (which-key-mode)
+    (which-key-enable-god-mode-support))
 #+END_SRC
 ** yasnippet
 #+BEGIN_SRC emacs-lisp
@@ -435,8 +441,8 @@
 * Configs
 #+BEGIN_SRC emacs-lisp
   ;;custom file
-  (setq custom-file (expand-file-name "~/.emacs.d/custom.el" user-emacs-directory))
-  (load-file custom-file)
+  ;;(setq custom-file (expand-file-name "~/.emacs.d/custom.el" user-emacs-directory))
+  ;;(load-file custom-file)
 
   ;;ido mode
   ;;(setq indo-enable-flex-matching t)
@@ -486,17 +492,17 @@
 #+BEGIN_SRC emacs-lisp
   ;;theme
   (use-package dracula-theme
-	:config
-	(set-cursor-color "#00ff00")
-	(load-theme 'dracula))
+    :init
+    (load-theme 'dracula t)
+    (set-cursor-color "#00ff00"))
 
   (use-package doom-modeline
-	:init (doom-modeline-mode 1)
-	:config
-	(setq doom-modeline-major-mode-icon nil)
-	(setq doom-modeline-height 1)
-	(set-face-attribute 'mode-line nil :family "Source Code Pro" :height 150)
-	(set-face-attribute 'mode-line-inactive nil :family "Source Code Pro" :height 150))
+    :init (doom-modeline-mode 1)
+    :config
+    (setq doom-modeline-major-mode-icon nil)
+    (setq doom-modeline-height 1)
+    (set-face-attribute 'mode-line nil :family "Source Code Pro" :height 150)
+    (set-face-attribute 'mode-line-inactive nil :family "Source Code Pro" :height 150))
 
   ;; set transparency
   (set-frame-parameter (selected-frame) 'alpha '(90 90))
@@ -561,10 +567,10 @@
 ** general
 #+BEGIN_SRC emacs-lisp
   (general-create-definer my-leader-def
-	:states '(normal insert visual emacs)
-	:keymaps 'override
-	:prefix my-leader-key
-	:non-normal-prefix "C-,")
+    :states '(normal insert visual emacs)
+    :keymaps 'override
+    :prefix my-leader-key
+    :non-normal-prefix "C-,")
 
   (general-define-key
    :states '(normal visual)
@@ -588,246 +594,246 @@
 *** a-key
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	"<SPC>" 'helm-M-x
-	"q" '((lambda ()
-			(interactive)
-			(progn
-			  (kill-current-buffer)
-			  (when (> (length (window-list)) 1)
-				(delete-window))))
-		  :wk "kill-buffer")
-	"'" '((lambda ()
-			(interactive)
-			(let ((buf-name "vterm"))
-			  (if (get-buffer buf-name)
-				  (switch-to-buffer buf-name)
-				(vterm))))
-		  :wk "term"))
+    "<SPC>" 'helm-M-x
+    "q" '((lambda ()
+	    (interactive)
+	    (progn
+	      (kill-current-buffer)
+	      (when (> (length (window-list)) 1)
+		(delete-window))))
+	  :wk "kill-buffer")
+    "'" '((lambda ()
+	    (interactive)
+	    (let ((buf-name "vterm"))
+	      (if (get-buffer buf-name)
+		  (switch-to-buffer buf-name)
+		(vterm))))
+	  :wk "term"))
 #+END_SRC
 *** buffer
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	"b" '(:wk "buffer")
+    "b" '(:wk "buffer")
 
-	"b+" 'er/expand-region
-	"bb" 'bufler
-	"bs" '(hydra-buffer/body :wk "switch buffer")
-	"bS" '((lambda ()
-			 "create a new scratch buffer to work in. (could be *scratch* - *scratchX*)"
-			 (interactive)
-			 (let ((n 0)
-				   bufname)
-			   (while (progn
-						(setq bufname (concat "*scratch"
-											  (if (= n 0) "" (int-to-string n))
-											  "*"))
-						(setq n (1+ n))
-						(get-buffer bufname)))
-			   (switch-to-buffer (get-buffer-create bufname))
-			   (if (= n 1) (lisp-interaction-mode))))
-		   :wk "new scratch"))
+    "b+" 'er/expand-region
+    "bb" 'bufler
+    "bs" '(hydra-buffer/body :wk "switch buffer")
+    "bS" '((lambda ()
+	     "create a new scratch buffer to work in. (could be *scratch* - *scratchX*)"
+	     (interactive)
+	     (let ((n 0)
+		   bufname)
+	       (while (progn
+			(setq bufname (concat "*scratch"
+					      (if (= n 0) "" (int-to-string n))
+					      "*"))
+			(setq n (1+ n))
+			(get-buffer bufname)))
+	       (switch-to-buffer (get-buffer-create bufname))
+	       (if (= n 1) (lisp-interaction-mode))))
+	   :wk "new scratch"))
 #+END_SRC
 *** commenter
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	"c" '(:wk "commenter")
+    "c" '(:wk "commenter")
 
-	"cc" 'evilnc-comment-or-uncomment-lines
-	"cp" 'evilnc-copy-and-comment-lines
-	"cb" 'evilnc-comment-or-uncomment-paragraphs)
+    "cc" 'evilnc-comment-or-uncomment-lines
+    "cp" 'evilnc-copy-and-comment-lines
+    "cb" 'evilnc-comment-or-uncomment-paragraphs)
 #+END_SRC
 *** file
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	"f" '(:wk "file")
+    "f" '(:wk "file")
 
-	"fe" '((lambda () (interactive) (find-file "~/.emacs.d/myinit.org"))
-		   :wk "open config")
-	"fE" '((lambda () (interactive) (org-babel-load-file (expand-file-name "~/.emacs.d/myinit.org")))
-		   :wk "reload config")
-	"ff" 'helm-find-files
-	"fF" '((lambda ()
-			 (interactive)
-			 (shell-command "open -R ."))
-		   :wk "open in Finder")
-	"fr" 'helm-recentf
-	"fR" 'revert-buffer
-	"fd" 'dired
-	"fs" 'save-buffer
-	"fS" 'save-some-buffers
-	"fp" '(lambda () (interactive) (when (file-exists-p (current-kill 0))
-								(find-file (current-kill 0)))))
+    "fe" '((lambda () (interactive) (find-file "~/.emacs.d/myinit.org"))
+	   :wk "open config")
+    "fE" '((lambda () (interactive) (org-babel-load-file (expand-file-name "~/.emacs.d/myinit.org")))
+	   :wk "reload config")
+    "ff" 'helm-find-files
+    "fF" '((lambda ()
+	     (interactive)
+	     (shell-command "open -R ."))
+	   :wk "open in Finder")
+    "fr" 'helm-recentf
+    "fR" 'revert-buffer
+    "fd" 'dired
+    "fs" 'save-buffer
+    "fS" 'save-some-buffers
+    "fp" '(lambda () (interactive) (when (file-exists-p (current-kill 0))
+				(find-file (current-kill 0)))))
 #+END_SRC
 *** git
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	"g" '(:wk "git")
+    "g" '(:wk "git")
 
-	"gg" 'magit-status
-	"gd" 'hydra-diff-hl/body)
+    "gg" 'magit-status
+    "gd" 'hydra-diff-hl/body)
 #+END_SRC
 *** jump
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	"j" '(:wk "jump")
+    "j" '(:wk "jump")
 
-	"jj" 'avy-goto-char-2
-	"jJ" 'avy-goto-char
-	"jt" 'avy-goto-char-timer
-	"jw" 'avy-goto-word-1
-	"jl" 'avy-goto-line)
+    "jj" 'avy-goto-char-2
+    "jJ" 'avy-goto-char
+    "jt" 'avy-goto-char-timer
+    "jw" 'avy-goto-word-1
+    "jl" 'avy-goto-line)
 #+END_SRC
 *** music
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	;; music
-	"m" '(:wk "music")
-	"mM" '(hydra-bongo/body :wk "music")
-	"mm" '(init-goto-bongo :wk "goto music")
-	"m <SPC>" 'bongo-pause/resume
-	"ms" 'bongo-pause/resume
-	"mr" 'bongo-play-random
-	"mn" 'bongo-play-next
-	"mp" 'bongo-play-previous
-	"mf" 'bongo-seek-forward-10
-	"mF" 'bongo-seek-forward-60
-	"mb" 'bongo-seek-backward-10
-	"mB" 'bongo-seek-backward-60)
+    ;; music
+    "m" '(:wk "music")
+    "mM" '(hydra-bongo/body :wk "music")
+    "mm" '(init-goto-bongo :wk "goto music")
+    "m <SPC>" 'bongo-pause/resume
+    "ms" 'bongo-pause/resume
+    "mr" 'bongo-play-random
+    "mn" 'bongo-play-next
+    "mp" 'bongo-play-previous
+    "mf" 'bongo-seek-forward-10
+    "mF" 'bongo-seek-forward-60
+    "mb" 'bongo-seek-backward-10
+    "mB" 'bongo-seek-backward-60)
 #+END_SRC
 *** note
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	"n" '(:wk "note")
-	"nn" 'org-capture
-	"nf" '((lambda () (interactive) (find-file my-note-file))
-		   :wk "open note"))
+    "n" '(:wk "note")
+    "nn" 'org-capture
+    "nf" '((lambda () (interactive) (find-file my-note-file))
+	   :wk "open note"))
 #+END_SRC
 *** project
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	"p" '(:wk "project")
+    "p" '(:wk "project")
 
-	"pp" 'projectile-command-map
-	"pt" '(projectile-run-vterm
-		   :wk "project term")
-	"ps" 'helm-multi-swoop-projectile)
+    "pp" 'projectile-command-map
+    "pt" '(projectile-run-vterm
+	   :wk "project term")
+    "ps" 'helm-multi-swoop-projectile)
 #+END_SRC
 *** quit
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	"<ESC>" '(:wk "quit")
-	"<ESC> <ESC>" 'save-buffers-kill-terminal
-	"<ESC> 1" 'restart-emacs)
+    "<ESC>" '(:wk "quit")
+    "<ESC> <ESC>" 'save-buffers-kill-terminal
+    "<ESC> 1" 'restart-emacs)
 #+END_SRC
 *** search
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	"s" '(:wk "search")
+    "s" '(:wk "search")
 
-	"si" 'helm-imenu
-	"sr" 'helm-ag
-	"sf" 'find-file-in-project
-	"sL" 'helm-locate
-	"ss" 'helm-swoop
-	"sS" 'helm-multi-swoop-all
-	"sg" 'google-this
-	"sd" '(lambda () (interactive)
-			(if (display-graphic-p)
-				(youdao-dictionary-search-at-point-posframe)
-			  (youdao-dictionary-search-at-point+)))
-	"sp" 'helm-projectile-ag
-	"sl" 'browse-url)
+    "si" 'helm-imenu
+    "sr" 'helm-ag
+    "sf" 'find-file-in-project
+    "sL" 'helm-locate
+    "ss" 'helm-swoop
+    "sS" 'helm-multi-swoop-all
+    "sg" 'google-this
+    "sd" '(lambda () (interactive)
+	    (if (display-graphic-p)
+		(youdao-dictionary-search-at-point-posframe)
+	      (youdao-dictionary-search-at-point+)))
+    "sp" 'helm-projectile-ag
+    "sl" 'browse-url)
 #+END_SRC
 *** terminal
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	;; terminal
-	"t" '(:wk "terminal")
-	"tt" '((lambda ()
-			 (interactive) (vterm t))
-		   :wk "new terminal")
-	"to" '(vterm-other-window
-		   :wk "term other window"))
+    ;; terminal
+    "t" '(:wk "terminal")
+    "tt" '((lambda ()
+	     (interactive) (vterm t))
+	   :wk "new terminal")
+    "to" '(vterm-other-window
+	   :wk "term other window"))
 #+END_SRC
 *** toggle
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-	"T" '(:wk "toggle")
+    "T" '(:wk "toggle")
 
-	"Te" 'toggle-company-english-helper
+    "Te" 'toggle-company-english-helper
 
-	"Th" '((lambda ()
-			 (interactive)
-			 (if highlight-thing-mode
-				 (highlight-thing-mode -1)
-			   (highlight-thing-mode 1)))
-		   :wk "toggle-highlight-thing")
+    "Th" '((lambda ()
+	     (interactive)
+	     (if highlight-thing-mode
+		 (highlight-thing-mode -1)
+	       (highlight-thing-mode 1)))
+	   :wk "toggle-highlight-thing")
 
-	"Tt" '((lambda ()
-			 (interactive)
-			 (let ((alpha (frame-parameter nil 'alpha)))
-			   (set-frame-parameter
-				nil 'alpha
-				(if (eql (cond ((numberp alpha) alpha)
-							   ((numberp (cdr alpha)) (cdr alpha))
-							   ;; Also handle undocumented (<active> <inactive>) form.
-							   ((numberp (cadr alpha)) (cadr alpha)))
-						 100)
-					'(85 . 50) '(100 . 100)))))
-		   :wk "toggle-transparency"))
+    "Tt" '((lambda ()
+	     (interactive)
+	     (let ((alpha (frame-parameter nil 'alpha)))
+	       (set-frame-parameter
+		nil 'alpha
+		(if (eql (cond ((numberp alpha) alpha)
+			       ((numberp (cdr alpha)) (cdr alpha))
+			       ;; Also handle undocumented (<active> <inactive>) form.
+			       ((numberp (cadr alpha)) (cadr alpha)))
+			 100)
+		    '(85 . 50) '(100 . 100)))))
+	   :wk "toggle-transparency"))
 #+END_SRC
 *** window
 #+BEGIN_SRC emacs-lisp
   (defhydra hydra-window ()
-	"window"
-	("h" windmove-left)
-	("j" windmove-down)
-	("k" windmove-up)
-	("l" windmove-right)
-	("H" windmove-swap-states-left)
-	("J" windmove-swap-states-down)
-	("K" windmove-swap-states-up)
-	("L" windmove-swap-states-right)
-	("C-h" evil-window-move-far-left)
-	("C-j" evil-window-move-very-bottom)
-	("C-k" evil-window-move-very-top)
-	("C-l" evil-window-move-far-right)
-	("/" (lambda ()
-		   (interactive)
-		   (split-window-right)
-		   (windmove-right))
-	 "v-split")
-	("?" (lambda ()
-		   (interactive)
-		   (split-window-below)
-		   (windmove-down))
-	 "h-split")
-	("g" ace-window "goto")
-	("s" ace-swap-window "swap")
-	("x" delete-window "x")
-	("d" ace-delete-window "del")
-	("m" delete-other-windows "maximize" :color blue)
-	("q" nil "cancel"))
+    "window"
+    ("h" windmove-left)
+    ("j" windmove-down)
+    ("k" windmove-up)
+    ("l" windmove-right)
+    ("H" windmove-swap-states-left)
+    ("J" windmove-swap-states-down)
+    ("K" windmove-swap-states-up)
+    ("L" windmove-swap-states-right)
+    ("C-h" evil-window-move-far-left)
+    ("C-j" evil-window-move-very-bottom)
+    ("C-k" evil-window-move-very-top)
+    ("C-l" evil-window-move-far-right)
+    ("/" (lambda ()
+	   (interactive)
+	   (split-window-right)
+	   (windmove-right))
+     "v-split")
+    ("?" (lambda ()
+	   (interactive)
+	   (split-window-below)
+	   (windmove-down))
+     "h-split")
+    ("g" ace-window "goto")
+    ("s" ace-swap-window "swap")
+    ("x" delete-window "x")
+    ("d" ace-delete-window "del")
+    ("m" delete-other-windows "maximize" :color blue)
+    ("q" nil "cancel"))
 
   (my-leader-def
-	"w" '(:wk "window")
+    "w" '(:wk "window")
 
-	"ww" 'hydra-window/body
-	"wt" 'awesome-fast-switch/body
-	"wh" 'windmove-left
-	"wj" 'windmove-down
-	"wk" 'windmove-up
-	"wl" 'windmove-right
-	"wH" 'windmove-swap-states-left
-	"wJ" 'windmove-swap-states-down
-	"wK" 'windmove-swap-states-up
-	"wL" 'windmove-swap-states-right
-	"wg" 'ace-window
-	"ws" 'ace-swap-window
-	"w/" 'split-window-right
-	"w?" 'split-window-below
-	"wm" 'delete-other-windows
-	"wd" 'delete-window)
+    "ww" 'hydra-window/body
+    "wt" 'awesome-fast-switch/body
+    "wh" 'windmove-left
+    "wj" 'windmove-down
+    "wk" 'windmove-up
+    "wl" 'windmove-right
+    "wH" 'windmove-swap-states-left
+    "wJ" 'windmove-swap-states-down
+    "wK" 'windmove-swap-states-up
+    "wL" 'windmove-swap-states-right
+    "wg" 'ace-window
+    "ws" 'ace-swap-window
+    "w/" 'split-window-right
+    "w?" 'split-window-below
+    "wm" 'delete-other-windows
+    "wd" 'delete-window)
 #+END_SRC
 
 ** major-mode-keys
@@ -838,16 +844,16 @@
    :keymaps 'bufler-list-mode-map
    "r" 'bufler-list
    "q" '(lambda ()
-		  (interactive)
-		  (progn
-			(kill-current-buffer)
-			(when (> (length (window-list)) 1)
-			  (delete-window))))
+	  (interactive)
+	  (progn
+	    (kill-current-buffer)
+	    (when (> (length (window-list)) 1)
+	      (delete-window))))
    "d" '(lambda ()
-		  (interactive)
-		  (when
-			  (yes-or-no-p "kill buffer?")
-			(bufler-list-buffer-kill)))
+	  (interactive)
+	  (when
+	      (yes-or-no-p "kill buffer?")
+	    (bufler-list-buffer-kill)))
    "s" 'bufler-list-buffer-save
    "RET" 'bufler-list-buffer-switch)
 #+END_SRC
@@ -879,11 +885,11 @@
    "l" '(:wk "md")
    "lp" 'markdown-live-preview-mode
    "lr" '((lambda ()
-			(interactive)
-			(shell-command
-			 (format "open %s"
-					 (shell-quote-argument (buffer-file-name)))))
-		  :wk "open"))
+	    (interactive)
+	    (shell-command
+	     (format "open %s"
+		     (shell-quote-argument (buffer-file-name)))))
+	  :wk "open"))
 #+END_SRC
 *** python-mode
 #+BEGIN_SRC emacs-lisp
