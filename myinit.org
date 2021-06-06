@@ -58,10 +58,7 @@
 	       (expand-file-name (concat user-emacs-directory "elisp")))
 
   (eval-and-compile
-    (setq use-package-always-ensure t
-	  use-package-always-demand nil
-	  use-package-expand-minimally t
-	  use-package-verbose t))
+    (setq use-package-always-ensure t))
 #+end_src
 ** ace-pinyin
 #+BEGIN_SRC emacs-lisp
@@ -145,12 +142,26 @@
 ** company
 #+BEGIN_SRC emacs-lisp
   (use-package company
-    :config
-    (setq company-idle-delay 0)
-    (setq company-minimum-prefix-length 2)
-    (setq company-show-numbers t)
-
-    (global-company-mode t))
+    :diminish (company-mode " Cmp.")
+    :defines (company-dabbrev-ignore-case company-dabbrev-downcase)
+    :hook (after-init . global-company-mode)
+    :config (setq company-dabbrev-code-everywhere t
+		  company-dabbrev-code-modes t
+		  company-dabbrev-code-other-buffers 'all
+		  company-dabbrev-downcase nil
+		  company-dabbrev-ignore-case t
+		  company-dabbrev-other-buffers 'all
+		  company-require-match nil
+		  company-minimum-prefix-length 1
+		  company-show-numbers t
+		  company-tooltip-limit 20
+		  company-idle-delay 0
+		  company-echo-delay 0
+		  company-tooltip-offset-display 'scrollbar
+		  company-begin-commands '(self-insert-command))
+    (eval-after-load 'company
+      '(add-to-list 'company-backends
+		    '(company-abbrev company-yasnippet company-capf))))
 
   (use-package company-quickhelp
     :config
@@ -159,9 +170,9 @@
   (use-package company-english-helper
     :load-path "~/.emacs.d/elisp/company-english-helper")
 
-  ;; (use-package company-tabnine
-  ;;   :config
-  ;;   (add-to-list 'company-backends #'company-tabnine))
+  (use-package company-tabnine
+    :config
+    (add-to-list 'company-backends #'company-tabnine))
 #+END_SRC
 ** dired
 #+BEGIN_SRC emacs-lisp
@@ -265,9 +276,8 @@
 	   (lsp-mode . lsp-enable-which-key-integration))
     :config
     (setq lsp-enable-file-watchers nil)
-    :commands lsp)
+    :commands (lsp lsp-deferred))
 
-  ;; optionally
   (use-package lsp-ui
     :after (lsp-mode)
     :commands lsp-ui-mode)
@@ -496,7 +506,9 @@
     (load-theme 'dracula t)
     (set-cursor-color "#00ff00"))
 
+  (use-package all-the-icons)
   (use-package doom-modeline
+    :after (all-the-icons)
     :init (doom-modeline-mode 1)
     :config
     (setq doom-modeline-major-mode-icon nil)
@@ -670,7 +682,8 @@
     "g" '(:wk "git")
 
     "gg" 'magit-status
-    "gd" 'hydra-diff-hl/body)
+    "gd" 'hydra-diff-hl/body
+    "gx" 'diff-hl-revert-hunk)
 #+END_SRC
 *** jump
 #+BEGIN_SRC emacs-lisp
@@ -808,6 +821,9 @@
 	   (split-window-below)
 	   (windmove-down))
      "h-split")
+    ("^" enlarge-window "enlarge")
+    ("<" shrink-window-horizontally "shirnk")
+    (">" enlarge-window-horizontally "shirnk")
     ("g" ace-window "goto")
     ("s" ace-swap-window "swap")
     ("x" delete-window "x")
