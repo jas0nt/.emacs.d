@@ -53,12 +53,11 @@
   (unless (package-installed-p 'use-package)
     (package-refresh-contents)
     (package-install 'use-package))
+  (require 'use-package-ensure)
+  (setq use-package-always-ensure t)
 
   (add-to-list 'load-path
 	       (expand-file-name (concat user-emacs-directory "elisp")))
-
-  (eval-and-compile
-    (setq use-package-always-ensure t))
 #+end_src
 ** ace-pinyin
 #+BEGIN_SRC emacs-lisp
@@ -97,7 +96,7 @@
 ** bongo
 #+BEGIN_SRC emacs-lisp
   (use-package bongo
-    :if (eq system-type 'gnu/linux)
+    ;; :if (eq system-type 'gnu/linux)
     :config
     (setq bongo-logo nil)
     (setq bongo-display-track-icons nil)
@@ -232,7 +231,7 @@
 #+begin_src emacs-lisp
  (use-package find-file-in-project
    :config
-   (helm-mode 1))
+   (ivy-mode 1))
 #+end_src
 ** general
 #+BEGIN_SRC emacs-lisp
@@ -241,15 +240,6 @@
 ** google-this
 #+BEGIN_SRC emacs-lisp
   (use-package google-this)
-#+END_SRC
-** helm
-#+BEGIN_SRC emacs-lisp
-  (use-package helm
-    :config
-    (helm-mode))
-
-  (use-package helm-ag)
-  (use-package helm-swoop)
 #+END_SRC
 ** hungry-delete & aggresive-indent
 #+BEGIN_SRC emacs-lisp
@@ -268,6 +258,13 @@
 #+BEGIN_SRC emacs-lisp
   (use-package ialign)
 #+END_SRC
+** ivy
+#+BEGIN_SRC emacs-lisp
+  (use-package counsel)
+  (use-package ivy
+    :custom-face
+    (ivy-current-match ((t (:extend t :background "yellow" :foreground "#ff79c6" :weight bold)))))
+#+END_SRC
 ** lsp
 #+BEGIN_SRC emacs-lisp
   (use-package lsp-mode
@@ -281,10 +278,6 @@
   (use-package lsp-ui
     :after (lsp-mode)
     :commands lsp-ui-mode)
-
-  (use-package helm-lsp
-    :after (lsp-mode)
-    :commands helm-lsp-workspace-symbol)
 #+END_SRC
 ** magit
 #+BEGIN_SRC emacs-lisp
@@ -315,6 +308,12 @@
 #+BEGIN_SRC emacs-lisp
   (use-package org
     :config
+    (setq-default prettify-symbols-alist '(("#+BEGIN_SRC" . "✎")
+					   ("#+END_SRC" . "□")
+					   ("#+begin_src" . "✎")
+					   ("#+end_src" . "□")))
+    (add-hook 'org-mode-hook 'prettify-symbols-mode)
+
     (setq org-startup-with-inline-images t)
     (setq org-babel-python-command "python3")
     (org-babel-do-load-languages
@@ -335,11 +334,7 @@
   (use-package projectile
     :config
     (projectile-global-mode)
-    (setq projectile-completion-system 'helm))
-
-  (use-package helm-projectile
-    :config
-    (helm-projectile-on))
+    (setq projectile-completion-system 'ivy))
 #+END_SRC
 ** python
 #+BEGIN_SRC emacs-lisp
@@ -427,12 +422,9 @@
 ** which-key
 #+BEGIN_SRC emacs-lisp
   (use-package which-key
-    :after (god-mode)
     :config
-    (which-key-mode)
     (setq which-key-idle-delay 0.5)
-    (which-key-mode)
-    (which-key-enable-god-mode-support))
+    (which-key-mode))
 #+END_SRC
 ** yasnippet
 #+BEGIN_SRC emacs-lisp
@@ -587,7 +579,7 @@
   (general-define-key
    :states '(normal visual)
    "gl" 'evil-avy-goto-line
-   ";" 'helm-mini
+   ";" 'ivy-switch-buffer
    "," 'evil-switch-to-windows-last-buffer
    "." 'evil-avy-goto-char-timer
    "g;" 'repeat-find-char
@@ -596,8 +588,8 @@
 
   (general-define-key
    "<f5>" 'revert-buffer
-   "C-s" 'helm-swoop-without-pre-input
-   "M-y" 'helm-show-kill-ring
+   "C-s" 'swiper
+   "M-y" 'counsel-yank-pop
    "M-RET" 'lsp-execute-code-action
 
    "C-." 'company-files)
@@ -606,7 +598,7 @@
 *** a-key
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-    "<SPC>" 'helm-M-x
+    "<SPC>" 'counsel-M-x
     "q" '((lambda ()
 	    (interactive)
 	    (progn
@@ -629,7 +621,7 @@
 
     "b+" 'er/expand-region
     "bb" 'bufler
-    "bs" '(hydra-buffer/body :wk "switch buffer")
+    "bs" 'counsel-switch-buffer-other-window
     "bS" '((lambda ()
 	     "create a new scratch buffer to work in. (could be *scratch* - *scratchX*)"
 	     (interactive)
@@ -663,12 +655,12 @@
 	   :wk "open config")
     "fE" '((lambda () (interactive) (org-babel-load-file (expand-file-name "~/.emacs.d/myinit.org")))
 	   :wk "reload config")
-    "ff" 'helm-find-files
+    "ff" 'counsel-find-file
     "fF" '((lambda ()
 	     (interactive)
 	     (shell-command "open -R ."))
 	   :wk "open in Finder")
-    "fr" 'helm-recentf
+    "fr" 'counsel-recentf
     "fR" 'revert-buffer
     "fd" 'dired
     "fs" 'save-buffer
@@ -728,8 +720,7 @@
 
     "pp" 'projectile-command-map
     "pt" '(projectile-run-vterm
-	   :wk "project term")
-    "ps" 'helm-multi-swoop-projectile)
+	   :wk "project term"))
 #+END_SRC
 *** quit
 #+BEGIN_SRC emacs-lisp
@@ -743,18 +734,18 @@
   (my-leader-def
     "s" '(:wk "search")
 
-    "si" 'helm-imenu
-    "sr" 'helm-ag
+    "si" 'counsel-imenu
+    "sr" 'counsel-rg
     "sf" 'find-file-in-project
-    "sL" 'helm-locate
-    "ss" 'helm-swoop
-    "sS" 'helm-multi-swoop-all
+    "sF" 'counsel-fzf
+    "sL" 'counsel-locate
+    "ss" 'swiper-thing-at-point
+    "sS" 'swiper-all
     "sg" 'google-this
     "sd" '(lambda () (interactive)
 	    (if (display-graphic-p)
 		(youdao-dictionary-search-at-point-posframe)
 	      (youdao-dictionary-search-at-point+)))
-    "sp" 'helm-projectile-ag
     "sl" 'browse-url)
 #+END_SRC
 *** terminal
