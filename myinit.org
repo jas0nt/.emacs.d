@@ -169,9 +169,9 @@
   (use-package company-english-helper
     :load-path "~/.emacs.d/elisp/company-english-helper")
 
-  (use-package company-tabnine
-    :config
-    (add-to-list 'company-backends #'company-tabnine))
+  ;; (use-package company-tabnine
+  ;;   :config
+  ;;   (add-to-list 'company-backends #'company-tabnine))
 #+END_SRC
 ** dired
 #+BEGIN_SRC emacs-lisp
@@ -264,6 +264,12 @@
   (use-package ivy
     :custom-face
     (ivy-current-match ((t (:extend t :background "yellow" :foreground "#ff79c6" :weight bold)))))
+
+  (use-package ivy-posframe
+    :init
+    (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display)))
+    :config
+    (ivy-posframe-mode 1))
 #+END_SRC
 ** lsp
 #+BEGIN_SRC emacs-lisp
@@ -393,6 +399,10 @@
   (add-hook 'term-mode-hook (lambda ()
 			      (setq-local global-hl-line-mode nil)
 			      (setq-local mode-line-format nil)))
+
+  (defun my-new-term ()
+    (interactive)
+    (ansi-term "/usr/local/bin/fish"))
 #+end_src
 ** try
 #+BEGIN_SRC emacs-lisp
@@ -608,10 +618,10 @@
 	  :wk "kill-buffer")
     "'" '((lambda ()
 	    (interactive)
-	    (let ((buf-name "vterm"))
+	    (let ((buf-name "*ansi-term*"))
 	      (if (get-buffer buf-name)
 		  (switch-to-buffer buf-name)
-		(vterm))))
+		(my-new-term))))
 	  :wk "term"))
 #+END_SRC
 *** buffer
@@ -754,10 +764,8 @@
     ;; terminal
     "t" '(:wk "terminal")
     "tt" '((lambda ()
-	     (interactive) (vterm t))
-	   :wk "new terminal")
-    "to" '(vterm-other-window
-	   :wk "term other window"))
+	     (interactive) (my-new-term))
+	   :wk "new terminal"))
 #+END_SRC
 *** toggle
 #+BEGIN_SRC emacs-lisp
@@ -765,13 +773,6 @@
     "T" '(:wk "toggle")
 
     "Te" 'toggle-company-english-helper
-
-    "Th" '((lambda ()
-	     (interactive)
-	     (if highlight-thing-mode
-		 (highlight-thing-mode -1)
-	       (highlight-thing-mode 1)))
-	   :wk "toggle-highlight-thing")
 
     "Tt" '((lambda ()
 	     (interactive)
