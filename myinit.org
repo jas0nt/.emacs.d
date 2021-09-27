@@ -1,7 +1,7 @@
 #+STARTUP: overview 
 #+PROPERTY: header-args :comments yes :results silent
 
-* Init
+* Basic
 #+begin_src emacs-lisp
   (setq gc-cons-threshold most-positive-fixnum)
 
@@ -11,43 +11,57 @@
   If you experience freezing, decrease this.  If you experience stuttering, increase this.")
 
   (add-hook 'emacs-startup-hook
-			(lambda ()
-			  (if (boundp 'after-focus-change-function)
-				  (add-function :after after-focus-change-function
-								(lambda ()
-								  (unless (frame-focus-state)
-									(garbage-collect))))
-				(add-hook 'after-focus-change-function 'garbage-collect))
-			  (defun gc-minibuffer-setup-hook ()
-				(setq gc-cons-threshold (* better-gc-cons-threshold 2)))
+	    (lambda ()
+	      (if (boundp 'after-focus-change-function)
+		  (add-function :after after-focus-change-function
+				(lambda ()
+				  (unless (frame-focus-state)
+				    (garbage-collect))))
+		(add-hook 'after-focus-change-function 'garbage-collect))
+	      (defun gc-minibuffer-setup-hook ()
+		(setq gc-cons-threshold (* better-gc-cons-threshold 2)))
 
-			  (defun gc-minibuffer-exit-hook ()
-				(garbage-collect)
-				(setq gc-cons-threshold better-gc-cons-threshold))
+	      (defun gc-minibuffer-exit-hook ()
+		(garbage-collect)
+		(setq gc-cons-threshold better-gc-cons-threshold))
 
-			  (add-hook 'minibuffer-setup-hook #'gc-minibuffer-setup-hook)
-			  (add-hook 'minibuffer-exit-hook #'gc-minibuffer-exit-hook)))
+	      (add-hook 'minibuffer-setup-hook #'gc-minibuffer-setup-hook)
+	      (add-hook 'minibuffer-exit-hook #'gc-minibuffer-exit-hook)))
+
+
+  (prefer-coding-system 'utf-8)
+  (setq locale-coding-system 'utf-8)
+
+  (set-language-environment 'utf-8)
+  (set-default-coding-systems 'utf-8)
+  (set-buffer-file-coding-system 'utf-8)
+  (set-clipboard-coding-system 'utf-8)
+  (set-file-name-coding-system 'utf-8)
+  (set-keyboard-coding-system 'utf-8)
+  (set-terminal-coding-system 'utf-8)
+  (set-selection-coding-system 'utf-8)
+  (modify-coding-system-alist 'process "*" 'utf-8)
 #+end_src
-* Variables
+* Const
 #+BEGIN_SRC emacs-lisp
   (defconst my-leader-key "<SPC>")
   (defconst my-note-file "~/mynote/note.org")
 
   (setq is-on-linux (eq system-type 'gnu/linux))
   (setq my-font (if is-on-linux
-					"Source Code Pro-9"
-				  "Source Code Pro-14"))
+		    "Source Code Pro-9"
+		  "Source Code Pro-14"))
 
   (setq my-shell (if is-on-linux
-					 "/usr/bin/fish"
-				   "/usr/local/bin/fish"))
+		     "/usr/bin/fish"
+		   "/usr/local/bin/fish"))
 #+END_SRC
 * Packages
 #+begin_src emacs-lisp
   (require 'package)
   (setq package-archives '(("gnu"   . "http://elpa.emacs-china.org/gnu/")
-						   ("melpa" . "http://elpa.emacs-china.org/melpa/")
-						   ("melpa-stable" . "https://stable.melpa.org/packages/")))
+			   ("melpa" . "http://elpa.emacs-china.org/melpa/")
+			   ("melpa-stable" . "https://stable.melpa.org/packages/")))
   (package-initialize)
   ;; install use-package
   (unless (package-installed-p 'use-package)
@@ -62,8 +76,8 @@
 ** ace-pinyin
 #+BEGIN_SRC emacs-lisp
   (use-package ace-pinyin
-	:config
-	(ace-pinyin-global-mode +1))
+    :config
+    (ace-pinyin-global-mode +1))
 #+END_SRC
 ** ace-window
 #+BEGIN_SRC emacs-lisp
@@ -417,17 +431,81 @@
 ** vterm
 #+BEGIN_SRC emacs-lisp
   (use-package vterm
+    :commands vterm--internal
+    :bind (:map vterm-mode-map
+		("C-;" . (lambda ()
+			  (interactive)
+			  (and (fboundp 'shell-pop)
+			       (shell-pop nil)))))
     :init
     (setq vterm-always-compile-module t)
-    :config
-    (setq vterm-shell my-shell)
-    :hook (
-	   (vterm-mode . (lambda () (setq-local global-hl-line-mode nil)))))
+
+    (with-no-warnings
+      (defvar vterm-posframe--frame nil)
+
+      (defun vterm-posframe-hidehandler (_)
+	"Hidehandler used by `vterm-posframe-toggle'."
+	(not (eq (selected-frame) posframe--frame)))
+
+      (defun vterm-posframe-toggle ()
+	"Toggle `vterm' child frame."
+	(interactive)
+	(let ((buffer (vterm--internal #'ignore 100)))
+	  (if (and vterm-posframe--frame
+		   (frame-live-p vterm-posframe--frame)
+		   (frame-visible-p vterm-posframe--frame))
+	      (progn
+		(posframe-hide buffer)
+		;; Focus the parent frame
+		(select-frame-set-input-focus (frame-parent vterm-posframe--frame)))
+	    (let ((width  (max 80 (/ (frame-width) 2)))
+		  (height (/ (frame-height) 2)))
+	      (setq vterm-posframe--frame
+		    (posframe-show
+		     buffer
+		     :poshandler #'posframe-poshandler-frame-center
+		     :hidehandler #'vterm-posframe-hidehandler
+		     :left-fringe 8
+		     :right-fringe 8
+		     :width width
+		     :height height
+		     :min-width width
+		     :min-height height
+		     :internal-border-width 3
+		     :internal-border-color (face-foreground 'font-lock-comment-face nil t)
+		     :background-color (face-background 'tooltip nil t)
+		     :override-parameters '((cursor-type . t))
+		     :accept-focus t))
+	      ;; Blink cursor
+	      (with-current-buffer buffer
+		(save-excursion
+		  (vterm-clear t))
+		(setq-local cursor-type 'box))
+	      ;; Focus the child frame
+	      (select-frame-set-input-focus vterm-posframe--frame)))))
+      (bind-key "C-`" #'vterm-posframe-toggle)))
+
 
   (use-package exec-path-from-shell
     :config
     (when (memq window-system '(mac ns x))
       (exec-path-from-shell-initialize)))
+
+
+  (use-package shell-pop
+    :bind (("C-`" . (lambda ()
+		      (interactive)
+		      (if (fboundp 'vterm-posframe-toggle)
+			  (vterm-posframe-toggle)
+			(shell-pop nil))))
+	   ("C-;" . shell-pop))
+    :init
+    (setq shell-pop-window-size 30
+	  shell-pop-shell-type
+	  (cond ((fboundp 'vterm) '("vterm" "*vterm*" #'vterm))
+		(sys/win32p '("eshell" "*eshell*" #'eshell))
+		(t '("terminal" "*terminal*"
+		     (lambda () (term shell-pop-term-shell)))))))
 #+END_SRC
 ** which-key
 #+BEGIN_SRC emacs-lisp
@@ -492,14 +570,6 @@
 
 #+END_SRC
 
-* org-capture
-#+begin_src emacs-lisp
-  (global-set-key (kbd "C-c c") 'org-capture)
-  (setq org-capture-templates
-		'(("n" "new" entry (file+headline my-note-file "Note") "** %^{title}\n%U\n")
-		  ("p" "paste" entry (file+headline my-note-file "Note") "** %^{title}\n%U\n\n%c")
-		  ("c" "code" entry (file+headline my-note-file "Note") "** %^{title}\n%U\n\n#+begin_src\n%c\n#+end_src")))
-#+end_src
 * UI
 #+BEGIN_SRC emacs-lisp
   ;;theme
