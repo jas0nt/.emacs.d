@@ -41,6 +41,11 @@
   (set-terminal-coding-system 'utf-8)
   (set-selection-coding-system 'utf-8)
   (modify-coding-system-alist 'process "*" 'utf-8)
+
+  (when (eq system-type 'darwin)
+    (setq mac-option-modifier 'meta)
+    (setq mac-command-modifier 'super)
+    (setq mac-pass-command-to-system nil))
 #+end_src
 * Const
 #+BEGIN_SRC emacs-lisp
@@ -919,11 +924,6 @@
 #+BEGIN_SRC emacs-lisp
   (use-package vterm
     :commands vterm--internal
-    :bind (:map vterm-mode-map
-		("C-;" . (lambda ()
-			   (interactive)
-			   (and (fboundp 'shell-pop)
-				(shell-pop nil)))))
     :init
     (setq vterm-always-compile-module t)
 
@@ -958,9 +958,8 @@
 		     :height height
 		     :min-width width
 		     :min-height height
-		     :internal-border-width 3
-		     :internal-border-color (face-foreground 'font-lock-comment-face nil t)
-		     :background-color (face-background 'tooltip nil t)
+		     :internal-border-width 1
+		     :internal-border-color "#00ff00"
 		     :override-parameters '((cursor-type . t))
 		     :accept-focus t))
 	      ;; Blink cursor
@@ -979,7 +978,6 @@
 
 
   (use-package shell-pop
-    :bind (("C-;" . shell-pop))
     :init
     (custom-set-variables
      '(shell-pop-shell-type (quote ("ansi-term" "*ansi-term*" (lambda nil (ansi-term shell-pop-term-shell)))))
@@ -1151,6 +1149,7 @@
 
   (general-define-key
    "<f5>" 'revert-buffer
+   "C-;" 'vterm-posframe-toggle
    "C-s" 'swiper
    "M-y" 'counsel-yank-pop
    "M-RET" 'lsp-execute-code-action
@@ -1169,13 +1168,7 @@
 	      (when (> (length (window-list)) 1)
 		(delete-window))))
 	  :wk "kill-buffer")
-    "'" '((lambda ()
-	    (interactive)
-	    (let ((buf-name "*ansi-term*"))
-	      (if (get-buffer buf-name)
-		  (switch-to-buffer buf-name)
-		(my-new-term))))
-	  :wk "term"))
+    "'" 'shell-pop)
 #+END_SRC
 *** buffer
 #+BEGIN_SRC emacs-lisp
