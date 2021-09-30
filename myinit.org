@@ -795,6 +795,12 @@
 #+BEGIN_SRC emacs-lisp
   (use-package magit)
 
+  (use-package git-messenger
+    :init (setq git-messenger:show-detail t
+		git-messenger:use-magit-popup t))
+
+  (use-package git-timemachine)
+
   (use-package diff-hl
     :config
     (global-diff-hl-mode)
@@ -1231,7 +1237,8 @@
 
     "gg" 'magit-status
     "gd" 'hydra-diff-hl/body
-    "gx" 'diff-hl-revert-hunk)
+    "gx" 'diff-hl-revert-hunk
+    "gm" 'git-messenger:popup-message)
 #+END_SRC
 *** jump
 #+BEGIN_SRC emacs-lisp
