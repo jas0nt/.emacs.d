@@ -1,6 +1,18 @@
 #+STARTUP: overview 
 #+PROPERTY: header-args :comments yes :results silent
 
+* Const
+#+BEGIN_SRC emacs-lisp
+  (defconst my-leader-key "<SPC>")
+
+  (setq my-font (if (eq system-type 'gnu/linux)
+		    "Source Code Pro-9"
+		  "Source Code Pro-14"))
+
+  (setq my-shell (if (eq system-type 'gnu/linux)
+		     "/usr/bin/fish"
+		   "/usr/local/bin/fish"))
+#+END_SRC
 * Basic
 #+begin_src emacs-lisp
   (setq gc-cons-threshold most-positive-fixnum)
@@ -46,22 +58,44 @@
     (setq mac-option-modifier 'meta)
     (setq mac-command-modifier 'super)
     (setq mac-pass-command-to-system nil))
+
+
+  ;;custom file
+  (setq custom-file (expand-file-name "~/.emacs.d/custom.el" user-emacs-directory))
+
+  ;;diable error tone
+  (setq ring-bell-function 'ignore)
+
+  ;;no backup file
+  (setq make-backup-files nil)
+  (setq auto-save-default nil)
+
+  ;;show recent file
+  (recentf-mode 1)
+  (setq recentf-max-menu-items 15)
+
+  ;;delete selection
+  (delete-selection-mode 1)
+
+  ;;paste from clipboard
+  (setq x-select-enable-clipboard t)
+
+  ;;replace Yes/No with y/n
+  (fset 'yes-or-no-p 'y-or-n-p)
+
+  ;;exec-path
+  (add-to-list 'exec-path "/usr/local/bin")
+
+  ;;emacs deamon
+  (if (and (fboundp 'server-running-p) 
+         (not (server-running-p)))
+   (server-start))
+
+  ;;tab-width
+  (setq tab-width 4)
 #+end_src
-* Const
-#+BEGIN_SRC emacs-lisp
-  (defconst my-leader-key "<SPC>")
-  (defconst my-note-file "~/mynote/note.org")
-
-  (setq is-on-linux (eq system-type 'gnu/linux))
-  (setq my-font (if is-on-linux
-		    "Source Code Pro-9"
-		  "Source Code Pro-14"))
-
-  (setq my-shell (if is-on-linux
-		     "/usr/bin/fish"
-		   "/usr/local/bin/fish"))
-#+END_SRC
-* Packages
+* Config
+** initialize package
 #+begin_src emacs-lisp
   (require 'package)
   (setq package-archives '(("gnu"   . "http://elpa.emacs-china.org/gnu/")
@@ -78,84 +112,81 @@
   (add-to-list 'load-path
 	       (expand-file-name (concat user-emacs-directory "elisp")))
 #+end_src
-** ace-pinyin
+** evil
 #+BEGIN_SRC emacs-lisp
-  (use-package ace-pinyin
-    :config
-    (ace-pinyin-global-mode +1))
-#+END_SRC
-** ace-window
-#+BEGIN_SRC emacs-lisp
-  (use-package ace-window
+  (use-package evil
     :init
-    (progn
-      (global-set-key [remap other-window] 'ace-window)
-      (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
-      (custom-set-faces
-       '(aw-leading-char-face
-	 ((t (:inhrit ace-jump-face-foreground :height 3.0)))))))
-#+END_SRC
-** all-the-icons
-#+BEGIN_SRC emacs-lisp
-  (use-package all-the-icons)
-#+END_SRC
-** beacon
-#+BEGIN_SRC emacs-lisp
-  (use-package beacon
+    (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
+    (setq evil-want-keybinding nil)
+    (setq evil-disable-insert-state-bindings t)
+    (setq evil-want-C-i-jump nil)
+    (setq evil-want-C-u-scroll t)
     :config
-    (beacon-mode 1)
-    (setq beacon-color "#00FF00"))
-#+END_SRC
-** benchmark-init
-#+BEGIN_SRC emacs-lisp
-  (use-package benchmark-init
-    :init (benchmark-init/activate)
-    :hook (after-init . benchmark-init/deactivate))
-#+END_SRC
-** bongo
-#+BEGIN_SRC emacs-lisp
-  (use-package bongo
-    ;; :if (eq system-type 'gnu/linux)
+    (evil-mode 1)
+    (setq evil-insert-state-cursor '(hollow "yellow")
+	  evil-normal-state-cursor '(box "green")))
+
+  (use-package evil-collection
+    :after (evil)
+    :init
+    (setq evil-collection-company-use-tng nil)
     :config
-    (setq bongo-logo nil)
-    (setq bongo-display-track-icons nil)
-    (setq bongo-display-track-lengths nil)
-    (setq bongo-display-header-icons nil)
-    (setq bongo-display-playback-mode-indicator t)
-    (setq bongo-header-line-mode nil)
-    (setq bongo-mode-line-indicator-mode nil)
-    (setq bongo-field-separator (propertize " · " 'face 'shadow))
+    (evil-collection-init))
 
-    (setq bongo-prefer-library-buffers nil)
-    (setq bongo-insert-whole-directory-trees t)
-    ;;(setq bongo-join-inserted-tracks nil)
-    (setq bongo-enabled-backends '(vlc))
+  (use-package evil-nerd-commenter)
 
-    (defun init-goto-bongo ()
-      (interactive)
-      (let ((bongo-playlist-buffer-name "*Bongo Playlist*"))
-	(unless (get-buffer bongo-playlist-buffer-name)
-	  (bongo)
-	  (bongo-insert-directory-tree "~/Music/my_music")
-	  (goto-char (point-min))
-	  (bongo-random-playback-mode))
-	(switch-to-buffer bongo-playlist-buffer-name)))
+  (use-package evil-pinyin
+    :after (evil)
+    :init
+    (setq-default evil-pinyin-scheme 'simplified-xiaohe-all)
+    (setq-default evil-pinyin-with-search-rule 'always)
+    :config
+    (evil-select-search-module 'evil-search-module 'evil-search)
+    (global-evil-pinyin-mode))
 
-    (defhydra hydra-bongo ()
-      ("m" init-goto-bongo "goto-bongo" :color blue)
-      ("s" bongo-pause/resume "play/pause")
-      ("r" bongo-play-random "play random")
-      ("n" bongo-play-next "play next")
-      ("p" bongo-play-previous "play previous")
-      ("f" bongo-seek-forward-10 "forward")
-      ("F" bongo-seek-forward-60 "Forward")
-      ("b" bongo-seek-backward-10 "backward")
-      ("B" bongo-seek-backward-60 "Backward")
-      ("q" nil "Cancel")))
+  (use-package evil-exchange
+    :config
+    (evil-exchange-install))
 #+END_SRC
-** bufler
+** edit
 #+BEGIN_SRC emacs-lisp
-  (use-package bufler)
+  (use-package expand-region)
+
+  (use-package hungry-delete
+    :config
+    (global-hungry-delete-mode))
+
+  (use-package aggressive-indent
+    :config
+    (global-aggressive-indent-mode 1))
+
+  (use-package ialign)
+
+  (use-package rainbow-delimiters
+    :config
+    (rainbow-delimiters-mode)
+    (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
+
+  (use-package yasnippet
+    :config
+    (yas-reload-all)
+    (add-hook 'prog-mode-hook #'yas-minor-mode))
+
+  (use-package yasnippet-snippets)
+
+  (use-package undo-tree
+    :init
+    (global-undo-tree-mode))
+#+END_SRC
+
+** dired
+#+BEGIN_SRC emacs-lisp
+  (when (string= system-type "darwin")
+    (require 'dired-x)
+    (setq dired-guess-shell-alist-user '(("\\.*\\'" "open")))
+    (setq dired-use-ls-dired nil))
+
+  (setq dired-listing-switches "-alht")
 #+END_SRC
 ** company
 #+BEGIN_SRC emacs-lisp
@@ -399,103 +430,6 @@
   ;;   :config
   ;;   (add-to-list 'company-backends #'company-tabnine))
 #+END_SRC
-** dashboard
-#+BEGIN_SRC emacs-lisp
-  (use-package dashboard
-    :init
-    (dashboard-setup-startup-hook)
-    (setq dashboard-center-content t)
-    (setq dashboard-startup-banner "~/.emacs.d/banners/dark_knight.png")
-    (setq dashboard-image-banner-max-height 400)
-    (setq dashboard-items '((recents . 10)
-			    (projects . 7)
-			    (bookmarks . 7))))
-#+END_SRC
-** dired
-#+BEGIN_SRC emacs-lisp
-  (when (string= system-type "darwin")
-    (require 'dired-x)
-    (setq dired-guess-shell-alist-user '(("\\.*\\'" "open")))
-    (setq dired-use-ls-dired nil))
-
-  (setq dired-listing-switches "-alht")
-#+END_SRC
-** discover-my-major
-#+begin_src emacs-lisp
-  (use-package discover-my-major
-    :bind ("C-h C-m" . discover-my-major))
-#+end_src
-** evil
-#+BEGIN_SRC emacs-lisp
-  (use-package evil
-    :init
-    (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
-    (setq evil-want-keybinding nil)
-    (setq evil-disable-insert-state-bindings t)
-    (setq evil-want-C-i-jump nil)
-    (setq evil-want-C-u-scroll t)
-    :config
-    (evil-mode 1)
-    (setq evil-insert-state-cursor '(hollow "yellow")
-	  evil-normal-state-cursor '(box "green")))
-
-  (use-package evil-collection
-    :after (evil)
-    :init
-    (setq evil-collection-company-use-tng nil)
-    :config
-    (evil-collection-init))
-
-  (use-package evil-nerd-commenter)
-
-  (use-package evil-pinyin
-    :after (evil)
-    :init
-    (setq-default evil-pinyin-scheme 'simplified-xiaohe-all)
-    (setq-default evil-pinyin-with-search-rule 'always)
-    :config
-    (evil-select-search-module 'evil-search-module 'evil-search)
-    (global-evil-pinyin-mode))
-
-  (use-package evil-exchange
-    :config
-    (evil-exchange-install))
-#+END_SRC
-** expand-region
-#+BEGIN_SRC emacs-lisp
-  (use-package expand-region)
-#+END_SRC
-** find-file-in-project
-#+begin_src emacs-lisp
- (use-package find-file-in-project
-   :config
-   (ivy-mode 1))
-#+end_src
-** general
-#+BEGIN_SRC emacs-lisp
-  (use-package general)
-#+END_SRC
-** google-this
-#+BEGIN_SRC emacs-lisp
-  (use-package google-this)
-#+END_SRC
-** hungry-delete & aggresive-indent
-#+BEGIN_SRC emacs-lisp
-  (use-package hungry-delete
-    :config
-    (global-hungry-delete-mode))
-  (use-package aggressive-indent
-    :config
-    (global-aggressive-indent-mode 1))
-#+END_SRC
-** hydra
-#+BEGIN_SRC emacs-lisp
-  (use-package hydra :ensure hydra)
-#+END_SRC
-** ialign
-#+BEGIN_SRC emacs-lisp
-  (use-package ialign)
-#+END_SRC
 ** ivy
 #+BEGIN_SRC emacs-lisp
   (use-package counsel
@@ -589,6 +523,27 @@
 		 counsel-recentf counsel-buffer-or-recentf))
 
     (ivy-prescient-mode 1))
+#+END_SRC
+** version-control
+#+BEGIN_SRC emacs-lisp
+  (use-package magit)
+
+  (use-package git-messenger
+    :init (setq git-messenger:show-detail t
+		git-messenger:use-magit-popup t))
+
+  (use-package git-timemachine)
+
+  ;; highlight diffs
+  (use-package diff-hl
+    :config
+    (global-diff-hl-mode)
+    (defhydra hydra-diff-hl ()
+      "git diff"
+      ("j" diff-hl-next-hunk)
+      ("k" diff-hl-previous-hunk)
+      ("x" diff-hl-revert-hunk)
+      ("q" nil "cancel")))
 #+END_SRC
 ** lsp
 #+BEGIN_SRC emacs-lisp
@@ -701,57 +656,6 @@
   (use-package lsp-ui
     :custom-face
     (lsp-ui-sideline-code-action ((t (:inherit warning))))
-    :pretty-hydra
-    ((:title (pretty-hydra-title "LSP UI" 'faicon "rocket" :face 'all-the-icons-green)
-	     :color amaranth :quit-key "q")
-     ("Doc"
-      (("d e" (progn
-		(lsp-ui-doc-enable (not lsp-ui-doc-mode))
-		(setq lsp-ui-doc-enable (not lsp-ui-doc-enable)))
-	"enable" :toggle lsp-ui-doc-mode)
-       ("d s" (setq lsp-ui-doc-include-signature (not lsp-ui-doc-include-signature))
-	"signature" :toggle lsp-ui-doc-include-signature)
-       ("d t" (setq lsp-ui-doc-position 'top)
-	"top" :toggle (eq lsp-ui-doc-position 'top))
-       ("d b" (setq lsp-ui-doc-position 'bottom)
-	"bottom" :toggle (eq lsp-ui-doc-position 'bottom))
-       ("d p" (setq lsp-ui-doc-position 'at-point)
-	"at point" :toggle (eq lsp-ui-doc-position 'at-point))
-       ("d h" (setq lsp-ui-doc-header (not lsp-ui-doc-header))
-	"header" :toggle lsp-ui-doc-header)
-       ("d f" (setq lsp-ui-doc-alignment 'frame)
-	"align frame" :toggle (eq lsp-ui-doc-alignment 'frame))
-       ("d w" (setq lsp-ui-doc-alignment 'window)
-	"align window" :toggle (eq lsp-ui-doc-alignment 'window)))
-      "Sideline"
-      (("s e" (progn
-		(lsp-ui-sideline-enable (not lsp-ui-sideline-mode))
-		(setq lsp-ui-sideline-enable (not lsp-ui-sideline-enable)))
-	"enable" :toggle lsp-ui-sideline-mode)
-       ("s h" (setq lsp-ui-sideline-show-hover (not lsp-ui-sideline-show-hover))
-	"hover" :toggle lsp-ui-sideline-show-hover)
-       ("s d" (setq lsp-ui-sideline-show-diagnostics (not lsp-ui-sideline-show-diagnostics))
-	"diagnostics" :toggle lsp-ui-sideline-show-diagnostics)
-       ("s s" (setq lsp-ui-sideline-show-symbol (not lsp-ui-sideline-show-symbol))
-	"symbol" :toggle lsp-ui-sideline-show-symbol)
-       ("s c" (setq lsp-ui-sideline-show-code-actions (not lsp-ui-sideline-show-code-actions))
-	"code actions" :toggle lsp-ui-sideline-show-code-actions)
-       ("s i" (setq lsp-ui-sideline-ignore-duplicate (not lsp-ui-sideline-ignore-duplicate))
-	"ignore duplicate" :toggle lsp-ui-sideline-ignore-duplicate))
-      "Action"
-      (("h" backward-char "←")
-       ("j" next-line "↓")
-       ("k" previous-line "↑")
-       ("l" forward-char "→")
-       ("C-a" mwim-beginning-of-code-or-line nil)
-       ("C-e" mwim-end-of-code-or-line nil)
-       ("C-b" backward-char nil)
-       ("C-n" next-line nil)
-       ("C-p" previous-line nil)
-       ("C-f" forward-char nil)
-       ("M-b" backward-word nil)
-       ("M-f" forward-word nil)
-       ("c" lsp-ui-sideline-apply-code-actions "apply code actions"))))
     :bind (("C-c u" . lsp-ui-imenu)
 	   :map lsp-ui-mode-map
 	   ("M-<f6>" . lsp-ui-hydra/body)
@@ -803,143 +707,16 @@
 		(setq lsp-ui-doc-border (face-foreground 'font-lock-comment-face nil t))
 		(set-face-background 'lsp-ui-doc-background (face-background 'tooltip nil t)))))
 #+END_SRC
-** magit
+** terminal
 #+BEGIN_SRC emacs-lisp
-  (use-package magit)
-
-  (use-package git-messenger
-    :init (setq git-messenger:show-detail t
-		git-messenger:use-magit-popup t))
-
-  (use-package git-timemachine)
-
-  (use-package diff-hl
-    :config
-    (global-diff-hl-mode)
-    (defhydra hydra-diff-hl ()
-      "git diff"
-      ("j" diff-hl-next-hunk)
-      ("k" diff-hl-previous-hunk)
-      ("x" diff-hl-revert-hunk)
-      ("q" nil "cancel")))
-
-#+END_SRC
-** markdown
-#+BEGIN_SRC emacs-lisp
-  (use-package markdown-preview-eww)
-  (use-package markdown-mode
-    :commands (markdown-mode gfm-mode)
-    :mode (("README\\.md\\'" . gfm-mode)
-	   ("\\.md\\'" . markdown-mode)
-	   ("\\.markdown\\'" . markdown-mode))
-    :init (setq markdown-command "multimarkdown"))
-#+END_SRC
-** org
-#+BEGIN_SRC emacs-lisp
-  (use-package org
-    :config
-    (setq-default prettify-symbols-alist '(("#+BEGIN_SRC" . "✎")
-					   ("#+END_SRC" . "□")
-					   ("#+begin_src" . "✎")
-					   ("#+end_src" . "□")))
-    (add-hook 'org-mode-hook 'prettify-symbols-mode)
-
-    (setq org-startup-with-inline-images t)
-    (setq org-babel-python-command "python3")
-    (org-babel-do-load-languages
-     'org-babel-load-languages
-     '((python . t)
-       (R . t)
-       (sql . t)
-       )))
-#+END_SRC
-** popwin
-#+BEGIN_SRC emacs-lisp
-  (use-package popwin
-    :config
-    (popwin-mode t))
-#+END_SRC
-** projectile
-#+BEGIN_SRC emacs-lisp
-  (use-package projectile
-    :config
-    (projectile-global-mode)
-    (setq projectile-completion-system 'ivy))
-#+END_SRC
-** python
-#+BEGIN_SRC emacs-lisp
-  (use-package python-mode
-    :config
-    (setq python-shell-interpreter "python3"))
-
-  (use-package pyvenv
-    :config
-    (pyvenv-mode 1))
-
-  (use-package lsp-pyright
-    :hook (python-mode . (lambda ()
-			   (require 'lsp-pyright)
-			   (lsp)))
-    :init
-    (when (executable-find "python3")
-      (setq lsp-pyright-python-executable-cmd "python3")))
-#+END_SRC
-** rainbow-delimiters
-#+BEGIN_SRC emacs-lisp
-  (use-package rainbow-delimiters
-    :config
-    (rainbow-delimiters-mode)
-    (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
-#+END_SRC
-** restart-emacs
-#+BEGIN_SRC emacs-lisp
-  (use-package restart-emacs)
-#+END_SRC
-** restclient
-#+BEGIN_SRC emacs-lisp
-  (use-package restclient
-    :mode ("\\.http\\'" . restclient-mode))
-  (use-package company-restclient
-    :config
-    (add-to-list 'company-backends 'company-restclient))
-#+END_SRC
-** rime
-#+BEGIN_SRC emacs-lisp
-  (use-package rime
-    :config
-    (unless is-on-linux
-      (setq rime-librime-root "~/.emacs.d/librime/dist"))
-    (setq rime-posframe-properties
-	  (list :background-color "#282a36"
-		:foreground-color "#bd93f9"
-		:font my-font
-		:internal-border-width 10))
-
-    (setq default-input-method "rime"
-	  rime-show-candidate 'minibuffer))
-#+END_SRC
-** term
-#+begin_src emacs-lisp
   (add-hook 'term-mode-hook (lambda ()
 			      (setq-local global-hl-line-mode nil)
 			      (setq-local mode-line-format nil)))
 
   (defun my-new-term ()
     (interactive)
-    (ansi-term "/usr/local/bin/fish"))
-#+end_src
-** try
-#+BEGIN_SRC emacs-lisp
-  (use-package try)
-#+END_SRC
-** undo-tree
-#+BEGIN_SRC emacs-lisp
-(use-package undo-tree
-  :init
-  (global-undo-tree-mode))
-#+END_SRC
-** vterm
-#+BEGIN_SRC emacs-lisp
+    (ansi-term my-shell))
+
   (use-package vterm
     :commands vterm--internal
     :init
@@ -1011,78 +788,189 @@
      '(shell-pop-restore-window-configuration t)
      '(shell-pop-cleanup-buffer-at-process-exit t)))
 #+END_SRC
-** which-key
+** dashboard
 #+BEGIN_SRC emacs-lisp
-  (use-package which-key
-    :config
-    (setq which-key-idle-delay 0.5)
-    (which-key-mode))
+  (use-package dashboard
+    :init
+    (dashboard-setup-startup-hook)
+    (setq dashboard-center-content t)
+    (setq dashboard-startup-banner "~/.emacs.d/banners/dark_knight.png")
+    (setq dashboard-image-banner-max-height 400)
+    (setq dashboard-items '((recents . 10)
+			    (projects . 7)
+			    (bookmarks . 7))))
 #+END_SRC
-** yasnippet
+** music
 #+BEGIN_SRC emacs-lisp
-  (use-package yasnippet
+  (use-package bongo
+    ;; :if (eq system-type 'gnu/linux)
     :config
-    (yas-reload-all)
-    (add-hook 'prog-mode-hook #'yas-minor-mode))
+    (setq bongo-logo nil)
+    (setq bongo-display-track-icons nil)
+    (setq bongo-display-track-lengths nil)
+    (setq bongo-display-header-icons nil)
+    (setq bongo-display-playback-mode-indicator t)
+    (setq bongo-header-line-mode nil)
+    (setq bongo-mode-line-indicator-mode nil)
+    (setq bongo-field-separator (propertize " · " 'face 'shadow))
 
-  (use-package yasnippet-snippets)
+    (setq bongo-prefer-library-buffers nil)
+    (setq bongo-insert-whole-directory-trees t)
+    ;;(setq bongo-join-inserted-tracks nil)
+    (setq bongo-enabled-backends '(vlc))
+
+    (defun init-goto-bongo ()
+      (interactive)
+      (let ((bongo-playlist-buffer-name "*Bongo Playlist*"))
+	(unless (get-buffer bongo-playlist-buffer-name)
+	  (bongo)
+	  (bongo-insert-directory-tree "~/Music/my_music")
+	  (goto-char (point-min))
+	  (bongo-random-playback-mode))
+	(switch-to-buffer bongo-playlist-buffer-name)))
+
+    (defhydra hydra-bongo ()
+      ("m" init-goto-bongo "goto-bongo" :color blue)
+      ("s" bongo-pause/resume "play/pause")
+      ("r" bongo-play-random "play random")
+      ("n" bongo-play-next "play next")
+      ("p" bongo-play-previous "play previous")
+      ("f" bongo-seek-forward-10 "forward")
+      ("F" bongo-seek-forward-60 "Forward")
+      ("b" bongo-seek-backward-10 "backward")
+      ("B" bongo-seek-backward-60 "Backward")
+      ("q" nil "Cancel")))
 #+END_SRC
-** youdao-dictionary
+** python
 #+BEGIN_SRC emacs-lisp
+  (use-package python-mode
+    :config
+    (setq python-shell-interpreter "python3"))
+
+  (use-package pyvenv
+    :config
+    (pyvenv-mode 1))
+
+  ;; python language server
+  (use-package lsp-pyright
+    :hook (python-mode . (lambda ()
+			   (require 'lsp-pyright)
+			   (lsp)))
+    :init
+    (when (executable-find "python3")
+      (setq lsp-pyright-python-executable-cmd "python3")))
+
+  (use-package flymake-python-pyflakes)
+#+END_SRC
+** org
+#+BEGIN_SRC emacs-lisp
+  (use-package org
+    :config
+    (setq-default prettify-symbols-alist '(("#+BEGIN_SRC" . "✎")
+					   ("#+END_SRC" . "□")
+					   ("#+begin_src" . "✎")
+					   ("#+end_src" . "□")))
+    (add-hook 'org-mode-hook 'prettify-symbols-mode)
+
+    (setq org-startup-with-inline-images t)
+    (setq org-babel-python-command "python3")
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((python . t)
+       (R . t)
+       (sql . t))))
+#+END_SRC
+** markdown
+#+BEGIN_SRC emacs-lisp
+  (use-package markdown-preview-eww)
+
+  (use-package markdown-mode
+    :commands (markdown-mode gfm-mode)
+    :mode (("README\\.md\\'" . gfm-mode)
+	   ("\\.md\\'" . markdown-mode)
+	   ("\\.markdown\\'" . markdown-mode))
+    :init (setq markdown-command "multimarkdown"))
+#+END_SRC
+** 中文
+#+BEGIN_SRC emacs-lisp
+  (use-package ace-pinyin
+    :config
+    (ace-pinyin-global-mode +1))
+
   (use-package youdao-dictionary)
-#+END_SRC
 
-* Configs
+  ;; 中文输入法
+  (use-package rime
+    :config
+    (unless (eq system-type 'gnu/linux)
+      (setq rime-librime-root "~/.emacs.d/librime/dist"))
+    (setq rime-posframe-properties
+	  (list :background-color "#282a36"
+		:foreground-color "#bd93f9"
+		:font my-font
+		:internal-border-width 10))
+
+    (setq default-input-method "rime"
+	  rime-show-candidate 'minibuffer))
+#+END_SRC
+** other
 #+BEGIN_SRC emacs-lisp
-  ;;custom file
-  (setq custom-file (expand-file-name "~/.emacs.d/custom.el" user-emacs-directory))
-  ;;(load-file custom-file)
+  ;; jump between windows
+  (use-package ace-window
+    :init
+    (progn
+      (global-set-key [remap other-window] 'ace-window)
+      (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+      (custom-set-faces
+       '(aw-leading-char-face
+	 ((t (:inhrit ace-jump-face-foreground :height 3.0)))))))
 
-  ;;ido mode
-  ;;(setq indo-enable-flex-matching t)
-  ;;(setq ido-everywhere t)
-  ;;(ido-mode t)
+  (use-package benchmark-init
+    :init (benchmark-init/activate)
+    :hook (after-init . benchmark-init/deactivate))
 
-  ;;diable error tone
-  (setq ring-bell-function 'ignore)
+  (use-package discover-my-major
+    :bind ("C-h C-m" . discover-my-major))
 
-  ;;no backup file
-  (setq make-backup-files nil)
-  (setq auto-save-default nil)
+  (use-package find-file-in-project
+    :config
+    (ivy-mode 1))
 
-  ;;show recent file
-  (recentf-mode 1)
-  (setq recentf-max-menu-items 15)
+  (use-package google-this)
 
-  ;;delete selection
-  (delete-selection-mode 1)
+  (use-package projectile
+    :config
+    (projectile-global-mode)
+    (setq projectile-completion-system 'ivy))
 
-  ;;paste from clipboard
-  (setq x-select-enable-clipboard t)
+  (use-package restart-emacs)
 
-  ;;replace Yes/No with y/n
-  (fset 'yes-or-no-p 'y-or-n-p)
+  (use-package restclient
+    :mode ("\\.http\\'" . restclient-mode))
 
-  ;;exec-path
-  (add-to-list 'exec-path "/usr/local/bin")
+  (use-package company-restclient
+    :config
+    (add-to-list 'company-backends 'company-restclient))
 
-  ;;emacs deamon
-  (unless (server-running-p) (server-start))
+  (use-package posframe)
 
-  ;;tab-width
-  (setq tab-width 4)
+  ;; try a package temporarily
+  (use-package try)
 
+  (use-package bufler)
 #+END_SRC
-
 * UI
 #+BEGIN_SRC emacs-lisp
-  ;;theme
+  ;; theme
   (use-package dracula-theme
     :init
     (load-theme 'dracula t)
     (set-cursor-color "#00ff00"))
 
+  ;; icons
   (use-package all-the-icons)
+
+  ;; modeline
   (use-package doom-modeline
     :after (all-the-icons)
     :init (doom-modeline-mode 1)
@@ -1091,6 +979,11 @@
     (setq doom-modeline-height 1)
     (set-face-attribute 'mode-line nil :family "Source Code Pro" :height 150)
     (set-face-attribute 'mode-line-inactive nil :family "Source Code Pro" :height 150))
+
+  (use-package beacon
+    :config
+    (beacon-mode 1)
+    (setq beacon-color "#00FF00"))
 
   ;; set transparency
   (set-frame-parameter (selected-frame) 'alpha '(90 90))
@@ -1104,12 +997,9 @@
   ;; display battery
   (display-battery-mode 1)
 
-  ;; (require 'nano)
-  ;; (require 'nano-theme-dark)
-
   ;;font
   (add-to-list 'default-frame-alist `(font . ,my-font))
-  (unless is-on-linux
+  (when (eq system-type 'darwin)
 	(set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
 
   ;;hide tool bar
@@ -1118,9 +1008,6 @@
   ;;hide scroll bar
   (scroll-bar-mode -1)
 
-  ;;hide menu bar
-  ;; (unless (display-graphic-p)
-  ;;   (menu-bar-mode -1))
   (menu-bar-mode -1)
 
   ;;show line number
@@ -1149,11 +1036,18 @@
   ;;Display lambda as λ
   (global-prettify-symbols-mode 1)
   (setq prettify-symbols-alist '(("lambda" . 955)))
-
 #+END_SRC
 * Keybindings
 ** general
 #+BEGIN_SRC emacs-lisp
+  (use-package general)
+  (use-package hydra :ensure hydra)
+
+  (use-package which-key
+    :config
+    (setq which-key-idle-delay 0.5)
+    (which-key-mode))
+
   (general-create-definer my-leader-def
     :states '(normal insert visual emacs)
     :keymaps 'override
@@ -1285,14 +1179,6 @@
     "mb" 'bongo-seek-backward-10
     "mB" 'bongo-seek-backward-60)
 #+END_SRC
-*** note
-#+BEGIN_SRC emacs-lisp
-  (my-leader-def
-    "n" '(:wk "note")
-    "nn" 'org-capture
-    "nf" '((lambda () (interactive) (find-file my-note-file))
-	   :wk "open note"))
-#+END_SRC
 *** project
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
@@ -1399,7 +1285,6 @@
     "w" '(:wk "window")
 
     "ww" 'hydra-window/body
-    "wt" 'awesome-fast-switch/body
     "wh" 'windmove-left
     "wj" 'windmove-down
     "wk" 'windmove-up
