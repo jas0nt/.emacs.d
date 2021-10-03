@@ -465,7 +465,13 @@
     (ivy-current-match ((t (:extend t :background "yellow" :foreground "#ff79c6" :weight bold)))))
 
   (use-package ivy-posframe
+    :after (dracula-theme)
+    :custom-face
+    (ivy-posframe-border ((t (:background "#bd93f9"))))
     :init
+    (setq ivy-posframe-border-width 1
+	  ivy-posframe-parameters '((left-fringe . 8)
+				    (right-fringe . 8)))
     (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display)))
     :config
     (ivy-posframe-mode 1))
@@ -755,7 +761,7 @@
 		     :min-width width
 		     :min-height height
 		     :internal-border-width 1
-		     :internal-border-color "#00ff00"
+		     :internal-border-color "#50fa7b"
 		     :override-parameters '((cursor-type . t))
 		     :accept-focus t))
 	      (with-current-buffer buffer
@@ -967,9 +973,6 @@
     (load-theme 'dracula t)
     (set-cursor-color "#00ff00"))
 
-  ;; icons
-  (use-package all-the-icons)
-
   ;; modeline
   (use-package doom-modeline
     :after (all-the-icons)
@@ -980,14 +983,17 @@
     (set-face-attribute 'mode-line nil :family "Source Code Pro" :height 150)
     (set-face-attribute 'mode-line-inactive nil :family "Source Code Pro" :height 150))
 
+  ;; icons
+  (use-package all-the-icons)
+
   (use-package beacon
     :config
     (beacon-mode 1)
     (setq beacon-color "#00FF00"))
 
   ;; set transparency
-  (set-frame-parameter (selected-frame) 'alpha '(90 90))
-  (add-to-list 'default-frame-alist '(alpha 90 90))
+  ;; (set-frame-parameter (selected-frame) 'alpha '(90 90))
+  ;; (add-to-list 'default-frame-alist '(alpha 90 90))
 
   ;; display time
   (display-time-mode 1)
