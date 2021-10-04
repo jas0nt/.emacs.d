@@ -4,6 +4,7 @@
 * Const
 #+BEGIN_SRC emacs-lisp
   (defconst my-leader-key "<SPC>")
+  (defconst main-color "#50fa7b")
 
   (setq my-font (if (eq system-type 'gnu/linux)
 		    "Source Code Pro-9"
@@ -462,7 +463,7 @@
 
   (use-package ivy
     :custom-face
-    (ivy-current-match ((t (:extend t :background "yellow" :foreground "#ff79c6" :weight bold)))))
+    (ivy-current-match ((t (:extend t :background ,main-color :foreground "#282a36" :weight bold)))))
 
   (use-package ivy-posframe
     :after (dracula-theme)
@@ -972,7 +973,7 @@
   (use-package dracula-theme
     :init
     (load-theme 'dracula t)
-    (set-cursor-color "#00ff00"))
+    (set-cursor-color main-color))
 
   ;; modeline
   (use-package doom-modeline
@@ -990,7 +991,7 @@
   (use-package beacon
     :config
     (beacon-mode 1)
-    (setq beacon-color "#00FF00"))
+    (setq beacon-color main-color))
 
   ;; set transparency
   ;; (set-frame-parameter (selected-frame) 'alpha '(90 90))
