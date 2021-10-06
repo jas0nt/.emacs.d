@@ -134,7 +134,26 @@
     :config
     (evil-collection-init))
 
-  (use-package evil-nerd-commenter)
+  (use-package evil-snipe
+    :after (evil)
+    :config
+    (evil-snipe-mode +1)
+    (evil-snipe-override-mode +1))
+
+  (use-package evil-goggles
+    :after (evil)
+    :ensure t
+    :config
+    (evil-goggles-mode)
+    (evil-goggles-use-diff-faces))
+
+  (use-package evil-surround
+    :ensure t
+    :config
+    (global-evil-surround-mode 1))
+
+  (use-package evil-nerd-commenter
+    :after (evil))
 
   (use-package evil-pinyin
     :after (evil)
@@ -146,6 +165,7 @@
     (global-evil-pinyin-mode))
 
   (use-package evil-exchange
+    :after (evil)
     :config
     (evil-exchange-install))
 #+END_SRC
@@ -1064,12 +1084,14 @@
 
   (general-define-key
    :states '(normal visual)
-   "gl" 'evil-avy-goto-line
    ";" 'ivy-switch-buffer
    "," 'evil-switch-to-windows-last-buffer
    "." 'evil-avy-goto-char-timer
-   "g;" 'repeat-find-char
-   "g," 'repeat-find-char-reverse
+   "f" 'evil-snipe-f
+   "F" 'evil-snipe-F
+   "t" 'evil-snipe-t
+   "T" 'evil-snipe-T
+   "gl" 'evil-avy-goto-line
    "g." 'evil-repeat)
 
   (general-define-key
