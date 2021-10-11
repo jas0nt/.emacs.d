@@ -137,8 +137,7 @@
   (use-package evil-snipe
     :after (evil)
     :config
-    (evil-snipe-mode +1)
-    (evil-snipe-override-mode +1))
+    (evil-snipe-mode +1))
 
   (use-package evil-goggles
     :after (evil)
@@ -858,7 +857,7 @@
 
     (defhydra hydra-bongo ()
       ("m" init-goto-bongo "goto-bongo" :color blue)
-      ("s" bongo-pause/resume "play/pause")
+      ("p" bongo-pause/resume "play/pause")
       ("r" bongo-play-random "play random")
       ("n" bongo-play-next "play next")
       ("p" bongo-play-previous "play previous")
@@ -1200,7 +1199,7 @@
     "mM" '(hydra-bongo/body :wk "music")
     "mm" '(init-goto-bongo :wk "goto music")
     "m <SPC>" 'bongo-pause/resume
-    "ms" 'bongo-pause/resume
+    "mp" 'bongo-pause/resume
     "mr" 'bongo-play-random
     "mn" 'bongo-play-next
     "mp" 'bongo-play-previous
@@ -1363,7 +1362,7 @@
    "K" 'bongo-previous-header-line
    "r" 'bongo-play-random
    "c" 'bongo-recenter
-   "s" 'bongo-pause/resume
+   "p" 'bongo-pause/resume
    "f" 'bongo-seek-forward-10
    "F" 'bongo-seek-forward-60
    "b" 'bongo-seek-backward-10
