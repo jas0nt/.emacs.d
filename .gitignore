@@ -38,6 +38,7 @@ tramp
 /.dap-breakpoints
 .lsp-session-*
 .mc-lists.el
+history
 
 librime/
 rime/

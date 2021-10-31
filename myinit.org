@@ -99,9 +99,8 @@
 ** initialize package
 #+begin_src emacs-lisp
   (require 'package)
-  (setq package-archives '(("gnu"   . "http://elpa.emacs-china.org/gnu/")
-			   ("melpa" . "http://elpa.emacs-china.org/melpa/")
-			   ("melpa-stable" . "https://stable.melpa.org/packages/")))
+  (setq package-archives '(("elpa"   . "https://elpa.gnu.org/packages/")
+			   ("melpa" . "https://melpa.org/packages/")))
   (package-initialize)
   ;; install use-package
   (unless (package-installed-p 'use-package)
@@ -450,105 +449,41 @@
   ;;   :config
   ;;   (add-to-list 'company-backends #'company-tabnine))
 #+END_SRC
-** ivy
+** vertico
 #+BEGIN_SRC emacs-lisp
-  (use-package counsel
+  (use-package vertico
     :init
-    (setq enable-recursive-minibuffers t) ; Allow commands in minibuffers
+    (vertico-mode))
 
-    (setq ivy-height 12
-	  ivy-use-selectable-prompt t
-	  ivy-use-virtual-buffers t    ; Enable bookmarks and recentf
-	  ivy-fixed-height-minibuffer t
-	  ivy-count-format "(%d/%d) "
-	  ivy-ignore-buffers '("\\` " "\\`\\*tramp/" "\\`\\*xref" "\\`\\*helpful "
-			       "\\`\\*.+-posframe-buffer\\*")
-	  ivy-on-del-error-function #'ignore
-	  ivy-initial-inputs-alist nil)
-
-    (setq swiper-action-recenter t)
-
-    (setq counsel-find-file-at-point t
-	  counsel-preselect-current-file t
-	  counsel-yank-pop-separator "\n────────\n")
-    (add-hook 'counsel-grep-post-action-hook #'recenter)
-
-    ;; Use the faster search tools
-    (when (executable-find "rg")
-      (setq counsel-grep-base-command "rg -S --no-heading --line-number --color never '%s' '%s'"))
-    (when (executable-find "fd")
-      (setq counsel-fzf-cmd
-	    "fd --type f --hidden --follow --exclude .git --color never '%s'")))
-
-  (use-package ivy
-    :custom-face
-    (ivy-current-match ((t (:extend t :background ,main-color :foreground "#282a36" :weight bold)))))
-
-  (use-package ivy-posframe
-    :after (dracula-theme)
-    :custom-face
-    (ivy-posframe-border ((t (:background "#bd93f9"))))
+  (use-package orderless
     :init
-    (setq ivy-posframe-border-width 1
-	  ivy-posframe-parameters '((left-fringe . 8)
-				    (right-fringe . 8)))
-    (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display)))
+    (setq completion-styles '(orderless)
+	  completion-category-defaults nil
+	  completion-category-overrides '((file (styles partial-completion)))))
+
+  (use-package savehist
+    :init
+    (savehist-mode))
+
+  (use-package emacs
+    :init
+    (defun crm-indicator (args)
+      (cons (concat "[CRM] " (car args)) (cdr args)))
+    (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
+
+    (setq minibuffer-prompt-properties
+	  '(read-only t cursor-intangible t face minibuffer-prompt))
+    (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+
+    (setq enable-recursive-minibuffers t))
+
+  (use-package consult
     :config
-    (ivy-posframe-mode 1))
-
-  (use-package ivy-rich
-    :hook ((counsel-projectile-mode . ivy-rich-mode) ; MUST after `counsel-projectile'
-	   (ivy-rich-mode . ivy-rich-project-root-cache-mode)
-	   (ivy-rich-mode . (lambda ()
-			      "Use abbreviate in `ivy-rich-mode'."
-			      (setq ivy-virtual-abbreviate
-				    (or (and ivy-rich-mode 'abbreviate) 'name)))))
-    :init
-    ;; For better performance
-    (setq ivy-rich-parse-remote-buffer nil))
-
-  (use-package prescient
-    :commands prescient-persist-mode
-    :init (prescient-persist-mode 1))
-
-  (use-package ivy-prescient
-    :commands ivy-prescient-re-builder
-    :custom-face
-    (ivy-minibuffer-match-face-1 ((t (:foreground ,(face-foreground 'font-lock-doc-face nil t)))))
-    :init
-    (defun ivy-prescient-non-fuzzy (str)
-      "Generate an Ivy-formatted non-fuzzy regexp list for the given STR.
-  This is for use in `ivy-re-builders-alist'."
-      (let ((prescient-filter-method '(literal regexp)))
-	(ivy-prescient-re-builder str)))
-
-    (setq ivy-prescient-retain-classic-highlighting t
-	  ivy-re-builders-alist
-	  '((counsel-ag . ivy-prescient-non-fuzzy)
-	    (counsel-rg . ivy-prescient-non-fuzzy)
-	    (counsel-pt . ivy-prescient-non-fuzzy)
-	    (counsel-grep . ivy-prescient-non-fuzzy)
-	    (counsel-fzf . ivy-prescient-non-fuzzy)
-	    (counsel-imenu . ivy-prescient-non-fuzzy)
-	    (counsel-yank-pop . ivy-prescient-non-fuzzy)
-	    (swiper . ivy-prescient-non-fuzzy)
-	    (swiper-isearch . ivy-prescient-non-fuzzy)
-	    (swiper-all . ivy-prescient-non-fuzzy)
-	    (lsp-ivy-workspace-symbol . ivy-prescient-non-fuzzy)
-	    (lsp-ivy-global-workspace-symbol . ivy-prescient-non-fuzzy)
-	    (insert-char . ivy-prescient-non-fuzzy)
-	    (counsel-unicode-char . ivy-prescient-non-fuzzy)
-	    (t . ivy-prescient-re-builder))
-	  ivy-prescient-sort-commands
-	  '(:not swiper swiper-isearch ivy-switch-buffer
-		 lsp-ivy-workspace-symbol ivy-resume ivy--restore-session
-		 counsel-grep counsel-git-grep counsel-rg counsel-ag
-		 counsel-ack counsel-fzf counsel-pt counsel-imenu
-		 counsel-org-capture counsel-outline counsel-org-goto
-		 counsel-load-theme counsel-yank-pop
-		 counsel-recentf counsel-buffer-or-recentf))
-
-    (ivy-prescient-mode 1))
+    (consult-customize
+     consult-ripgrep consult-git-grep consult-grep
+     consult-bookmark consult-recent-file consult-xref
+     consult--source-file consult--source-project-file consult--source-bookmark
+     :preview-key (kbd "M-.")))
 #+END_SRC
 ** version-control
 #+BEGIN_SRC emacs-lisp
@@ -562,6 +497,7 @@
 
   ;; highlight diffs
   (use-package diff-hl
+    :after (hydra)
     :config
     (global-diff-hl-mode)
     (defhydra hydra-diff-hl ()
@@ -735,9 +671,9 @@
 #+END_SRC
 ** terminal
 #+BEGIN_SRC emacs-lisp
-  (add-hook 'term-mode-hook (lambda ()
-			      (setq-local global-hl-line-mode nil)
-			      (setq-local mode-line-format nil)))
+  ;; (add-hook 'term-mode-hook (lambda ()
+  ;; 			    (setq-local global-hl-line-mode nil)
+  ;; 			    (setq-local mode-line-format nil)))
 
   (defun my-new-term ()
     (interactive)
@@ -817,6 +753,7 @@
 ** dashboard
 #+BEGIN_SRC emacs-lisp
   (use-package dashboard
+    :disabled t
     :init
     (dashboard-setup-startup-hook)
     (setq dashboard-center-content t)
@@ -829,6 +766,7 @@
 ** music
 #+BEGIN_SRC emacs-lisp
   (use-package bongo
+    :after (hydra)
     ;; :if (eq system-type 'gnu/linux)
     :config
     (setq bongo-logo nil)
@@ -857,7 +795,7 @@
 
     (defhydra hydra-bongo ()
       ("m" init-goto-bongo "goto-bongo" :color blue)
-      ("p" bongo-pause/resume "play/pause")
+      ("<SPC>" bongo-pause/resume "play/pause")
       ("r" bongo-play-random "play random")
       ("n" bongo-play-next "play next")
       ("p" bongo-play-previous "play previous")
@@ -923,6 +861,16 @@
     :config
     (ace-pinyin-global-mode +1))
 
+  (use-package pyim
+    :init
+    (pyim-default-scheme 'xiaohe-shuangpin)
+    :config
+    ;; 让 vertico 通过 orderless 支持拼音搜索候选项功能
+    (defun my-orderless-regexp (orig_func component)
+      (let ((result (funcall orig_func component)))
+	(pyim-cregexp-build result)))
+    (advice-add 'orderless-regexp :around #'my-orderless-regexp))
+
   (use-package youdao-dictionary)
   (use-package fanyi)
 
@@ -959,16 +907,7 @@
   (use-package discover-my-major
     :bind ("C-h C-m" . discover-my-major))
 
-  (use-package find-file-in-project
-    :config
-    (ivy-mode 1))
-
   (use-package google-this)
-
-  (use-package projectile
-    :config
-    (projectile-global-mode)
-    (setq projectile-completion-system 'ivy))
 
   (use-package restart-emacs)
 
@@ -1081,9 +1020,17 @@
     :prefix my-leader-key
     :non-normal-prefix "C-,")
 
+  ;; copy to clipboard on MacOS
+  (when (eq system-type 'darwin)
+    (general-define-key
+     :states '(visual)
+     "C-c r" '(lambda () (interactive)
+		(shell-command-on-region (point) (mark) "pbcopy"))))
+
   (general-define-key
    :states '(normal visual)
-   ";" 'ivy-switch-buffer
+   "`" 'shell-pop
+   ";" 'switch-to-buffer
    "," 'evil-switch-to-windows-last-buffer
    "." 'evil-avy-goto-char-timer
    "f" 'evil-snipe-f
@@ -1094,19 +1041,19 @@
    "g." 'evil-repeat)
 
   (general-define-key
-   "<f5>" 'revert-buffer
    "C-;" 'vterm-posframe-toggle
-   "C-s" 'swiper
-   "M-y" 'counsel-yank-pop
+   "<f5>" 'revert-buffer
+   "C-s" 'consult-line
+   "M-y" 'yank-pop
    "M-RET" 'lsp-execute-code-action
 
-   "C-." 'company-files)
+   "M-/" 'company-files)
 #+END_SRC
 ** leader-keys
 *** a-key
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-    "<SPC>" 'counsel-M-x
+    "<SPC>" 'execute-extended-command
     "q" '((lambda ()
 	    (interactive)
 	    (progn
@@ -1123,7 +1070,7 @@
 
     "b+" 'er/expand-region
     "bb" 'bufler
-    "bs" 'counsel-switch-buffer-other-window
+    "bs" 'switch-buffer-other-window
     "bS" '((lambda ()
 	     "create a new scratch buffer to work in. (could be *scratch* - *scratchX*)"
 	     (interactive)
@@ -1157,16 +1104,17 @@
 	   :wk "open config")
     "fE" '((lambda () (interactive) (org-babel-load-file (expand-file-name "~/.emacs.d/myinit.org")))
 	   :wk "reload config")
-    "ff" 'counsel-find-file
+    "ff" 'find-file
     "fF" '((lambda ()
 	     (interactive)
 	     (shell-command "open -R ."))
 	   :wk "open in Finder")
-    "fr" 'counsel-recentf
+    "fr" 'consult-recent-file
     "fR" 'revert-buffer
     "fd" 'dired
     "fs" 'save-buffer
     "fS" 'save-some-buffers
+    "fo" 'find-file-at-point
     "fp" '(lambda () (interactive) (when (file-exists-p (current-kill 0))
 				(find-file (current-kill 0)))))
 #+END_SRC
@@ -1199,7 +1147,6 @@
     "mM" '(hydra-bongo/body :wk "music")
     "mm" '(init-goto-bongo :wk "goto music")
     "m <SPC>" 'bongo-pause/resume
-    "mp" 'bongo-pause/resume
     "mr" 'bongo-play-random
     "mn" 'bongo-play-next
     "mp" 'bongo-play-previous
@@ -1229,18 +1176,18 @@
   (my-leader-def
     "s" '(:wk "search")
 
-    "si" 'counsel-imenu
-    "sr" 'counsel-rg
+    "ss" 'consult-line-multi
+    "si" 'consult-imenu
+    "sr" 'consult-ripgrep
     "sf" 'find-file-in-project
-    "sF" 'counsel-fzf
-    "sL" 'counsel-locate
-    "ss" 'swiper-thing-at-point
-    "sS" 'swiper-all
+    "sL" 'consult-locate
     "sg" 'google-this
     "sd" '(lambda () (interactive)
 	    (if (display-graphic-p)
 		(youdao-dictionary-search-at-point-posframe)
 	      (youdao-dictionary-search-at-point+)))
+    "sD" '(lambda () (interactive)
+	    (fanyi-dwim2))
     "sl" 'browse-url)
 #+END_SRC
 *** terminal
