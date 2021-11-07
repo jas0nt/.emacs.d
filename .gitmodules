@@ -19,3 +19,6 @@
 [submodule "elisp/snails"]
 	path = elisp/snails
 	url = https://github.com/manateelazycat/snails.git
+[submodule "elisp/vertico-posframe"]
+	path = elisp/vertico-posframe
+	url = https://github.com/tumashu/vertico-posframe.git

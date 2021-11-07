@@ -455,6 +455,14 @@
     :init
     (vertico-mode))
 
+  (use-package vertico-posframe
+    :if (display-graphic-p)
+    :custom-face
+    ;; (vertico-current ((t (:extend t :background ,main-color :foreground "deep pink" :weight bold))))
+    :load-path "~/.emacs.d/elisp/vertico-posframe"
+    :config
+    (vertico-posframe-mode 1))
+
   (use-package orderless
     :init
     (setq completion-styles '(orderless)
@@ -1176,6 +1184,7 @@
   (my-leader-def
     "s" '(:wk "search")
 
+    "sb" 'consult-bookmark
     "ss" 'consult-line-multi
     "si" 'consult-imenu
     "sr" 'consult-ripgrep
