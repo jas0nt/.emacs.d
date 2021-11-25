@@ -514,6 +514,20 @@
       ("k" diff-hl-previous-hunk)
       ("x" diff-hl-revert-hunk)
       ("q" nil "cancel")))
+
+  (use-package blamer
+    :ensure t
+    :defer 20
+    :custom
+    (blamer-idle-time 0.3)
+    (blamer-min-offset 70)
+    :custom-face
+    (blamer-face ((t :foreground "#7a88cf"
+		     :background nil
+		     :height 140
+		     :italic t)))
+    :config
+    (global-blamer-mode 1))
 #+END_SRC
 ** lsp
 #+BEGIN_SRC emacs-lisp
