@@ -891,13 +891,6 @@
                     (pop-to-buffer buf)))))
             org-file-apps))
 
-    ;; Add gfm/md backends
-    (use-package ox-gfm)
-    (add-to-list 'org-export-backends 'md)
-
-    (with-eval-after-load 'counsel
-      (bind-key [remap org-set-tags-command] #'counsel-org-tag org-mode-map))
-
     ;; Babel
     (setq org-confirm-babel-evaluate nil
           org-src-fontify-natively t
@@ -1062,6 +1055,7 @@
   (use-package try)
   (use-package bufler)
   (use-package find-file-in-project)
+  (use-package rg)
 #+END_SRC
 * UI
 #+BEGIN_SRC emacs-lisp
@@ -1327,12 +1321,8 @@
     "sf" 'find-file-in-project
     "sL" 'consult-locate
     "sg" 'google-this
-    "sd" '(lambda () (interactive)
-	    (if (display-graphic-p)
-		(youdao-dictionary-search-at-point-posframe)
-	      (youdao-dictionary-search-at-point+)))
-    "sD" '(lambda () (interactive)
-	    (fanyi-dwim2))
+    "sd" 'youdao-dictionary-search-at-point+
+    "sD" 'fanyi-dwim2
     "sl" 'browse-url)
 #+END_SRC
 *** terminal
