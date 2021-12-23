@@ -95,6 +95,7 @@
   ;;tab-width
   (setq tab-width 4)
 #+end_src
+
 * Config
 ** initialize package
 #+begin_src emacs-lisp
@@ -138,13 +139,6 @@
     :config
     (evil-snipe-mode +1))
 
-  (use-package evil-goggles
-    :after (evil)
-    :ensure t
-    :config
-    (evil-goggles-mode)
-    (evil-goggles-use-diff-faces))
-
   (use-package evil-surround
     :ensure t
     :config
@@ -170,10 +164,6 @@
 ** edit
 #+BEGIN_SRC emacs-lisp
   (use-package expand-region)
-
-  (use-package hungry-delete
-    :config
-    (global-hungry-delete-mode))
 
   (use-package aggressive-indent
     :config
@@ -502,18 +492,6 @@
 		git-messenger:use-magit-popup t))
 
   (use-package git-timemachine)
-
-  ;; highlight diffs
-  (use-package diff-hl
-    :after (hydra)
-    :config
-    (global-diff-hl-mode)
-    (defhydra hydra-diff-hl ()
-      "git diff"
-      ("j" diff-hl-next-hunk)
-      ("k" diff-hl-previous-hunk)
-      ("x" diff-hl-revert-hunk)
-      ("q" nil "cancel")))
 
   (use-package blamer
     :ensure t
@@ -851,20 +829,158 @@
 ** org
 #+BEGIN_SRC emacs-lisp
   (use-package org
+    :ensure nil
+    :commands (org-dynamic-block-define)
+    :custom-face (org-ellipsis ((t (:foreground nil))))
+    :hook (((org-babel-after-execute org-mode) . org-redisplay-inline-images) ; display image
+           (org-mode . (lambda ()
+                         "Beautify org symbols."
+                         (setq prettify-symbols-alist centaur-prettify-org-symbols-alist)
+                         (prettify-symbols-mode 1)))
+           (org-indent-mode . (lambda()
+                                (diminish 'org-indent-mode)
+                                ;; WORKAROUND: Prevent text moving around while using brackets
+                                ;; @see https://github.com/seagle0128/.emacs.d/issues/88
+                                (make-variable-buffer-local 'show-paren-mode)
+                                (setq show-paren-mode nil))))
     :config
-    (setq-default prettify-symbols-alist '(("#+BEGIN_SRC" . "✎")
-					   ("#+END_SRC" . "□")
-					   ("#+begin_src" . "✎")
-					   ("#+end_src" . "□")))
-    (add-hook 'org-mode-hook 'prettify-symbols-mode)
+    ;; For hydra
+    (defun hot-expand (str &optional mod)
+      "Expand org template.
 
-    (setq org-startup-with-inline-images t)
-    (setq org-babel-python-command "python3")
-    (org-babel-do-load-languages
-     'org-babel-load-languages
-     '((python . t)
-       (R . t)
-       (sql . t))))
+  STR is a structure template string recognised by org like <s. MOD is a
+  string with additional parameters to add the begin line of the
+  structure element. HEADER string includes more parameters that are
+  prepended to the element after the #+HEADER: tag."
+      (let (text)
+        (when (region-active-p)
+          (setq text (buffer-substring (region-beginning) (region-end)))
+          (delete-region (region-beginning) (region-end)))
+        (insert str)
+        (if (fboundp 'org-try-structure-completion)
+            (org-try-structure-completion) ; < org 9
+          (progn
+            ;; New template expansion since org 9
+            (require 'org-tempo nil t)
+            (org-tempo-complete-tag)))
+        (when mod (insert mod) (forward-line))
+        (when text (insert text))))
+
+    ;; To speed up startup, don't put to init section
+    (setq org-modules nil                 ; Faster loading
+          org-tags-column -80
+          org-log-done 'time
+          org-catch-invisible-edits 'smart
+          org-startup-indented t
+          org-ellipsis (if (and (display-graphic-p) (char-displayable-p ?⏷)) " ⏷" nil)
+          org-pretty-entities nil
+          org-hide-emphasis-markers t)
+
+    ;; Add new template
+    (add-to-list 'org-structure-template-alist '("n" . "note"))
+
+    ;; Use embedded webkit browser if possible
+    (when (featurep 'xwidget-internal)
+      (push '("\\.\\(x?html?\\|pdf\\)\\'"
+              .
+              (lambda (file _link)
+                (xwidget-webkit-browse-url (concat "file://" file))
+                (let ((buf (xwidget-buffer (xwidget-webkit-current-session))))
+                  (when (buffer-live-p buf)
+                    (and (eq buf (current-buffer)) (quit-window))
+                    (pop-to-buffer buf)))))
+            org-file-apps))
+
+    ;; Add gfm/md backends
+    (use-package ox-gfm)
+    (add-to-list 'org-export-backends 'md)
+
+    (with-eval-after-load 'counsel
+      (bind-key [remap org-set-tags-command] #'counsel-org-tag org-mode-map))
+
+    ;; Babel
+    (setq org-confirm-babel-evaluate nil
+          org-src-fontify-natively t
+          org-src-tab-acts-natively t)
+
+    (defvar load-language-list '((emacs-lisp . t)
+                                 (perl . t)
+                                 (python . t)
+                                 (ruby . t)
+                                 (js . t)
+                                 (css . t)
+                                 (sass . t)
+                                 (C . t)
+                                 (java . t)
+                                 (plantuml . t)))
+
+    ;; ob-sh renamed to ob-shell since 26.1.
+    (cl-pushnew '(shell . t) load-language-list)
+
+    ;; Use mermadi-cli: npm install -g @mermaid-js/mermaid-cli
+    (use-package ob-mermaid
+      :init (cl-pushnew '(mermaid . t) load-language-list))
+
+    (org-babel-do-load-languages 'org-babel-load-languages
+                                 load-language-list)
+
+    ;; Rich text clipboard
+    (use-package org-rich-yank
+      :bind (:map org-mode-map
+                  ("C-M-y" . org-rich-yank)))
+
+    ;; Table of contents
+    (use-package toc-org
+      :hook (org-mode . toc-org-mode))
+
+    ;; Export text/html MIME emails
+    (use-package org-mime
+      :bind (:map message-mode-map
+                  ("C-c M-o" . org-mime-htmlize)
+                  :map org-mode-map
+                  ("C-c M-o" . org-mime-org-buffer-htmlize)))
+
+    ;; Add graphical view of agenda
+    (use-package org-timeline
+      :hook (org-agenda-finalize . org-timeline-insert-timeline))
+
+    ;; Auto-toggle Org LaTeX fragments
+    (use-package org-fragtog
+      :diminish
+      :hook (org-mode . org-fragtog-mode))
+
+    ;; Preview
+    (use-package org-preview-html
+      :diminish)
+
+    ;; Presentation
+    (use-package org-tree-slide
+      :diminish
+      :functions (org-display-inline-images
+                  org-remove-inline-images)
+      :bind (:map org-mode-map
+                  ("s-<f7>" . org-tree-slide-mode)
+                  :map org-tree-slide-mode-map
+                  ("<left>" . org-tree-slide-move-previous-tree)
+                  ("<right>" . org-tree-slide-move-next-tree)
+                  ("S-SPC" . org-tree-slide-move-previous-tree)
+                  ("SPC" . org-tree-slide-move-next-tree))
+      :hook ((org-tree-slide-play . (lambda ()
+                                      (text-scale-increase 4)
+                                      (org-display-inline-images)
+                                      (read-only-mode 1)))
+             (org-tree-slide-stop . (lambda ()
+                                      (text-scale-increase 0)
+                                      (org-remove-inline-images)
+                                      (read-only-mode -1))))
+      :init (setq org-tree-slide-header nil
+                  org-tree-slide-slide-in-effect t
+                  org-tree-slide-heading-emphasis nil
+                  org-tree-slide-cursor-init t
+                  org-tree-slide-modeline-display 'outside
+                  org-tree-slide-skip-done nil
+                  org-tree-slide-skip-comments t
+                  org-tree-slide-skip-outline-level 3)))
 #+END_SRC
 ** markdown
 #+BEGIN_SRC emacs-lisp
@@ -908,7 +1024,7 @@
 		:internal-border-width 10))
 
     (setq default-input-method "rime"
-	  rime-show-candidate 'minibuffer))
+	  rime-show-candidate 'posframe))
 #+END_SRC
 ** other
 #+BEGIN_SRC emacs-lisp
@@ -944,8 +1060,8 @@
 
   ;; try a package temporarily
   (use-package try)
-
   (use-package bufler)
+  (use-package find-file-in-project)
 #+END_SRC
 * UI
 #+BEGIN_SRC emacs-lisp
@@ -957,6 +1073,7 @@
 
   ;; modeline
   (use-package doom-modeline
+    :disabled t
     :after (all-the-icons)
     :init (doom-modeline-mode 1)
     :config
@@ -964,6 +1081,11 @@
     (setq doom-modeline-height 1)
     (set-face-attribute 'mode-line nil :family "Source Code Pro" :height 150)
     (set-face-attribute 'mode-line-inactive nil :family "Source Code Pro" :height 150))
+
+  (use-package awesome-tray
+    :load-path "~/.emacs.d/elisp/awesome-tray"
+    :config
+    (awesome-tray-mode 1))
 
   ;; icons
   (use-package all-the-icons)
@@ -988,7 +1110,7 @@
   ;;font
   (add-to-list 'default-frame-alist `(font . ,my-font))
   (when (eq system-type 'darwin)
-	(set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
+        (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
 
   ;;hide tool bar
   (tool-bar-mode -1)
@@ -1017,7 +1139,7 @@
 
   ;;highlight current line
   (when (display-graphic-p)
-	(global-hl-line-mode))
+        (global-hl-line-mode))
 
   (setq visible-bell nil)
 

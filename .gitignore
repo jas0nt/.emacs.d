@@ -44,3 +44,7 @@ librime/
 rime/
 quelpa/
 var/
+
+.lsp-eslint-choices
+.persistent-scratch
+persistent-scratch/
