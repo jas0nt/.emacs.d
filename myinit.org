@@ -10,9 +10,6 @@
 		    "Source Code Pro-9"
 		  "Source Code Pro-14"))
 
-  (setq my-shell (if (eq system-type 'gnu/linux)
-		     "/usr/bin/fish"
-		   "/usr/local/bin/fish"))
 #+END_SRC
 * Basic
 #+begin_src emacs-lisp
@@ -671,84 +668,101 @@
 #+END_SRC
 ** terminal
 #+BEGIN_SRC emacs-lisp
-  ;; (add-hook 'term-mode-hook (lambda ()
-  ;; 			    (setq-local global-hl-line-mode nil)
-  ;; 			    (setq-local mode-line-format nil)))
-
-  (defun my-new-term ()
-    (interactive)
-    (ansi-term my-shell))
-
-  (use-package vterm
-    :commands vterm--internal
-    :init
-    (setq vterm-always-compile-module t)
-
-    (with-no-warnings
-      (defvar vterm-posframe--frame nil)
-
-      (defun vterm-posframe-hidehandler (_)
-	"Hidehandler used by `vterm-posframe-toggle'."
-	(not (eq (selected-frame) posframe--frame)))
-
-      (defun vterm-posframe-toggle ()
-	"Toggle `vterm' child frame."
-	(interactive)
-	(let ((buffer (vterm--internal #'ignore 100)))
-	  (if (and vterm-posframe--frame
-		   (frame-live-p vterm-posframe--frame)
-		   (frame-visible-p vterm-posframe--frame))
-	      (progn
-		(posframe-hide buffer)
-		;; Focus the parent frame
-		(select-frame-set-input-focus (frame-parent vterm-posframe--frame)))
-	    (let ((width  (max 80 (/ (frame-width) 2)))
-		  (height (/ (frame-height) 2))
-		  (cwd default-directory))
-	      (setq vterm-posframe--frame
-		    (posframe-show
-		     buffer
-		     :poshandler #'posframe-poshandler-frame-center
-		     :hidehandler #'vterm-posframe-hidehandler
-		     :left-fringe 8
-		     :right-fringe 8
-		     :width width
-		     :height height
-		     :min-width width
-		     :min-height height
-		     :internal-border-width 1
-		     :internal-border-color "#50fa7b"
-		     :override-parameters '((cursor-type . t))
-		     :accept-focus t))
-	      (with-current-buffer buffer
-		(save-excursion
-		  (vterm-send-C-c)
-		  (vterm-clear t)
-		  (vterm-insert (concat "cd "
-					(shell-quote-argument (expand-file-name cwd))))
-		  (vterm-send-return)
-		  (evil-insert-state))
-		(setq-local cursor-type 'box))
-	      ;; Focus the child frame
-	      (select-frame-set-input-focus vterm-posframe--frame)))))))
-
-
-  (use-package exec-path-from-shell
+  (use-package eshell
+    :ensure nil
+    :defines eshell-prompt-function
+    :functions eshell/alias
+    :hook (eshell-mode . (lambda ()
+                           (bind-key "C-l" 'eshell/clear eshell-mode-map)
+                           (setq-local company-mode nil)
+                           ;; Aliases
+                           (eshell/alias "f" "find-file $1")
+                           (eshell/alias "fo" "find-file-other-window $1")
+                           (eshell/alias "d" "dired $1")
+                           (eshell/alias "l" "ls -lFh")
+                           (eshell/alias "ll" "ls -l")
+                           (eshell/alias "la" "ls -lAFh")
+                           (eshell/alias "lr" "ls -tRFh")
+                           (eshell/alias "lrt" "ls -lFcrt")
+                           (eshell/alias "lsa" "ls -lah")
+                           (eshell/alias "lt" "ls -ltFh")))
     :config
-    (when (memq window-system '(mac ns x))
-      (exec-path-from-shell-initialize)))
+    (with-no-warnings
+      ;; For compatibility
+      (unless (fboundp 'flatten-tree)
+        (defalias 'flatten-tree #'eshell-flatten-list))
 
+      (defun eshell/clear ()
+        "Clear the eshell buffer."
+        (interactive)
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (eshell-send-input)))
 
-  (use-package shell-pop
-    :init
-    (custom-set-variables
-     '(shell-pop-shell-type (quote ("ansi-term" "*ansi-term*" (lambda nil (ansi-term shell-pop-term-shell)))))
-     '(shell-pop-window-size 30)
-     '(shell-pop-full-span t)
-     '(shell-pop-window-position "bottom")
-     '(shell-pop-autocd-to-working-dir t)
-     '(shell-pop-restore-window-configuration t)
-     '(shell-pop-cleanup-buffer-at-process-exit t)))
+      (defun eshell/emacs (&rest args)
+        "Open a file (ARGS) in Emacs.  Some habits die hard."
+        (if (null args)
+            ;; If I just ran "emacs", I probably expect to be launching
+            ;; Emacs, which is rather silly since I'm already in Emacs.
+            ;; So just pretend to do what I ask.
+            (bury-buffer)
+          ;; We have to expand the file names or else naming a directory in an
+          ;; argument causes later arguments to be looked for in that directory,
+          ;; not the starting directory
+          (mapc #'find-file (mapcar #'expand-file-name (flatten-tree (reverse args))))))
+      (defalias 'eshell/e #'eshell/emacs)
+      (defalias 'eshell/ec #'eshell/emacs)
+
+      (defun eshell/ebc (&rest args)
+        "Compile a file (ARGS) in Emacs. Use `compile' to do background make."
+        (if (eshell-interactive-output-p)
+            (let ((compilation-process-setup-function
+                   (list 'lambda nil
+                         (list 'setq 'process-environment
+                               (list 'quote (eshell-copy-environment))))))
+              (compile (eshell-flatten-and-stringify args))
+              (pop-to-buffer compilation-last-buffer))
+          (throw 'eshell-replace-command
+                 (let ((l (eshell-stringify-list (flatten-tree args))))
+                   (eshell-parse-command (car l) (cdr l))))))
+      (put 'eshell/ebc 'eshell-no-numeric-conversions t)
+
+      (defun eshell-view-file (file)
+        "View FILE.  A version of `view-file' which properly rets the eshell prompt."
+        (interactive "fView file: ")
+        (unless (file-exists-p file) (error "%s does not exist" file))
+        (let ((buffer (find-file-noselect file)))
+          (if (eq (get (buffer-local-value 'major-mode buffer) 'mode-class)
+                  'special)
+              (progn
+                (switch-to-buffer buffer)
+                (message "Not using View mode because the major mode is special"))
+            (let ((undo-window (list (window-buffer) (window-start)
+                                     (+ (window-point)
+                                        (length (funcall eshell-prompt-function))))))
+              (switch-to-buffer buffer)
+              (view-mode-enter (cons (selected-window) (cons nil undo-window))
+                               'kill-buffer)))))
+
+      (defun eshell/less (&rest args)
+        "Invoke `view-file' on a file (ARGS).
+  \"less +42 foo\" will go to line 42 in the buffer for foo."
+        (while args
+          (if (string-match "\\`\\+\\([0-9]+\\)\\'" (car args))
+              (let* ((line (string-to-number (match-string 1 (pop args))))
+                     (file (pop args)))
+                (eshell-view-file file)
+                (forward-line line))
+            (eshell-view-file (pop args)))))
+      (defalias 'eshell/more #'eshell/less)))
+
+  (use-package aweshell
+    :load-path "~/.emacs.d/elisp/aweshell")
+#+END_SRC
+** eshell
+#+BEGIN_SRC emacs-lisp
+  (use-package aweshell
+    :load-path "~/.emacs.d/elisp/aweshell")
 #+END_SRC
 ** dashboard
 #+BEGIN_SRC emacs-lisp
@@ -832,40 +846,8 @@
     :ensure nil
     :commands (org-dynamic-block-define)
     :custom-face (org-ellipsis ((t (:foreground nil))))
-    :hook (((org-babel-after-execute org-mode) . org-redisplay-inline-images) ; display image
-           (org-mode . (lambda ()
-                         "Beautify org symbols."
-                         (setq prettify-symbols-alist centaur-prettify-org-symbols-alist)
-                         (prettify-symbols-mode 1)))
-           (org-indent-mode . (lambda()
-                                (diminish 'org-indent-mode)
-                                ;; WORKAROUND: Prevent text moving around while using brackets
-                                ;; @see https://github.com/seagle0128/.emacs.d/issues/88
-                                (make-variable-buffer-local 'show-paren-mode)
-                                (setq show-paren-mode nil))))
+    :hook (((org-babel-after-execute org-mode) . org-redisplay-inline-images))
     :config
-    ;; For hydra
-    (defun hot-expand (str &optional mod)
-      "Expand org template.
-
-  STR is a structure template string recognised by org like <s. MOD is a
-  string with additional parameters to add the begin line of the
-  structure element. HEADER string includes more parameters that are
-  prepended to the element after the #+HEADER: tag."
-      (let (text)
-        (when (region-active-p)
-          (setq text (buffer-substring (region-beginning) (region-end)))
-          (delete-region (region-beginning) (region-end)))
-        (insert str)
-        (if (fboundp 'org-try-structure-completion)
-            (org-try-structure-completion) ; < org 9
-          (progn
-            ;; New template expansion since org 9
-            (require 'org-tempo nil t)
-            (org-tempo-complete-tag)))
-        (when mod (insert mod) (forward-line))
-        (when text (insert text))))
-
     ;; To speed up startup, don't put to init section
     (setq org-modules nil                 ; Faster loading
           org-tags-column -80
@@ -937,43 +919,9 @@
     (use-package org-timeline
       :hook (org-agenda-finalize . org-timeline-insert-timeline))
 
-    ;; Auto-toggle Org LaTeX fragments
-    (use-package org-fragtog
-      :diminish
-      :hook (org-mode . org-fragtog-mode))
-
     ;; Preview
     (use-package org-preview-html
-      :diminish)
-
-    ;; Presentation
-    (use-package org-tree-slide
-      :diminish
-      :functions (org-display-inline-images
-                  org-remove-inline-images)
-      :bind (:map org-mode-map
-                  ("s-<f7>" . org-tree-slide-mode)
-                  :map org-tree-slide-mode-map
-                  ("<left>" . org-tree-slide-move-previous-tree)
-                  ("<right>" . org-tree-slide-move-next-tree)
-                  ("S-SPC" . org-tree-slide-move-previous-tree)
-                  ("SPC" . org-tree-slide-move-next-tree))
-      :hook ((org-tree-slide-play . (lambda ()
-                                      (text-scale-increase 4)
-                                      (org-display-inline-images)
-                                      (read-only-mode 1)))
-             (org-tree-slide-stop . (lambda ()
-                                      (text-scale-increase 0)
-                                      (org-remove-inline-images)
-                                      (read-only-mode -1))))
-      :init (setq org-tree-slide-header nil
-                  org-tree-slide-slide-in-effect t
-                  org-tree-slide-heading-emphasis nil
-                  org-tree-slide-cursor-init t
-                  org-tree-slide-modeline-display 'outside
-                  org-tree-slide-skip-done nil
-                  org-tree-slide-skip-comments t
-                  org-tree-slide-skip-outline-level 3)))
+      :diminish))
 #+END_SRC
 ** markdown
 #+BEGIN_SRC emacs-lisp
@@ -1078,6 +1026,8 @@
 
   (use-package awesome-tray
     :load-path "~/.emacs.d/elisp/awesome-tray"
+    :init
+    (unless (display-graphic-p) (setq mode-line-format nil))
     :config
     (awesome-tray-mode 1))
 
@@ -1167,7 +1117,7 @@
 
   (general-define-key
    :states '(normal visual)
-   "`" 'shell-pop
+   "`" 'aweshell-dedicated-toggle
    ";" 'switch-to-buffer
    "," 'evil-switch-to-windows-last-buffer
    "." 'evil-avy-goto-char-timer
@@ -1193,13 +1143,13 @@
   (my-leader-def
     "<SPC>" 'execute-extended-command
     "q" '((lambda ()
-	    (interactive)
-	    (progn
-	      (kill-current-buffer)
-	      (when (> (length (window-list)) 1)
-		(delete-window))))
-	  :wk "kill-buffer")
-    "'" 'shell-pop)
+            (interactive)
+            (progn
+              (kill-current-buffer)
+              (when (> (length (window-list)) 1)
+                (delete-window))))
+          :wk "kill-buffer")
+    "'" 'aweshell-switch-buffer)
 #+END_SRC
 *** buffer
 #+BEGIN_SRC emacs-lisp
@@ -1262,8 +1212,6 @@
     "g" '(:wk "git")
 
     "gg" 'magit-status
-    "gd" 'hydra-diff-hl/body
-    "gx" 'diff-hl-revert-hunk
     "gm" 'git-messenger:popup-message)
 #+END_SRC
 *** jump
@@ -1328,11 +1276,8 @@
 *** terminal
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-    ;; terminal
     "t" '(:wk "terminal")
-    "tt" '((lambda ()
-	     (interactive) (my-new-term))
-	   :wk "new terminal"))
+    "tt" 'aweshell-new)
 #+END_SRC
 *** toggle
 #+BEGIN_SRC emacs-lisp
