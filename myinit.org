@@ -3,12 +3,131 @@
 
 * Const
 #+BEGIN_SRC emacs-lisp
+  (defconst jst/emacs-config-file "~/.emacs.d/myinit.org")
   (defconst my-leader-key "<SPC>")
   (defconst main-color "#50fa7b")
 
-  (setq my-font (if (eq system-type 'gnu/linux)
-		    "Source Code Pro-9"
-		  "Source Code Pro-14"))
+  (defconst jst/my-font (if (eq system-type 'gnu/linux)
+                    "Source Code Pro-9"
+                  "Source Code Pro-14"))
+
+#+END_SRC
+* Func
+** Common
+#+BEGIN_SRC emacs-lisp
+  (defun jst/new-scratch-buffer ()
+    "create a new scratch buffer to work in. (could be *scratch* - *scratchX*)"
+    (interactive)
+    (let ((n 0)
+          bufname)
+      (while (progn
+               (setq bufname (concat "*scratch"
+                                     (if (= n 0) "" (int-to-string n))
+                                     "*"))
+               (setq n (1+ n))
+               (get-buffer bufname)))
+      (switch-to-buffer (get-buffer-create bufname))
+      (if (= n 1) (lisp-interaction-mode))))
+
+  (defun jst/find-config-file ()
+    "open emacs config file"
+    (interactive)
+    (find-file jst/emacs-config-file))
+
+  (defun jst/reload-config-file ()
+    "reload emacs config file"
+    (interactive)
+    (org-babel-load-file (expand-file-name jst/emacs-config-file)))
+
+  (defun jst/find-file-in-clipboard ()
+    "open file in clipboard"
+    (interactive)
+    (when (file-exists-p (current-kill 0))
+      (find-file (current-kill 0))))
+
+  (defun jst/toggle-ui-transparency ()
+    "toggle UI transparency"
+    (interactive)
+    (let ((alpha (frame-parameter nil 'alpha)))
+      (set-frame-parameter
+       nil 'alpha
+       (if (eql (cond ((numberp alpha) alpha)
+                      ((numberp (cdr alpha)) (cdr alpha))
+                      ;; Also handle undocumented (<active> <inactive>) form.
+                      ((numberp (cadr alpha)) (cadr alpha)))
+                100)
+           '(85 . 50) '(100 . 100)))))
+
+  (defun jst/kill-current-buffer ()
+    "kill current buffer but keep the last window"
+    (interactive)
+    (progn
+      (kill-current-buffer)
+      (when (> (length (window-list)) 1)
+        (delete-window))))
+
+  (defun jst/string-trim-final-newline (string)
+    (let ((len (length string)))
+      (cond
+       ((and (> len 0) (eql (aref string (- len 1)) ?\n))
+        (substring string 0 (- len 1)))
+       (t string))))
+
+  (defun jst/shell-command-to-string-trim (command)
+    (jst/string-trim-final-newline (shell-command-to-string command)))
+#+END_SRC
+** MacOS
+#+BEGIN_SRC emacs-lisp
+  (defun jst/mac-pbcopy ()
+    "copy selected region to system clipboard"
+    (interactive)
+    (shell-command-on-region (point) (mark) "pbcopy"))
+
+  (defun jst/mac-reveal-in-finder ()
+    "reveal current directory in finder"
+    (interactive)
+    (shell-command "open -R ."))
+
+  ;; control Apple Music
+  (defconst jst/mac--music-action-play "play")
+  (defconst jst/mac--music-action-pause "pause")
+  (defconst jst/mac--music-action-next "next track")
+  (defconst jst/mac--music-action-prev "previous track")
+  (defconst jst/mac--music-action-status "player state as string")
+  (defconst jst/mac--music-action-mute "set mute to true")
+  (defconst jst/mac--music-action-unmute "set mute to false")
+  (defconst jst/mac--music-status-playing "playing")
+
+  (defun jst/mac--music-do (action)
+    "controll MacOS Music app"
+    (jst/shell-command-to-string-trim (format "osascript -e \"tell application \\\"Music\\\" to %s\"" action)))
+
+  (defun jst/mac-music-status ()
+    (interactive)
+    (jst/mac--music-do jst/mac--music-action-status))
+
+  (defun jst/mac-music-launch ()
+    (interactive)
+    (shell-command "open -a Music"))
+
+  (defun jst/mac-music-play-pause ()
+    (interactive)
+    (if (equal jst/mac--music-status-playing (jst/mac-music-status))
+        (jst/mac--music-do jst/mac--music-action-pause)
+      (jst/mac--music-do jst/mac--music-action-play)))
+
+  (defun jst/mac-music-play-next ()
+    (interactive)
+    (jst/mac--music-do jst/mac--music-action-next))
+  (defun jst/mac-music-play-prev ()
+    (interactive)
+    (jst/mac--music-do jst/mac--music-action-prev))
+  (defun jst/mac-music-mute ()
+    (interactive)
+    (jst/mac--music-do jst/mac--music-action-mute))
+  (defun jst/mac-music-unmute ()
+    (interactive)
+    (jst/mac--music-do jst/mac--music-action-unmute))
 
 #+END_SRC
 * Basic
@@ -122,7 +241,7 @@
     :config
     (evil-mode 1)
     (setq evil-insert-state-cursor '(hollow "yellow")
-	  evil-normal-state-cursor '(box "green")))
+          evil-normal-state-cursor '(box "green")))
 
   (use-package evil-collection
     :after (evil)
@@ -157,6 +276,10 @@
     :after (evil)
     :config
     (evil-exchange-install))
+
+  (use-package evil-smartparens
+    :after (evil smartparens)
+    :hook (smartparens-enabled-hook . evil-smartparens-mode))
 #+END_SRC
 ** edit
 #+BEGIN_SRC emacs-lisp
@@ -183,8 +306,11 @@
   (use-package undo-tree
     :init
     (global-undo-tree-mode))
-#+END_SRC
 
+  (use-package smartparens
+    :config
+    (smartparens-global-mode))
+#+END_SRC
 ** dired
 #+BEGIN_SRC emacs-lisp
   (when (string= system-type "darwin")
@@ -489,20 +615,6 @@
 		git-messenger:use-magit-popup t))
 
   (use-package git-timemachine)
-
-  (use-package blamer
-    :ensure t
-    :defer 20
-    :custom
-    (blamer-idle-time 0.3)
-    (blamer-min-offset 70)
-    :custom-face
-    (blamer-face ((t :foreground "#7a88cf"
-		     :background nil
-		     :height 140
-		     :italic t)))
-    :config
-    (global-blamer-mode 1))
 #+END_SRC
 ** lsp
 #+BEGIN_SRC emacs-lisp
@@ -961,7 +1073,7 @@
     (setq rime-posframe-properties
 	  (list :background-color "#282a36"
 		:foreground-color "#bd93f9"
-		:font my-font
+		:font jst/my-font
 		:internal-border-width 10))
 
     (setq default-input-method "rime"
@@ -1013,6 +1125,14 @@
     (load-theme 'dracula t)
     (set-cursor-color main-color))
 
+  ;; display time
+  (display-time-mode 1)
+  (setq display-time-24hr-format t)
+  (setq display-time-day-and-date t)
+
+  ;; display battery
+  (display-battery-mode 1)
+
   ;; modeline
   (use-package doom-modeline
     :disabled t
@@ -1026,10 +1146,10 @@
 
   (use-package awesome-tray
     :load-path "~/.emacs.d/elisp/awesome-tray"
-    :init
-    (unless (display-graphic-p) (setq mode-line-format nil))
     :config
-    (awesome-tray-mode 1))
+    (awesome-tray-mode 1)
+    (eval-after-load 'awesome-tray
+      '(unless (display-graphic-p) (setq mode-line-format nil))))
 
   ;; icons
   (use-package all-the-icons)
@@ -1043,16 +1163,8 @@
   ;; (set-frame-parameter (selected-frame) 'alpha '(90 90))
   ;; (add-to-list 'default-frame-alist '(alpha 90 90))
 
-  ;; display time
-  (display-time-mode 1)
-  (setq display-time-24hr-format t)
-  (setq display-time-day-and-date t)
-
-  ;; display battery
-  (display-battery-mode 1)
-
   ;;font
-  (add-to-list 'default-frame-alist `(font . ,my-font))
+  (add-to-list 'default-frame-alist `(font . ,jst/my-font))
   (when (eq system-type 'darwin)
         (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
 
@@ -1092,10 +1204,23 @@
   (setq prettify-symbols-alist '(("lambda" . 955)))
 #+END_SRC
 * Keybindings
+** MacOS
+#+BEGIN_SRC emacs-lisp
+  ;; set keys for Apple keyboard, for emacs in OS X
+  (when (eq system-type 'darwin)
+    ;; (setq mac-command-modifier 'meta) ; make cmd key do Meta
+    ;; (setq mac-option-modifier 'super) ; make opt key do Super
+    (setq mac-control-modifier 'control) ; make Control key do Control
+    (setq ns-function-modifier 'hyper)  ; make Fn key do Hyper
+    )
+#+END_SRC
 ** general
 #+BEGIN_SRC emacs-lisp
   (use-package general)
-  (use-package hydra :ensure hydra)
+  (use-package hydra
+    :ensure hydra
+    :config
+    (use-package pretty-hydra))
 
   (use-package which-key
     :config
@@ -1107,13 +1232,6 @@
     :keymaps 'override
     :prefix my-leader-key
     :non-normal-prefix "C-,")
-
-  ;; copy to clipboard on MacOS
-  (when (eq system-type 'darwin)
-    (general-define-key
-     :states '(visual)
-     "C-c r" '(lambda () (interactive)
-		(shell-command-on-region (point) (mark) "pbcopy"))))
 
   (general-define-key
    :states '(normal visual)
@@ -1137,226 +1255,191 @@
 
    "M-/" 'company-files)
 #+END_SRC
-** leader-keys
-*** a-key
-#+BEGIN_SRC emacs-lisp
-  (my-leader-def
-    "<SPC>" 'execute-extended-command
-    "q" '((lambda ()
-            (interactive)
-            (progn
-              (kill-current-buffer)
-              (when (> (length (window-list)) 1)
-                (delete-window))))
-          :wk "kill-buffer")
-    "'" 'aweshell-switch-buffer)
-#+END_SRC
+** hydras
 *** buffer
 #+BEGIN_SRC emacs-lisp
-  (my-leader-def
-    "b" '(:wk "buffer")
-
-    "b+" 'er/expand-region
-    "bb" 'bufler
-    "bs" 'switch-buffer-other-window
-    "bS" '((lambda ()
-	     "create a new scratch buffer to work in. (could be *scratch* - *scratchX*)"
-	     (interactive)
-	     (let ((n 0)
-		   bufname)
-	       (while (progn
-			(setq bufname (concat "*scratch"
-					      (if (= n 0) "" (int-to-string n))
-					      "*"))
-			(setq n (1+ n))
-			(get-buffer bufname)))
-	       (switch-to-buffer (get-buffer-create bufname))
-	       (if (= n 1) (lisp-interaction-mode))))
-	   :wk "new scratch"))
+  (pretty-hydra-define hydra-buffer (:exit t :foreign-keys warn :quit-key "q")
+    ("Actions"
+     (("+" er/expand-region "expand-region")
+      ("b" bufler "bufler")
+      ("s" ido-switch-buffer-other-window "switch buffer other window")
+      ("S" jst/new-scratch-buffer "new scratch"))))
 #+END_SRC
-*** commenter
+*** comment
 #+BEGIN_SRC emacs-lisp
-  (my-leader-def
-    "c" '(:wk "commenter")
-
-    "cc" 'evilnc-comment-or-uncomment-lines
-    "cp" 'evilnc-copy-and-comment-lines
-    "cb" 'evilnc-comment-or-uncomment-paragraphs)
+  (pretty-hydra-define hydra-comment (:exit t :foreign-keys warn :quit-key "q")
+    ("comment"
+     (("c" evilnc-comment-or-uncomment-lines "toggle comment")
+      ("p" evilnc-copy-and-comment-lines "comment & copy")
+      ("b" evilnc-comment-or-uncomment-paragraphs "comment block"))))
 #+END_SRC
 *** file
 #+BEGIN_SRC emacs-lisp
-  (my-leader-def
-    "f" '(:wk "file")
+  (pretty-hydra-define hydra-file (:exit t :foreign-keys warn :quit-key "q")
+    ("find-file"
+     (("f" find-file "find-file")
+      ("r" consult-recent-file "recentf")
+      ("d" dired "dired")
+      ("o" find-file-at-point "find-file-at-point")
+      ("p" jst/find-file-in-clipboard "find-file-in-kill-ring"))
 
-    "fe" '((lambda () (interactive) (find-file "~/.emacs.d/myinit.org"))
-	   :wk "open config")
-    "fE" '((lambda () (interactive) (org-babel-load-file (expand-file-name "~/.emacs.d/myinit.org")))
-	   :wk "reload config")
-    "ff" 'find-file
-    "fF" '((lambda ()
-	     (interactive)
-	     (shell-command "open -R ."))
-	   :wk "open in Finder")
-    "fr" 'consult-recent-file
-    "fR" 'revert-buffer
-    "fd" 'dired
-    "fs" 'save-buffer
-    "fS" 'save-some-buffers
-    "fo" 'find-file-at-point
-    "fp" '(lambda () (interactive) (when (file-exists-p (current-kill 0))
-				(find-file (current-kill 0)))))
+     "action"
+     (("F" jst/mac-reveal-in-finder "reveal in finder")
+      ("R" revert-buffer "revert buffer")
+      ("s" save-buffer "save-buffer")
+      ("S" save-some-buffers "save-some-buffers"))
+
+     "config-file"
+     (("e" jst/find-config-file "open config")
+      ("E" jst/reload-config-file "reload config"))))
 #+END_SRC
 *** git
 #+BEGIN_SRC emacs-lisp
-  (my-leader-def
-    "g" '(:wk "git")
-
-    "gg" 'magit-status
-    "gm" 'git-messenger:popup-message)
+  (pretty-hydra-define hydra-git (:exit t :foreign-keys warn :quit-key "q")
+    ("git"
+     (("g" magit-status "status")
+      ("m" git-messenger:popup-message "show msg"))))
 #+END_SRC
 *** jump
 #+BEGIN_SRC emacs-lisp
-  (my-leader-def
-    "j" '(:wk "jump")
+  (pretty-hydra-define hydra-jump (:exit t :foreign-keys warn :quit-key "q")
+    ("goto-char"
+     (("j" avy-goto-char-2 "goto-char-2")
+      ("J" avy-goto-char "goto-char")
+      ("t" avy-goto-char-timer "goto-char-timer"))
 
-    "jj" 'avy-goto-char-2
-    "jJ" 'avy-goto-char
-    "jt" 'avy-goto-char-timer
-    "jw" 'avy-goto-word-1
-    "jl" 'avy-goto-line)
+     "goto-word"
+     (("w" avy-goto-word-1 "goto-word"))
+
+     "goto-line"
+     (("l" avy-goto-line "goto-line"))))
 #+END_SRC
 *** music
 #+BEGIN_SRC emacs-lisp
-  (my-leader-def
-    ;; music
-    "m" '(:wk "music")
-    "mM" '(hydra-bongo/body :wk "music")
-    "mm" '(init-goto-bongo :wk "goto music")
-    "m <SPC>" 'bongo-pause/resume
-    "mr" 'bongo-play-random
-    "mn" 'bongo-play-next
-    "mp" 'bongo-play-previous
-    "mf" 'bongo-seek-forward-10
-    "mF" 'bongo-seek-forward-60
-    "mb" 'bongo-seek-backward-10
-    "mB" 'bongo-seek-backward-60)
-#+END_SRC
-*** project
-#+BEGIN_SRC emacs-lisp
-  (my-leader-def
-    "p" '(:wk "project")
+  (pretty-hydra-define hydra-music (:foreign-keys warn :quit-key "q")
+    ("♫"
+     (("m" init-goto-bongo "music-player" :exit t)
+      ("<SPC>" bongo-pause/resume "play/pause" :exit t))
 
-    "pp" 'projectile-command-map
-    "pt" '(projectile-run-vterm
-	   :wk "project term"))
+     "play"
+     (("r" bongo-play-random "random")
+      ("n" bongo-play-next "next")
+      ("p" bongo-play-previous "prev"))
+
+     "ctrl"
+     (("f" bongo-seek-forward-10 ">> 10")
+      ("F" bongo-seek-forward-60 ">> 60")
+      ("b" bongo-seek-backward-10 "<< 10")
+      ("B" bongo-seek-backward-60 "<< 60"))
+
+     "Apple Music"
+     (("M" jst/mac-music-launch "music app" :exit t)
+      ("j" jst/mac-music-play-next "next" :exit nil)
+      ("k" jst/mac-music-play-prev "prev" :exit nil)
+      ("l" jst/mac-music-play-pause "play/pause" :exit t))))
 #+END_SRC
 *** quit
 #+BEGIN_SRC emacs-lisp
-  (my-leader-def
-    "<ESC>" '(:wk "quit")
-    "<ESC> <ESC>" 'save-buffers-kill-terminal
-    "<ESC> 1" 'restart-emacs)
+  (pretty-hydra-define hydra-quit (:exit t :foreign-keys warn :quit-key "q")
+    ("❗"
+     (("<ESC>" save-buffers-kill-terminal "exit emacs")
+      ("1" restart-emacs "restart-emacs"))))
 #+END_SRC
 *** search
 #+BEGIN_SRC emacs-lisp
-  (my-leader-def
-    "s" '(:wk "search")
+  (pretty-hydra-define hydra-search (:exit t :title "Search" :foreign-keys warn :quit-key "q")
+    ("content"
+     (("i" consult-imenu "imenu")
+      ("r" consult-ripgrep "rg")
+      ("s" consult-line-multi "multi-buffer"))
 
-    "sb" 'consult-bookmark
-    "ss" 'consult-line-multi
-    "si" 'consult-imenu
-    "sr" 'consult-ripgrep
-    "sf" 'find-file-in-project
-    "sL" 'consult-locate
-    "sg" 'google-this
-    "sd" 'youdao-dictionary-search-at-point+
-    "sD" 'fanyi-dwim2
-    "sl" 'browse-url)
+     "file"
+     (("b" consult-bookmark "bookmark")
+      ("f" find-file-in-project "project")
+      ("L" consult-locate "locate"))
+
+     "lookup"
+     (("g" google-this "google")
+      ("d" youdao-dictionary-search-at-point+ "dict")
+      ("D" fanyi-dwim2 "fanyi")
+      ("l" browse-url "browse-url"))))
 #+END_SRC
 *** terminal
 #+BEGIN_SRC emacs-lisp
-  (my-leader-def
-    "t" '(:wk "terminal")
-    "tt" 'aweshell-new)
+  (pretty-hydra-define hydra-terminal (:exit t :foreign-keys warn :quit-key "q")
+    ("terminal"
+     (("t" aweshell-new "new terminal"))))
 #+END_SRC
 *** toggle
 #+BEGIN_SRC emacs-lisp
-  (my-leader-def
-    "T" '(:wk "toggle")
-
-    "Te" 'toggle-company-english-helper
-
-    "Tt" '((lambda ()
-	     (interactive)
-	     (let ((alpha (frame-parameter nil 'alpha)))
-	       (set-frame-parameter
-		nil 'alpha
-		(if (eql (cond ((numberp alpha) alpha)
-			       ((numberp (cdr alpha)) (cdr alpha))
-			       ;; Also handle undocumented (<active> <inactive>) form.
-			       ((numberp (cadr alpha)) (cadr alpha)))
-			 100)
-		    '(85 . 50) '(100 . 100)))))
-	   :wk "toggle-transparency"))
+  (pretty-hydra-define hydra-toggle (:exit t :foreign-keys warn :quit-key "q")
+    ("toggle things"
+     (("e" toggle-company-english-helper "english-helper" :exit t)
+      ("t" jst/toggle-ui-transparency "transparency"))))
 #+END_SRC
 *** window
 #+BEGIN_SRC emacs-lisp
-  (defhydra hydra-window ()
-    "window"
-    ("h" windmove-left)
-    ("j" windmove-down)
-    ("k" windmove-up)
-    ("l" windmove-right)
-    ("H" windmove-swap-states-left)
-    ("J" windmove-swap-states-down)
-    ("K" windmove-swap-states-up)
-    ("L" windmove-swap-states-right)
-    ("C-h" evil-window-move-far-left)
-    ("C-j" evil-window-move-very-bottom)
-    ("C-k" evil-window-move-very-top)
-    ("C-l" evil-window-move-far-right)
-    ("/" (lambda ()
-	   (interactive)
-	   (split-window-right)
-	   (windmove-right))
-     "v-split")
-    ("?" (lambda ()
-	   (interactive)
-	   (split-window-below)
-	   (windmove-down))
-     "h-split")
-    ("0" balance-windows "balance-windows")
-    ("=" enlarge-window "enlarge-v")
-    ("-" shrink-window "shrink-v")
-    ("<" shrink-window-horizontally "shrink-h")
-    (">" enlarge-window-horizontally "enlarge-h")
-    ("g" ace-window "goto")
-    ("s" ace-swap-window "swap")
-    ("x" delete-window "x")
-    ("d" ace-delete-window "del")
-    ("m" delete-other-windows "maximize" :color blue)
-    ("q" nil "cancel"))
+  (defmacro jst/hydra-window (hydra-name exit)
+    `(pretty-hydra-define ,(make-symbol (concat "hydra--window-" hydra-name)) (:hint nil :exit ,exit)
+       ("nav"
+        (("h" windmove-left "←")
+         ("j" windmove-down "↓")
+         ("k" windmove-up "↑")
+         ("l" windmove-right "→")
+         ("g" ace-window "➶"))
 
-  (my-leader-def
-    "w" '(:wk "window")
+        "swap"
+        (("H" windmove-swap-states-left "⮌")
+         ("J" windmove-swap-states-down "⮏")
+         ("K" windmove-swap-states-up "⮍")
+         ("L" windmove-swap-states-right "⮎")
+         ("s" ace-swap-window "🗘"))
 
-    "ww" 'hydra-window/body
-    "wh" 'windmove-left
-    "wj" 'windmove-down
-    "wk" 'windmove-up
-    "wl" 'windmove-right
-    "wH" 'windmove-swap-states-left
-    "wJ" 'windmove-swap-states-down
-    "wK" 'windmove-swap-states-up
-    "wL" 'windmove-swap-states-right
-    "wg" 'ace-window
-    "ws" 'ace-swap-window
-    "w/" 'split-window-right
-    "w?" 'split-window-below
-    "wm" 'delete-other-windows
-    "wd" 'delete-window)
+        "split"
+        (("/" (lambda ()
+                (interactive)
+                (split-window-right)
+                (windmove-right)) "⦶ vertical")
+         ("?" (lambda ()
+                (interactive)
+                (split-window-below)
+                (windmove-down)) "⦵ horizontal"))
+
+        "resize"
+        (("0" balance-windows "⊞ balance")
+         ("=" enlarge-window "🡙" :exit nil)
+         ("-" shrink-window "🡫" :exit nil)
+         ("." enlarge-window-horizontally "🡘" :exit nil)
+         ("," shrink-window-horizontally "🡨" :exit nil))
+
+        "action"
+        (("d" delete-window "X 𐤕")
+         ("D" ace-delete-window "X other")
+         ("m" delete-other-windows "✡ maximum" :exit t)))))
+
+  (jst/hydra-window "exit" t)
+  (jst/hydra-window "noexit" nil)
 #+END_SRC
+*** leader
+#+BEGIN_SRC emacs-lisp
+  (my-leader-def
+    "<SPC>" 'execute-extended-command
+    "q" '(jst/kill-current-buffer :wk "kill-buffer")
+    "'" 'aweshell-switch-buffer
 
+    "b" 'hydra-buffer/body
+    "c" 'hydra-comment/body
+    "f" 'hydra-file/body
+    "g" 'hydra-git/body
+    "j" 'hydra-jump/body
+    "m" 'hydra-music/body
+    "<ESC>" 'hydra-quit/body
+    "s" 'hydra-search/body
+    "t" 'hydra-terminal/body
+    "T" 'hydra-toggle/body
+    "w" 'hydra--window-exit/body
+    "W" 'hydra--window-noexit/body)
+#+END_SRC
 ** major-mode-keys
 *** bufler-list-mode
 #+BEGIN_SRC emacs-lisp
@@ -1364,17 +1447,12 @@
    :states 'normal
    :keymaps 'bufler-list-mode-map
    "r" 'bufler-list
-   "q" '(lambda ()
-	  (interactive)
-	  (progn
-	    (kill-current-buffer)
-	    (when (> (length (window-list)) 1)
-	      (delete-window))))
+   "q" 'jst/kill-current-buffer
    "d" '(lambda ()
-	  (interactive)
-	  (when
-	      (yes-or-no-p "kill buffer?")
-	    (bufler-list-buffer-kill)))
+          (interactive)
+          (when
+              (yes-or-no-p "kill buffer?")
+            (bufler-list-buffer-kill)))
    "s" 'bufler-list-buffer-save
    "RET" 'bufler-list-buffer-switch)
 #+END_SRC
@@ -1404,13 +1482,7 @@
    :prefix my-leader-key
    :keymaps 'markdown-mode-map
    "l" '(:wk "md")
-   "lp" 'markdown-live-preview-mode
-   "lr" '((lambda ()
-	    (interactive)
-	    (shell-command
-	     (format "open %s"
-		     (shell-quote-argument (buffer-file-name)))))
-	  :wk "open"))
+   "lp" 'markdown-live-preview-mode)
 #+END_SRC
 *** python-mode
 #+BEGIN_SRC emacs-lisp
@@ -1440,6 +1512,5 @@
   (general-define-key
    :states 'normal
    :keymaps 'term-mode-map
-   "q" '(term-interrupt-subjob
-		 :wd "quit"))
+   "q" '(term-interrupt-subjob :wk "quit"))
 #+end_src
