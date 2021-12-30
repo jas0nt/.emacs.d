@@ -118,7 +118,8 @@
 
   (defun jst/mac-music-play-next ()
     (interactive)
-    (jst/mac--music-do jst/mac--music-action-next))
+    (jst/mac--music-do jst/mac--music-action-next)
+    (jst/mac--music-do jst/mac--music-action-play))
   (defun jst/mac-music-play-prev ()
     (interactive)
     (jst/mac--music-do jst/mac--music-action-prev))
@@ -1146,6 +1147,9 @@
 
   (use-package awesome-tray
     :load-path "~/.emacs.d/elisp/awesome-tray"
+    :init
+    (setq awesome-tray-active-modules
+          '("evil" "input-method" "location" "buffer-name" "git" "file-path" "mode-name"))
     :config
     (awesome-tray-mode 1)
     (eval-after-load 'awesome-tray
