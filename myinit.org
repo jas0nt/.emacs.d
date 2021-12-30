@@ -311,6 +311,14 @@
   (use-package smartparens
     :config
     (smartparens-global-mode))
+
+  (use-package indent-guide
+    :config
+    (indent-guide-global-mode))
+
+  (use-package flycheck
+    :init
+    (global-flycheck-mode))
 #+END_SRC
 ** dired
 #+BEGIN_SRC emacs-lisp
@@ -1090,7 +1098,7 @@
       (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
       (custom-set-faces
        '(aw-leading-char-face
-	 ((t (:inhrit ace-jump-face-foreground :height 3.0)))))))
+         ((t (:inhrit ace-jump-face-foreground :height 3.0)))))))
 
   (use-package benchmark-init
     :init (benchmark-init/activate)
@@ -1116,7 +1124,8 @@
   (use-package try)
   (use-package bufler)
   (use-package find-file-in-project)
-  (use-package rg)
+  (use-package deadgrep)
+  (use-package focus)
 #+END_SRC
 * UI
 #+BEGIN_SRC emacs-lisp
@@ -1251,7 +1260,6 @@
    "g." 'evil-repeat)
 
   (general-define-key
-   "C-;" 'vterm-posframe-toggle
    "<f5>" 'revert-buffer
    "C-s" 'consult-line
    "M-y" 'yank-pop
@@ -1355,6 +1363,7 @@
     ("content"
      (("i" consult-imenu "imenu")
       ("r" consult-ripgrep "rg")
+      ("R" deadgrep "rg+")
       ("s" consult-line-multi "multi-buffer"))
 
      "file"
@@ -1378,7 +1387,8 @@
 #+BEGIN_SRC emacs-lisp
   (pretty-hydra-define hydra-toggle (:exit t :foreign-keys warn :quit-key "q")
     ("toggle things"
-     (("e" toggle-company-english-helper "english-helper" :exit t)
+     (("e" toggle-company-english-helper "english-helper")
+      ("f" focus-mode "focus-mode")
       ("t" jst/toggle-ui-transparency "transparency"))))
 #+END_SRC
 *** window
