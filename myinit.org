@@ -15,6 +15,7 @@
 * Func
 ** Common
 #+BEGIN_SRC emacs-lisp
+  ;;;###autoload
   (defun jst/new-scratch-buffer ()
     "create a new scratch buffer to work in. (could be *scratch* - *scratchX*)"
     (interactive)
@@ -29,22 +30,26 @@
       (switch-to-buffer (get-buffer-create bufname))
       (if (= n 1) (lisp-interaction-mode))))
 
+  ;;;###autoload
   (defun jst/find-config-file ()
     "open emacs config file"
     (interactive)
     (find-file jst/emacs-config-file))
 
+  ;;;###autoload
   (defun jst/reload-config-file ()
     "reload emacs config file"
     (interactive)
     (org-babel-load-file (expand-file-name jst/emacs-config-file)))
 
+  ;;;###autoload
   (defun jst/find-file-in-clipboard ()
     "open file in clipboard"
     (interactive)
     (when (file-exists-p (current-kill 0))
       (find-file (current-kill 0))))
 
+  ;;;###autoload
   (defun jst/toggle-ui-transparency ()
     "toggle UI transparency"
     (interactive)
@@ -58,6 +63,7 @@
                 100)
            '(85 . 50) '(100 . 100)))))
 
+  ;;;###autoload
   (defun jst/kill-current-buffer ()
     "kill current buffer but keep the last window"
     (interactive)
@@ -66,6 +72,7 @@
       (when (> (length (window-list)) 1)
         (delete-window))))
 
+  ;;;###autoload
   (defun jst/string-trim-final-newline (string)
     (let ((len (length string)))
       (cond
@@ -73,6 +80,7 @@
         (substring string 0 (- len 1)))
        (t string))))
 
+  ;;;###autoload
   (defun jst/shell-command-to-string-trim (command)
     (jst/string-trim-final-newline (shell-command-to-string command)))
 #+END_SRC
@@ -1118,9 +1126,19 @@
   (use-package find-file-in-project)
   (use-package deadgrep)
   (use-package focus)
+  (use-package projectile)
 #+END_SRC
 * UI
 #+BEGIN_SRC emacs-lisp
+  (when (eq system-type 'darwin)
+    (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+    (add-to-list 'default-frame-alist '(ns-appearance . dark))
+    (add-hook 'after-load-theme-hook
+              (lambda ()
+                (let ((bg (frame-parameter nil 'background-mode)))
+                  (set-frame-parameter nil 'ns-appearance bg)
+                  (setcdr (assq 'ns-appearance default-frame-alist) bg)))))
+
   ;; theme
   (use-package dracula-theme
     :init
@@ -1135,9 +1153,18 @@
   ;; display battery
   (display-battery-mode 1)
 
+
   ;; modeline
+  (defconst jst/modeline-bg (face-attribute 'mode-line :background))
+  (defun jst/flash-mode-line ()
+    (let ((bell-color "#ff5555"))
+      (set-face-background 'mode-line bell-color)
+      (run-with-timer 0.1 nil #'set-face-background 'mode-line jst/modeline-bg)))
+
+  (setq visible-bell nil
+        ring-bell-function 'jst/flash-mode-line)
+
   (use-package doom-modeline
-    :disabled t
     :after (all-the-icons)
     :init (doom-modeline-mode 1)
     :config
@@ -1147,6 +1174,7 @@
     (set-face-attribute 'mode-line-inactive nil :family "Source Code Pro" :height 150))
 
   (use-package awesome-tray
+    :disabled t
     :load-path "~/.emacs.d/elisp/awesome-tray"
     :init
     (setq awesome-tray-active-modules
@@ -1347,7 +1375,7 @@
 #+BEGIN_SRC emacs-lisp
   (pretty-hydra-define hydra-quit (:exit t :foreign-keys warn :quit-key "q")
     ("❗"
-     (("<ESC>" save-buffers-kill-terminal "exit emacs")
+     (("!" save-buffers-kill-terminal "exit emacs")
       ("1" restart-emacs "restart-emacs"))))
 #+END_SRC
 *** search
