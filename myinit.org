@@ -327,6 +327,9 @@
   (use-package flycheck
     :init
     (global-flycheck-mode))
+
+  (use-package hideshow
+    :hook (prog-mode . hs-minor-mode))
 #+END_SRC
 ** dired
 #+BEGIN_SRC emacs-lisp
@@ -1010,6 +1013,9 @@
                                  (java . t)
                                  (plantuml . t)))
 
+    (org-babel-do-load-languages 'org-babel-load-languages
+                                 load-language-list)
+
     ;; ob-sh renamed to ob-shell since 26.1.
     (cl-pushnew '(shell . t) load-language-list)
 
@@ -1017,32 +1023,13 @@
     (use-package ob-mermaid
       :init (cl-pushnew '(mermaid . t) load-language-list))
 
-    (org-babel-do-load-languages 'org-babel-load-languages
-                                 load-language-list)
-
-    ;; Rich text clipboard
-    (use-package org-rich-yank
-      :bind (:map org-mode-map
-                  ("C-M-y" . org-rich-yank)))
-
-    ;; Table of contents
-    (use-package toc-org
-      :hook (org-mode . toc-org-mode))
-
-    ;; Export text/html MIME emails
-    (use-package org-mime
-      :bind (:map message-mode-map
-                  ("C-c M-o" . org-mime-htmlize)
-                  :map org-mode-map
-                  ("C-c M-o" . org-mime-org-buffer-htmlize)))
-
     ;; Add graphical view of agenda
     (use-package org-timeline
       :hook (org-agenda-finalize . org-timeline-insert-timeline))
 
     ;; Preview
-    (use-package org-preview-html
-      :diminish))
+    (use-package org-preview-html)
+    )
 #+END_SRC
 ** markdown
 #+BEGIN_SRC emacs-lisp
