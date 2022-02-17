@@ -31,6 +31,13 @@
       (if (= n 1) (lisp-interaction-mode))))
 
   ;;;###autoload
+  (defun jst/new-terminal ()
+    "create a new terminal buffer to work in."
+    (interactive)
+    (let ((my-sh "/usr/local/bin/fish"))
+      (ansi-term my-sh)))
+
+  ;;;###autoload
   (defun jst/find-config-file ()
     "open emacs config file"
     (interactive)
@@ -1505,8 +1512,7 @@
   (my-leader-def
     "<SPC>" 'execute-extended-command
     "q" '(jst/kill-current-buffer :wk "kill-buffer")
-    "'" 'aweshell-switch-buffer
-
+    "'" '(jst/new-terminal :wk ">_")
     "b" 'hydra-buffer/body
     "c" 'hydra-comment/body
     "f" 'hydra-file/body
