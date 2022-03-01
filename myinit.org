@@ -1007,38 +1007,9 @@
 #+END_SRC
 ** org
 #+BEGIN_SRC emacs-lisp
-  (use-package org
-    :ensure nil
-    :commands (org-dynamic-block-define)
-    :custom-face (org-ellipsis ((t (:foreground nil))))
-    :hook (((org-babel-after-execute org-mode) . org-redisplay-inline-images))
+  (use-package org-modern
+    :hook (org-mode . org-modern-mode)
     :config
-    ;; To speed up startup, don't put to init section
-    (setq org-modules nil                 ; Faster loading
-          org-tags-column -80
-          org-log-done 'time
-          org-catch-invisible-edits 'smart
-          org-startup-indented t
-          org-ellipsis (if (and (display-graphic-p) (char-displayable-p ?⏷)) " ⏷" nil)
-          org-pretty-entities nil
-          org-hide-emphasis-markers t)
-
-    ;; Add new template
-    (add-to-list 'org-structure-template-alist '("n" . "note"))
-
-    ;; Use embedded webkit browser if possible
-    (when (featurep 'xwidget-internal)
-      (push '("\\.\\(x?html?\\|pdf\\)\\'"
-              .
-              (lambda (file _link)
-                (xwidget-webkit-browse-url (concat "file://" file))
-                (let ((buf (xwidget-buffer (xwidget-webkit-current-session))))
-                  (when (buffer-live-p buf)
-                    (and (eq buf (current-buffer)) (quit-window))
-                    (pop-to-buffer buf)))))
-            org-file-apps))
-
-    ;; Babel
     (setq org-confirm-babel-evaluate nil
           org-src-fontify-natively t
           org-src-tab-acts-natively t)
@@ -1055,22 +1026,7 @@
                                  (plantuml . t)))
 
     (org-babel-do-load-languages 'org-babel-load-languages
-                                 load-language-list)
-
-    ;; ob-sh renamed to ob-shell since 26.1.
-    (cl-pushnew '(shell . t) load-language-list)
-
-    ;; Use mermadi-cli: npm install -g @mermaid-js/mermaid-cli
-    (use-package ob-mermaid
-      :init (cl-pushnew '(mermaid . t) load-language-list))
-
-    ;; Add graphical view of agenda
-    (use-package org-timeline
-      :hook (org-agenda-finalize . org-timeline-insert-timeline))
-
-    ;; Preview
-    (use-package org-preview-html)
-    )
+                                 load-language-list))
 #+END_SRC
 ** markdown
 #+BEGIN_SRC emacs-lisp
@@ -1189,6 +1145,7 @@
         ring-bell-function 'jst/flash-mode-line)
 
   (use-package doom-modeline
+    :disabled t
     :after (all-the-icons)
     :init (doom-modeline-mode 1)
     :config
@@ -1198,7 +1155,6 @@
     (set-face-attribute 'mode-line-inactive nil :family "Source Code Pro" :height 140))
 
   (use-package awesome-tray
-    :disabled t
     :load-path "~/.emacs.d/elisp/awesome-tray"
     :init
     (setq awesome-tray-active-modules
