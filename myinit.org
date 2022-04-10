@@ -31,13 +31,6 @@
       (if (= n 1) (lisp-interaction-mode))))
 
   ;;;###autoload
-  (defun jst/new-terminal ()
-    "create a new terminal buffer to work in."
-    (interactive)
-    (let ((my-sh "/usr/local/bin/fish"))
-      (ansi-term my-sh)))
-
-  ;;;###autoload
   (defun jst/find-config-file ()
     "open emacs config file"
     (interactive)
@@ -245,7 +238,7 @@
   (add-to-list 'load-path
 	       (expand-file-name (concat user-emacs-directory "elisp")))
 #+end_src
-** evil
+** Evil
 #+BEGIN_SRC emacs-lisp
   (use-package evil
     :init
@@ -257,7 +250,7 @@
     :config
     (evil-mode 1)
     (setq evil-insert-state-cursor '(hollow "yellow")
-          evil-normal-state-cursor '(box "green")))
+	  evil-normal-state-cursor '(box "green")))
 
   (use-package evil-collection
     :after (evil)
@@ -269,7 +262,8 @@
   (use-package evil-snipe
     :after (evil)
     :config
-    (evil-snipe-mode +1))
+    (evil-snipe-mode +1)
+    (evil-snipe-override-mode +1))
 
   (use-package evil-surround
     :ensure t
@@ -327,19 +321,19 @@
     :config
     (smartparens-global-mode))
 
-  (use-package indent-guide
-    :config
-    (indent-guide-global-mode))
-
   (use-package flycheck
     :init
     (global-flycheck-mode))
 
   (use-package hideshow
     :hook (prog-mode . hs-minor-mode))
+
+  (use-package symbol-overlay)
 #+END_SRC
 ** dired
 #+BEGIN_SRC emacs-lisp
+  (use-package dirvish)
+
   (when (string= system-type "darwin")
     (require 'dired-x)
     (setq dired-guess-shell-alist-user '(("\\.*\\'" "open")))
@@ -353,22 +347,22 @@
     :defines (company-dabbrev-ignore-case company-dabbrev-downcase)
     :hook (after-init . global-company-mode)
     :config (setq company-dabbrev-code-everywhere t
-                  company-dabbrev-code-modes t
-                  company-dabbrev-code-other-buffers 'all
-                  company-dabbrev-downcase nil
-                  company-dabbrev-ignore-case t
-                  company-dabbrev-other-buffers 'all
-                  company-require-match nil
-                  company-minimum-prefix-length 1
-                  company-show-numbers t
-                  company-tooltip-limit 20
-                  company-idle-delay 0
-                  company-echo-delay 0
-                  company-tooltip-offset-display 'scrollbar
-                  company-begin-commands '(self-insert-command))
+		  company-dabbrev-code-modes t
+		  company-dabbrev-code-other-buffers 'all
+		  company-dabbrev-downcase nil
+		  company-dabbrev-ignore-case t
+		  company-dabbrev-other-buffers 'all
+		  company-require-match nil
+		  company-minimum-prefix-length 1
+		  company-show-numbers t
+		  company-tooltip-limit 20
+		  company-idle-delay 0
+		  company-echo-delay 0
+		  company-tooltip-offset-display 'scrollbar
+		  company-begin-commands '(self-insert-command))
     (eval-after-load 'company
       '(add-to-list 'company-backends
-                    '(company-abbrev company-yasnippet company-capf))))
+		    '(company-abbrev company-yasnippet company-capf))))
 
   (use-package company-prescient
     :init (company-prescient-mode 1))
@@ -378,207 +372,207 @@
     :defines company-box-icons-all-the-icons
     :hook (company-mode . company-box-mode)
     :init (setq company-box-backends-colors nil
-                company-box-doc-delay 0.1)
+		company-box-doc-delay 0.1)
     :config
     (with-no-warnings
       ;; Prettify icons
       (defun my-company-box-icons--elisp (candidate)
-        (when (or (derived-mode-p 'emacs-lisp-mode) (derived-mode-p 'lisp-mode))
-          (let ((sym (intern candidate)))
-            (cond ((fboundp sym) 'Function)
-                  ((featurep sym) 'Module)
-                  ((facep sym) 'Color)
-                  ((boundp sym) 'Variable)
-                  ((symbolp sym) 'Text)
-                  (t . nil)))))
+	(when (or (derived-mode-p 'emacs-lisp-mode) (derived-mode-p 'lisp-mode))
+	  (let ((sym (intern candidate)))
+	    (cond ((fboundp sym) 'Function)
+		  ((featurep sym) 'Module)
+		  ((facep sym) 'Color)
+		  ((boundp sym) 'Variable)
+		  ((symbolp sym) 'Text)
+		  (t . nil)))))
       (advice-add #'company-box-icons--elisp :override #'my-company-box-icons--elisp)
 
       ;; Display borders and optimize performance
       (defun my-company-box--display (string on-update)
-        "Display the completions."
-        (company-box--render-buffer string on-update)
+	"Display the completions."
+	(company-box--render-buffer string on-update)
 
-        (let ((frame (company-box--get-frame))
-              (border-color (face-foreground 'font-lock-comment-face nil t)))
-          (unless frame
-            (setq frame (company-box--make-frame))
-            (company-box--set-frame frame))
-          (company-box--compute-frame-position frame)
-          (company-box--move-selection t)
-          (company-box--update-frame-position frame)
-          (unless (frame-visible-p frame)
-            (make-frame-visible frame))
-          (company-box--update-scrollbar frame t)
-          (set-face-background 'internal-border border-color frame)
-          (when (facep 'child-frame-border)
-            (set-face-background 'child-frame-border border-color frame)))
-        (with-current-buffer (company-box--get-buffer)
-          (company-box--maybe-move-number (or company-box--last-start 1))))
+	(let ((frame (company-box--get-frame))
+	      (border-color (face-foreground 'font-lock-comment-face nil t)))
+	  (unless frame
+	    (setq frame (company-box--make-frame))
+	    (company-box--set-frame frame))
+	  (company-box--compute-frame-position frame)
+	  (company-box--move-selection t)
+	  (company-box--update-frame-position frame)
+	  (unless (frame-visible-p frame)
+	    (make-frame-visible frame))
+	  (company-box--update-scrollbar frame t)
+	  (set-face-background 'internal-border border-color frame)
+	  (when (facep 'child-frame-border)
+	    (set-face-background 'child-frame-border border-color frame)))
+	(with-current-buffer (company-box--get-buffer)
+	  (company-box--maybe-move-number (or company-box--last-start 1))))
       (advice-add #'company-box--display :override #'my-company-box--display)
 
       (setq company-box-doc-frame-parameters '((internal-border-width . 1)
-                                               (left-fringe . 8)
-                                               (right-fringe . 8)))
+					       (left-fringe . 8)
+					       (right-fringe . 8)))
 
       (defun my-company-box-doc--make-buffer (object)
-        (let* ((buffer-list-update-hook nil)
-               (inhibit-modification-hooks t)
-               (string (cond ((stringp object) object)
-                             ((bufferp object) (with-current-buffer object (buffer-string))))))
-          (when (and string (> (length (string-trim string)) 0))
-            (with-current-buffer (company-box--get-buffer "doc")
-              (erase-buffer)
-              (insert (propertize "\n" 'face '(:height 0.5)))
-              (insert string)
-              (insert (propertize "\n\n" 'face '(:height 0.5)))
+	(let* ((buffer-list-update-hook nil)
+	       (inhibit-modification-hooks t)
+	       (string (cond ((stringp object) object)
+			     ((bufferp object) (with-current-buffer object (buffer-string))))))
+	  (when (and string (> (length (string-trim string)) 0))
+	    (with-current-buffer (company-box--get-buffer "doc")
+	      (erase-buffer)
+	      (insert (propertize "\n" 'face '(:height 0.5)))
+	      (insert string)
+	      (insert (propertize "\n\n" 'face '(:height 0.5)))
 
-              ;; Handle hr lines of markdown
-              ;; @see `lsp-ui-doc--handle-hr-lines'
-              (with-current-buffer (company-box--get-buffer "doc")
-                (let (bolp next before after)
-                  (goto-char 1)
-                  (while (setq next (next-single-property-change (or next 1) 'markdown-hr))
-                    (when (get-text-property next 'markdown-hr)
-                      (goto-char next)
-                      (setq bolp (bolp)
-                            before (char-before))
-                      (delete-region (point) (save-excursion (forward-visible-line 1) (point)))
-                      (setq after (char-after (1+ (point))))
-                      (insert
-                       (concat
-                        (and bolp (not (equal before ?\n)) (propertize "\n" 'face '(:height 0.5)))
-                        (propertize "\n" 'face '(:height 0.5))
-                        (propertize " "
-                                    'display '(space :height (1))
-                                    'company-box-doc--replace-hr t
-                                    'face `(:background ,(face-foreground 'font-lock-comment-face)))
-                        (propertize " " 'display '(space :height (1)))
-                        (and (not (equal after ?\n)) (propertize " \n" 'face '(:height 0.5)))))))))
+	      ;; Handle hr lines of markdown
+	      ;; @see `lsp-ui-doc--handle-hr-lines'
+	      (with-current-buffer (company-box--get-buffer "doc")
+		(let (bolp next before after)
+		  (goto-char 1)
+		  (while (setq next (next-single-property-change (or next 1) 'markdown-hr))
+		    (when (get-text-property next 'markdown-hr)
+		      (goto-char next)
+		      (setq bolp (bolp)
+			    before (char-before))
+		      (delete-region (point) (save-excursion (forward-visible-line 1) (point)))
+		      (setq after (char-after (1+ (point))))
+		      (insert
+		       (concat
+			(and bolp (not (equal before ?\n)) (propertize "\n" 'face '(:height 0.5)))
+			(propertize "\n" 'face '(:height 0.5))
+			(propertize " "
+				    'display '(space :height (1))
+				    'company-box-doc--replace-hr t
+				    'face `(:background ,(face-foreground 'font-lock-comment-face)))
+			(propertize " " 'display '(space :height (1)))
+			(and (not (equal after ?\n)) (propertize " \n" 'face '(:height 0.5)))))))))
 
-              (setq mode-line-format nil
-                    display-line-numbers nil
-                    header-line-format nil
-                    show-trailing-whitespace nil
-                    cursor-in-non-selected-windows nil)
-              (current-buffer)))))
+	      (setq mode-line-format nil
+		    display-line-numbers nil
+		    header-line-format nil
+		    show-trailing-whitespace nil
+		    cursor-in-non-selected-windows nil)
+	      (current-buffer)))))
       (advice-add #'company-box-doc--make-buffer :override #'my-company-box-doc--make-buffer)
 
       ;; Display the border and fix the markdown header properties
       (defun my-company-box-doc--show (selection frame)
-        (cl-letf (((symbol-function 'completing-read) #'company-box-completing-read)
-                  (window-configuration-change-hook nil)
-                  (inhibit-redisplay t)
-                  (display-buffer-alist nil)
-                  (buffer-list-update-hook nil))
-          (-when-let* ((valid-state (and (eq (selected-frame) frame)
-                                         company-box--bottom
-                                         company-selection
-                                         (company-box--get-frame)
-                                         (frame-visible-p (company-box--get-frame))))
-                       (candidate (nth selection company-candidates))
-                       (doc (or (company-call-backend 'quickhelp-string candidate)
-                                (company-box-doc--fetch-doc-buffer candidate)))
-                       (doc (company-box-doc--make-buffer doc)))
-            (let ((frame (frame-local-getq company-box-doc-frame))
-                  (border-color (face-foreground 'font-lock-comment-face nil t)))
-              (unless (frame-live-p frame)
-                (setq frame (company-box-doc--make-frame doc))
-                (frame-local-setq company-box-doc-frame frame))
-              (set-face-background 'internal-border border-color frame)
-              (when (facep 'child-frame-border)
-                (set-face-background 'child-frame-border border-color frame))
-              (company-box-doc--set-frame-position frame)
+	(cl-letf (((symbol-function 'completing-read) #'company-box-completing-read)
+		  (window-configuration-change-hook nil)
+		  (inhibit-redisplay t)
+		  (display-buffer-alist nil)
+		  (buffer-list-update-hook nil))
+	  (-when-let* ((valid-state (and (eq (selected-frame) frame)
+					 company-box--bottom
+					 company-selection
+					 (company-box--get-frame)
+					 (frame-visible-p (company-box--get-frame))))
+		       (candidate (nth selection company-candidates))
+		       (doc (or (company-call-backend 'quickhelp-string candidate)
+				(company-box-doc--fetch-doc-buffer candidate)))
+		       (doc (company-box-doc--make-buffer doc)))
+	    (let ((frame (frame-local-getq company-box-doc-frame))
+		  (border-color (face-foreground 'font-lock-comment-face nil t)))
+	      (unless (frame-live-p frame)
+		(setq frame (company-box-doc--make-frame doc))
+		(frame-local-setq company-box-doc-frame frame))
+	      (set-face-background 'internal-border border-color frame)
+	      (when (facep 'child-frame-border)
+		(set-face-background 'child-frame-border border-color frame))
+	      (company-box-doc--set-frame-position frame)
 
-              ;; Fix hr props. @see `lsp-ui-doc--fix-hr-props'
-              (with-current-buffer (company-box--get-buffer "doc")
-                (let (next)
-                  (while (setq next (next-single-property-change (or next 1) 'company-box-doc--replace-hr))
-                    (when (get-text-property next 'company-box-doc--replace-hr)
-                      (put-text-property next (1+ next) 'display
-                                         '(space :align-to (- right-fringe 1) :height (1)))
-                      (put-text-property (1+ next) (+ next 2) 'display
-                                         '(space :align-to right-fringe :height (1)))))))
+	      ;; Fix hr props. @see `lsp-ui-doc--fix-hr-props'
+	      (with-current-buffer (company-box--get-buffer "doc")
+		(let (next)
+		  (while (setq next (next-single-property-change (or next 1) 'company-box-doc--replace-hr))
+		    (when (get-text-property next 'company-box-doc--replace-hr)
+		      (put-text-property next (1+ next) 'display
+					 '(space :align-to (- right-fringe 1) :height (1)))
+		      (put-text-property (1+ next) (+ next 2) 'display
+					 '(space :align-to right-fringe :height (1)))))))
 
-              (unless (frame-visible-p frame)
-                (make-frame-visible frame))))))
+	      (unless (frame-visible-p frame)
+		(make-frame-visible frame))))))
       (advice-add #'company-box-doc--show :override #'my-company-box-doc--show)
 
       (defun my-company-box-doc--set-frame-position (frame)
-        (-let* ((frame-resize-pixelwise t)
+	(-let* ((frame-resize-pixelwise t)
 
-                (box-frame (company-box--get-frame))
-                (box-position (frame-position box-frame))
-                (box-width (frame-pixel-width box-frame))
-                (box-height (frame-pixel-height box-frame))
-                (box-border-width (frame-border-width box-frame))
+		(box-frame (company-box--get-frame))
+		(box-position (frame-position box-frame))
+		(box-width (frame-pixel-width box-frame))
+		(box-height (frame-pixel-height box-frame))
+		(box-border-width (frame-border-width box-frame))
 
-                (window (frame-root-window frame))
-                ((text-width . text-height) (window-text-pixel-size window nil nil
-                                                                    (/ (frame-pixel-width) 2)
-                                                                    (/ (frame-pixel-height) 2)))
-                (border-width (or (alist-get 'internal-border-width company-box-doc-frame-parameters) 0))
+		(window (frame-root-window frame))
+		((text-width . text-height) (window-text-pixel-size window nil nil
+								    (/ (frame-pixel-width) 2)
+								    (/ (frame-pixel-height) 2)))
+		(border-width (or (alist-get 'internal-border-width company-box-doc-frame-parameters) 0))
 
-                (x (- (+ (car box-position) box-width) border-width))
-                (space-right (- (frame-pixel-width) x))
-                (space-left (car box-position))
-                (fringe-left (or (alist-get 'left-fringe company-box-doc-frame-parameters) 0))
-                (fringe-right (or (alist-get 'right-fringe company-box-doc-frame-parameters) 0))
-                (width (+ text-width border-width fringe-left fringe-right))
-                (x (if (> width space-right)
-                       (if (> space-left width)
-                           (- space-left width)
-                         space-left)
-                     x))
-                (y (cdr box-position))
-                (bottom (+ company-box--bottom (frame-border-width)))
-                (height (+ text-height (* 2 border-width)))
-                (y (cond ((= x space-left)
-                          (if (> (+ y box-height height) bottom)
-                              (+ (- y height) border-width)
-                            (- (+ y box-height) border-width)))
-                         ((> (+ y height) bottom)
-                          (- (+ y box-height) height))
-                         (t y))))
-          (set-frame-position frame (max x 0) (max y 0))
-          (set-frame-size frame text-width text-height t)))
+		(x (- (+ (car box-position) box-width) border-width))
+		(space-right (- (frame-pixel-width) x))
+		(space-left (car box-position))
+		(fringe-left (or (alist-get 'left-fringe company-box-doc-frame-parameters) 0))
+		(fringe-right (or (alist-get 'right-fringe company-box-doc-frame-parameters) 0))
+		(width (+ text-width border-width fringe-left fringe-right))
+		(x (if (> width space-right)
+		       (if (> space-left width)
+			   (- space-left width)
+			 space-left)
+		     x))
+		(y (cdr box-position))
+		(bottom (+ company-box--bottom (frame-border-width)))
+		(height (+ text-height (* 2 border-width)))
+		(y (cond ((= x space-left)
+			  (if (> (+ y box-height height) bottom)
+			      (+ (- y height) border-width)
+			    (- (+ y box-height) border-width)))
+			 ((> (+ y height) bottom)
+			  (- (+ y box-height) height))
+			 (t y))))
+	  (set-frame-position frame (max x 0) (max y 0))
+	  (set-frame-size frame text-width text-height t)))
       (advice-add #'company-box-doc--set-frame-position :override #'my-company-box-doc--set-frame-position)
 
       (setq company-box-icons-all-the-icons
-            `((Unknown . ,(all-the-icons-material "find_in_page" :height 1.0 :v-adjust -0.2))
-              (Text . ,(all-the-icons-faicon "text-width" :height 1.0 :v-adjust -0.02))
-              (Method . ,(all-the-icons-faicon "cube" :height 1.0 :v-adjust -0.02 :face 'all-the-icons-purple))
-              (Function . ,(all-the-icons-faicon "cube" :height 1.0 :v-adjust -0.02 :face 'all-the-icons-purple))
-              (Constructor . ,(all-the-icons-faicon "cube" :height 1.0 :v-adjust -0.02 :face 'all-the-icons-purple))
-              (Field . ,(all-the-icons-octicon "tag" :height 1.1 :v-adjust 0 :face 'all-the-icons-lblue))
-              (Variable . ,(all-the-icons-octicon "tag" :height 1.1 :v-adjust 0 :face 'all-the-icons-lblue))
-              (Class . ,(all-the-icons-material "settings_input_component" :height 1.0 :v-adjust -0.2 :face 'all-the-icons-orange))
-              (Interface . ,(all-the-icons-material "share" :height 1.0 :v-adjust -0.2 :face 'all-the-icons-lblue))
-              (Module . ,(all-the-icons-material "view_module" :height 1.0 :v-adjust -0.2 :face 'all-the-icons-lblue))
-              (Property . ,(all-the-icons-faicon "wrench" :height 1.0 :v-adjust -0.02))
-              (Unit . ,(all-the-icons-material "settings_system_daydream" :height 1.0 :v-adjust -0.2))
-              (Value . ,(all-the-icons-material "format_align_right" :height 1.0 :v-adjust -0.2 :face 'all-the-icons-lblue))
-              (Enum . ,(all-the-icons-material "storage" :height 1.0 :v-adjust -0.2 :face 'all-the-icons-orange))
-              (Keyword . ,(all-the-icons-material "filter_center_focus" :height 1.0 :v-adjust -0.2))
-              (Snippet . ,(all-the-icons-material "format_align_center" :height 1.0 :v-adjust -0.2))
-              (Color . ,(all-the-icons-material "palette" :height 1.0 :v-adjust -0.2))
-              (File . ,(all-the-icons-faicon "file-o" :height 1.0 :v-adjust -0.02))
-              (Reference . ,(all-the-icons-material "collections_bookmark" :height 1.0 :v-adjust -0.2))
-              (Folder . ,(all-the-icons-faicon "folder-open" :height 1.0 :v-adjust -0.02))
-              (EnumMember . ,(all-the-icons-material "format_align_right" :height 1.0 :v-adjust -0.2))
-              (Constant . ,(all-the-icons-faicon "square-o" :height 1.0 :v-adjust -0.1))
-              (Struct . ,(all-the-icons-material "settings_input_component" :height 1.0 :v-adjust -0.2 :face 'all-the-icons-orange))
-              (Event . ,(all-the-icons-octicon "zap" :height 1.0 :v-adjust 0 :face 'all-the-icons-orange))
-              (Operator . ,(all-the-icons-material "control_point" :height 1.0 :v-adjust -0.2))
-              (TypeParameter . ,(all-the-icons-faicon "arrows" :height 1.0 :v-adjust -0.02))
-              (Template . ,(all-the-icons-material "format_align_left" :height 1.0 :v-adjust -0.2)))
-            company-box-icons-alist 'company-box-icons-all-the-icons)))
+	    `((Unknown . ,(all-the-icons-material "find_in_page" :height 1.0 :v-adjust -0.2))
+	      (Text . ,(all-the-icons-faicon "text-width" :height 1.0 :v-adjust -0.02))
+	      (Method . ,(all-the-icons-faicon "cube" :height 1.0 :v-adjust -0.02 :face 'all-the-icons-purple))
+	      (Function . ,(all-the-icons-faicon "cube" :height 1.0 :v-adjust -0.02 :face 'all-the-icons-purple))
+	      (Constructor . ,(all-the-icons-faicon "cube" :height 1.0 :v-adjust -0.02 :face 'all-the-icons-purple))
+	      (Field . ,(all-the-icons-octicon "tag" :height 1.1 :v-adjust 0 :face 'all-the-icons-lblue))
+	      (Variable . ,(all-the-icons-octicon "tag" :height 1.1 :v-adjust 0 :face 'all-the-icons-lblue))
+	      (Class . ,(all-the-icons-material "settings_input_component" :height 1.0 :v-adjust -0.2 :face 'all-the-icons-orange))
+	      (Interface . ,(all-the-icons-material "share" :height 1.0 :v-adjust -0.2 :face 'all-the-icons-lblue))
+	      (Module . ,(all-the-icons-material "view_module" :height 1.0 :v-adjust -0.2 :face 'all-the-icons-lblue))
+	      (Property . ,(all-the-icons-faicon "wrench" :height 1.0 :v-adjust -0.02))
+	      (Unit . ,(all-the-icons-material "settings_system_daydream" :height 1.0 :v-adjust -0.2))
+	      (Value . ,(all-the-icons-material "format_align_right" :height 1.0 :v-adjust -0.2 :face 'all-the-icons-lblue))
+	      (Enum . ,(all-the-icons-material "storage" :height 1.0 :v-adjust -0.2 :face 'all-the-icons-orange))
+	      (Keyword . ,(all-the-icons-material "filter_center_focus" :height 1.0 :v-adjust -0.2))
+	      (Snippet . ,(all-the-icons-material "format_align_center" :height 1.0 :v-adjust -0.2))
+	      (Color . ,(all-the-icons-material "palette" :height 1.0 :v-adjust -0.2))
+	      (File . ,(all-the-icons-faicon "file-o" :height 1.0 :v-adjust -0.02))
+	      (Reference . ,(all-the-icons-material "collections_bookmark" :height 1.0 :v-adjust -0.2))
+	      (Folder . ,(all-the-icons-faicon "folder-open" :height 1.0 :v-adjust -0.02))
+	      (EnumMember . ,(all-the-icons-material "format_align_right" :height 1.0 :v-adjust -0.2))
+	      (Constant . ,(all-the-icons-faicon "square-o" :height 1.0 :v-adjust -0.1))
+	      (Struct . ,(all-the-icons-material "settings_input_component" :height 1.0 :v-adjust -0.2 :face 'all-the-icons-orange))
+	      (Event . ,(all-the-icons-octicon "zap" :height 1.0 :v-adjust 0 :face 'all-the-icons-orange))
+	      (Operator . ,(all-the-icons-material "control_point" :height 1.0 :v-adjust -0.2))
+	      (TypeParameter . ,(all-the-icons-faicon "arrows" :height 1.0 :v-adjust -0.02))
+	      (Template . ,(all-the-icons-material "format_align_left" :height 1.0 :v-adjust -0.2)))
+	    company-box-icons-alist 'company-box-icons-all-the-icons)))
 
   (use-package company-quickhelp-terminal
     :defines company-quickhelp-delay
     :bind (:map company-active-map
-                ([remap company-show-doc-buffer] . company-quickhelp-manual-begin))
+		([remap company-show-doc-buffer] . company-quickhelp-manual-begin))
     :hook ((global-company-mode . company-quickhelp-mode)
-           (company-quickhelp-mode  . company-quickhelp-terminal-mode))
+	   (company-quickhelp-mode  . company-quickhelp-terminal-mode))
     :init (setq company-quickhelp-delay 0.3))
 
   (use-package company-english-helper
@@ -591,14 +585,14 @@
   (use-package orderless
     :init
     (setq completion-styles '(orderless)
-          completion-category-defaults nil
-          completion-category-overrides '((file (styles partial-completion)))))
+	  completion-category-defaults nil
+	  completion-category-overrides '((file (styles partial-completion)))))
 
   ;; Use dabbrev with Corfu!
   (use-package dabbrev
     ;; Swap M-/ and C-M-/
     :bind (("M-/" . dabbrev-completion)
-           ("C-M-/" . dabbrev-expand)))
+	   ("C-M-/" . dabbrev-expand)))
 
   ;; A few more useful configurations...
   (use-package emacs
@@ -626,8 +620,7 @@
   (use-package embark
     :ensure t
     :bind
-    (("C-." . embark-act)         ;; pick some comfortable binding
-     ("C-;" . embark-dwim)        ;; good alternative: M-.
+    (("C-c ." . embark-act)         ;; pick some comfortable binding
      ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
     :init
     ;; Optionally replace the key help with a completing-read interface
@@ -635,9 +628,9 @@
     :config
     ;; Hide the mode line of the Embark live/completions buffers
     (add-to-list 'display-buffer-alist
-                 '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
-                   nil
-                   (window-parameters (mode-line-format . none)))))
+		 '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+		   nil
+		   (window-parameters (mode-line-format . none)))))
 
   ;; Consult users will also want the embark-consult package.
   (use-package embark-consult
@@ -838,101 +831,93 @@
     :defines eshell-prompt-function
     :functions eshell/alias
     :hook (eshell-mode . (lambda ()
-                           (bind-key "C-l" 'eshell/clear eshell-mode-map)
-                           (setq-local company-mode nil)
-                           ;; Aliases
-                           (eshell/alias "f" "find-file $1")
-                           (eshell/alias "fo" "find-file-other-window $1")
-                           (eshell/alias "d" "dired $1")
-                           (eshell/alias "l" "ls -lFh")
-                           (eshell/alias "ll" "ls -l")
-                           (eshell/alias "la" "ls -lAFh")
-                           (eshell/alias "lr" "ls -tRFh")
-                           (eshell/alias "lrt" "ls -lFcrt")
-                           (eshell/alias "lsa" "ls -lah")
-                           (eshell/alias "lt" "ls -ltFh")))
+			   (bind-key "C-l" 'eshell/clear eshell-mode-map)
+			   (setq-local company-mode nil)
+			   ;; Aliases
+			   (eshell/alias "f" "find-file $1")
+			   (eshell/alias "fo" "find-file-other-window $1")
+			   (eshell/alias "d" "dired $1")
+			   (eshell/alias "l" "ls -lFh")
+			   (eshell/alias "ll" "ls -l")
+			   (eshell/alias "la" "ls -lAFh")
+			   (eshell/alias "lr" "ls -tRFh")
+			   (eshell/alias "lrt" "ls -lFcrt")
+			   (eshell/alias "lsa" "ls -lah")
+			   (eshell/alias "lt" "ls -ltFh")))
     :config
     (with-no-warnings
       ;; For compatibility
       (unless (fboundp 'flatten-tree)
-        (defalias 'flatten-tree #'eshell-flatten-list))
+	(defalias 'flatten-tree #'eshell-flatten-list))
 
       (defun eshell/clear ()
-        "Clear the eshell buffer."
-        (interactive)
-        (let ((inhibit-read-only t))
-          (erase-buffer)
-          (eshell-send-input)))
+	"Clear the eshell buffer."
+	(interactive)
+	(let ((inhibit-read-only t))
+	  (erase-buffer)
+	  (eshell-send-input)))
 
       (defun eshell/emacs (&rest args)
-        "Open a file (ARGS) in Emacs.  Some habits die hard."
-        (if (null args)
-            ;; If I just ran "emacs", I probably expect to be launching
-            ;; Emacs, which is rather silly since I'm already in Emacs.
-            ;; So just pretend to do what I ask.
-            (bury-buffer)
-          ;; We have to expand the file names or else naming a directory in an
-          ;; argument causes later arguments to be looked for in that directory,
-          ;; not the starting directory
-          (mapc #'find-file (mapcar #'expand-file-name (flatten-tree (reverse args))))))
+	"Open a file (ARGS) in Emacs.  Some habits die hard."
+	(if (null args)
+	    ;; If I just ran "emacs", I probably expect to be launching
+	    ;; Emacs, which is rather silly since I'm already in Emacs.
+	    ;; So just pretend to do what I ask.
+	    (bury-buffer)
+	  ;; We have to expand the file names or else naming a directory in an
+	  ;; argument causes later arguments to be looked for in that directory,
+	  ;; not the starting directory
+	  (mapc #'find-file (mapcar #'expand-file-name (flatten-tree (reverse args))))))
       (defalias 'eshell/e #'eshell/emacs)
       (defalias 'eshell/ec #'eshell/emacs)
 
       (defun eshell/ebc (&rest args)
-        "Compile a file (ARGS) in Emacs. Use `compile' to do background make."
-        (if (eshell-interactive-output-p)
-            (let ((compilation-process-setup-function
-                   (list 'lambda nil
-                         (list 'setq 'process-environment
-                               (list 'quote (eshell-copy-environment))))))
-              (compile (eshell-flatten-and-stringify args))
-              (pop-to-buffer compilation-last-buffer))
-          (throw 'eshell-replace-command
-                 (let ((l (eshell-stringify-list (flatten-tree args))))
-                   (eshell-parse-command (car l) (cdr l))))))
+	"Compile a file (ARGS) in Emacs. Use `compile' to do background make."
+	(if (eshell-interactive-output-p)
+	    (let ((compilation-process-setup-function
+		   (list 'lambda nil
+			 (list 'setq 'process-environment
+			       (list 'quote (eshell-copy-environment))))))
+	      (compile (eshell-flatten-and-stringify args))
+	      (pop-to-buffer compilation-last-buffer))
+	  (throw 'eshell-replace-command
+		 (let ((l (eshell-stringify-list (flatten-tree args))))
+		   (eshell-parse-command (car l) (cdr l))))))
       (put 'eshell/ebc 'eshell-no-numeric-conversions t)
 
       (defun eshell-view-file (file)
-        "View FILE.  A version of `view-file' which properly rets the eshell prompt."
-        (interactive "fView file: ")
-        (unless (file-exists-p file) (error "%s does not exist" file))
-        (let ((buffer (find-file-noselect file)))
-          (if (eq (get (buffer-local-value 'major-mode buffer) 'mode-class)
-                  'special)
-              (progn
-                (switch-to-buffer buffer)
-                (message "Not using View mode because the major mode is special"))
-            (let ((undo-window (list (window-buffer) (window-start)
-                                     (+ (window-point)
-                                        (length (funcall eshell-prompt-function))))))
-              (switch-to-buffer buffer)
-              (view-mode-enter (cons (selected-window) (cons nil undo-window))
-                               'kill-buffer)))))
+	"View FILE.  A version of `view-file' which properly rets the eshell prompt."
+	(interactive "fView file: ")
+	(unless (file-exists-p file) (error "%s does not exist" file))
+	(let ((buffer (find-file-noselect file)))
+	  (if (eq (get (buffer-local-value 'major-mode buffer) 'mode-class)
+		  'special)
+	      (progn
+		(switch-to-buffer buffer)
+		(message "Not using View mode because the major mode is special"))
+	    (let ((undo-window (list (window-buffer) (window-start)
+				     (+ (window-point)
+					(length (funcall eshell-prompt-function))))))
+	      (switch-to-buffer buffer)
+	      (view-mode-enter (cons (selected-window) (cons nil undo-window))
+			       'kill-buffer)))))
 
       (defun eshell/less (&rest args)
-        "Invoke `view-file' on a file (ARGS).
+	"Invoke `view-file' on a file (ARGS).
   \"less +42 foo\" will go to line 42 in the buffer for foo."
-        (while args
-          (if (string-match "\\`\\+\\([0-9]+\\)\\'" (car args))
-              (let* ((line (string-to-number (match-string 1 (pop args))))
-                     (file (pop args)))
-                (eshell-view-file file)
-                (forward-line line))
-            (eshell-view-file (pop args)))))
+	(while args
+	  (if (string-match "\\`\\+\\([0-9]+\\)\\'" (car args))
+	      (let* ((line (string-to-number (match-string 1 (pop args))))
+		     (file (pop args)))
+		(eshell-view-file file)
+		(forward-line line))
+	    (eshell-view-file (pop args)))))
       (defalias 'eshell/more #'eshell/less)))
-
-  (use-package aweshell
-    :load-path "~/.emacs.d/elisp/aweshell")
-#+END_SRC
-** eshell
-#+BEGIN_SRC emacs-lisp
-  (use-package aweshell
-    :load-path "~/.emacs.d/elisp/aweshell")
 #+END_SRC
 ** dashboard
 #+BEGIN_SRC emacs-lisp
   (use-package dashboard
-    :disabled t
+    ;; :disabled t
     :init
     (dashboard-setup-startup-hook)
     (setq dashboard-center-content t)
@@ -965,24 +950,12 @@
     (defun init-goto-bongo ()
       (interactive)
       (let ((bongo-playlist-buffer-name "*Bongo Playlist*"))
-	(unless (get-buffer bongo-playlist-buffer-name)
-	  (bongo)
-	  (bongo-insert-directory-tree "~/Music/my_music")
-	  (goto-char (point-min))
-	  (bongo-random-playback-mode))
-	(switch-to-buffer bongo-playlist-buffer-name)))
-
-    (defhydra hydra-bongo ()
-      ("m" init-goto-bongo "goto-bongo" :color blue)
-      ("<SPC>" bongo-pause/resume "play/pause")
-      ("r" bongo-play-random "play random")
-      ("n" bongo-play-next "play next")
-      ("p" bongo-play-previous "play previous")
-      ("f" bongo-seek-forward-10 "forward")
-      ("F" bongo-seek-forward-60 "Forward")
-      ("b" bongo-seek-backward-10 "backward")
-      ("B" bongo-seek-backward-60 "Backward")
-      ("q" nil "Cancel")))
+        (unless (get-buffer bongo-playlist-buffer-name)
+          (bongo)
+          (bongo-insert-directory-tree "~/Music/my_music")
+          (goto-char (point-min))
+          (bongo-random-playback-mode))
+        (switch-to-buffer bongo-playlist-buffer-name))))
 #+END_SRC
 ** python
 #+BEGIN_SRC emacs-lisp
@@ -1114,16 +1087,17 @@
     (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
     (add-to-list 'default-frame-alist '(ns-appearance . dark))
     (add-hook 'after-load-theme-hook
-              (lambda ()
-                (let ((bg (frame-parameter nil 'background-mode)))
-                  (set-frame-parameter nil 'ns-appearance bg)
-                  (setcdr (assq 'ns-appearance default-frame-alist) bg)))))
+	      (lambda ()
+		(let ((bg (frame-parameter nil 'background-mode)))
+		  (set-frame-parameter nil 'ns-appearance bg)
+		  (setcdr (assq 'ns-appearance default-frame-alist) bg)))))
 
   ;; theme
   (use-package dracula-theme
     :init
     (load-theme 'dracula t)
     (set-cursor-color main-color))
+
 
   ;; display time
   (display-time-mode 1)
@@ -1142,10 +1116,9 @@
       (run-with-timer 0.1 nil #'set-face-background 'mode-line jst/modeline-bg)))
 
   (setq visible-bell nil
-        ring-bell-function 'jst/flash-mode-line)
+	ring-bell-function 'jst/flash-mode-line)
 
   (use-package doom-modeline
-    :disabled t
     :after (all-the-icons)
     :init (doom-modeline-mode 1)
     :config
@@ -1155,10 +1128,11 @@
     (set-face-attribute 'mode-line-inactive nil :family "Source Code Pro" :height 140))
 
   (use-package awesome-tray
+    :disabled t
     :load-path "~/.emacs.d/elisp/awesome-tray"
     :init
     (setq awesome-tray-active-modules
-          '("evil" "input-method" "location" "buffer-name" "git" "file-path" "mode-name"))
+	  '("evil" "input-method" "location" "buffer-name" "git" "file-path" "mode-name"))
     :config
     (awesome-tray-mode 1)
     (eval-after-load 'awesome-tray
@@ -1179,7 +1153,7 @@
   ;;font
   (add-to-list 'default-frame-alist `(font . ,jst/my-font))
   (when (eq system-type 'darwin)
-        (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
+	(set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
 
   ;;hide tool bar
   (tool-bar-mode -1)
@@ -1208,7 +1182,7 @@
 
   ;;highlight current line
   (when (display-graphic-p)
-        (global-hl-line-mode))
+	(global-hl-line-mode))
 
   (setq visible-bell nil)
 
@@ -1240,29 +1214,29 @@
     (setq which-key-idle-delay 0.5)
     (which-key-mode))
 
+  (general-define-key
+   "<f5>" 'revert-buffer
+   "C-s" 'consult-line
+   "M-y" 'yank-pop)
+
   (general-create-definer my-leader-def
-    :states '(normal insert visual emacs)
-    :keymaps 'override
-    :prefix my-leader-key
-    :non-normal-prefix "C-,")
+	:states '(normal insert visual emacs)
+	:keymaps 'override
+	:prefix my-leader-key
+	:non-normal-prefix "C-,")
 
   (general-define-key
    :states '(normal visual)
-   "`" 'aweshell-dedicated-toggle
+   "gl" 'evil-avy-goto-line
    ";" 'switch-to-buffer
    "," 'evil-switch-to-windows-last-buffer
    "." 'evil-avy-goto-char-timer
-   "f" 'evil-snipe-f
-   "F" 'evil-snipe-F
-   "t" 'evil-snipe-t
-   "T" 'evil-snipe-T
-   "gl" 'evil-avy-goto-line
    "g." 'evil-repeat)
 
   (general-define-key
    "<f5>" 'revert-buffer
-   "C-s" 'consult-line
-   "M-y" 'yank-pop
+   "C-s" 'helm-swoop-without-pre-input
+   "M-y" 'helm-show-kill-ring
    "M-RET" 'lsp-execute-code-action)
 #+END_SRC
 ** hydras
@@ -1283,10 +1257,10 @@
 *** comment
 #+BEGIN_SRC emacs-lisp
   (pretty-hydra-define hydra-comment (
-                                      :exit t
-                                      :foreign-keys warn
-                                      :idle 1.0
-                                      :quit-key "q")
+				      :exit t
+				      :foreign-keys warn
+				      :idle 1.0
+				      :quit-key "q")
     ("comment"
      (("c" evilnc-comment-or-uncomment-lines "toggle comment")
       ("p" evilnc-copy-and-comment-lines "comment & copy")
@@ -1295,12 +1269,13 @@
 *** file
 #+BEGIN_SRC emacs-lisp
   (pretty-hydra-define hydra-file (
-                                   :exit t
-                                   :foreign-keys warn
-                                   :idle 1.0
-                                   :quit-key "q")
+				   :exit t
+				   :foreign-keys warn
+				   :idle 1.0
+				   :quit-key "q")
     ("find-file"
      (("f" find-file "find-file")
+      ("F" find-file-other-window "find-file-other-window")
       ("r" consult-recent-file "recentf")
       ("d" dired "dired")
       ("b" bookmark-jump "bookmark")
@@ -1308,8 +1283,7 @@
       ("p" jst/find-file-in-clipboard "find-file-in-kill-ring"))
 
      "action"
-     (("F" jst/mac-reveal-in-finder "reveal in finder")
-      ("R" revert-buffer "revert buffer")
+     (("R" jst/mac-reveal-in-finder "reveal in finder")
       ("s" save-buffer "save-buffer")
       ("S" save-some-buffers "save-some-buffers"))
 
@@ -1404,13 +1378,9 @@
 #+END_SRC
 *** terminal
 #+BEGIN_SRC emacs-lisp
-  (pretty-hydra-define hydra-terminal (
-                                       :exit t
-                                       :foreign-keys warn
-                                       :idle 1.0
-                                       :quit-key "q")
+  (pretty-hydra-define hydra-terminal (:exit t :foreign-keys warn :quit-key "q")
     ("terminal"
-     (("t" aweshell-new "new terminal"))))
+     (("t" ansi-term ">_"))))
 #+END_SRC
 *** toggle
 #+BEGIN_SRC emacs-lisp
@@ -1466,93 +1436,18 @@
 *** leader
 #+BEGIN_SRC emacs-lisp
   (my-leader-def
-    "<SPC>" 'execute-extended-command
-    "q" '(jst/kill-current-buffer :wk "kill-buffer")
-    "'" '(jst/new-terminal :wk ">_")
-    "b" 'hydra-buffer/body
-    "c" 'hydra-comment/body
-    "f" 'hydra-file/body
-    "g" 'hydra-git/body
-    "j" 'hydra-jump/body
-    "m" 'hydra-music/body
-    "<ESC>" 'hydra-quit/body
-    "s" 'hydra-search/body
-    "t" 'hydra-terminal/body
-    "T" 'hydra-toggle/body
-    "w" 'hydra--window-exit/body
-    "W" 'hydra--window-noexit/body)
+   "<SPC>" 'execute-extended-command
+   "q" '(jst/kill-current-buffer :wk "kill-buffer")
+   "b" 'hydra-buffer/body
+   "c" 'hydra-comment/body
+   "f" 'hydra-file/body
+   "g" 'hydra-git/body
+   "j" 'hydra-jump/body
+   "m" 'hydra-music/body
+   "<ESC>" 'hydra-quit/body
+   "s" 'hydra-search/body
+   "t" 'hydra-terminal/body
+   "T" 'hydra-toggle/body
+   "w" 'hydra--window-exit/body
+   "W" 'hydra--window-noexit/body)
 #+END_SRC
-** major-mode-keys
-*** bufler-list-mode
-#+BEGIN_SRC emacs-lisp
-  (general-define-key
-   :states 'normal
-   :keymaps 'bufler-list-mode-map
-   "r" 'bufler-list
-   "q" 'jst/kill-current-buffer
-   "d" '(lambda ()
-          (interactive)
-          (when
-              (yes-or-no-p "kill buffer?")
-            (bufler-list-buffer-kill)))
-   "s" 'bufler-list-buffer-save
-   "RET" 'bufler-list-buffer-switch)
-#+END_SRC
-*** bongo-playlist-mode
-#+BEGIN_SRC emacs-lisp
-  (general-define-key
-   :states 'normal
-   :keymaps 'bongo-playlist-mode-map
-   "RET" 'bongo-play
-   "TAB" 'bongo-toggle-collapsed
-   "J" 'bongo-next-header-line
-   "K" 'bongo-previous-header-line
-   "r" 'bongo-play-random
-   "c" 'bongo-recenter
-   "p" 'bongo-pause/resume
-   "f" 'bongo-seek-forward-10
-   "F" 'bongo-seek-forward-60
-   "b" 'bongo-seek-backward-10
-   "B" 'bongo-seek-backward-60
-   "q" 'bongo-quit
-   "Q" 'bongo-stop)
-#+END_SRC
-*** markdown-mode
-#+BEGIN_SRC emacs-lisp
-  (general-define-key
-   :states 'normal
-   :prefix my-leader-key
-   :keymaps 'markdown-mode-map
-   "l" '(:wk "md")
-   "lp" 'markdown-live-preview-mode)
-#+END_SRC
-*** python-mode
-#+BEGIN_SRC emacs-lisp
-  (general-define-key
-   :states 'normal
-   :prefix my-leader-key
-   :keymaps 'python-mode-map
-   "l" '(:wk "python")
-   "lf" 'lsp-format-buffer
-   "lr" '(lsp-rename :wk "rename")
-   "ld" 'lsp-find-definition)
-#+END_SRC
-*** org-mode
-#+BEGIN_SRC emacs-lisp
-  (general-define-key
-   :states 'normal
-   :prefix my-leader-key
-   :keymaps 'org-mode-map
-   "l" '(:wk "org")
-   "lp" '(grip-mode :wk "preview")
-   "ll" 'org-babel-remove-result
-   "lr" 'org-ctrl-c-ctrl-c
-   "lt" 'org-insert-structure-template)
-#+END_SRC
-*** term-mode
-#+begin_src emacs-lisp
-  (general-define-key
-   :states 'normal
-   :keymaps 'term-mode-map
-   "q" '(term-interrupt-subjob :wk "quit"))
-#+end_src
