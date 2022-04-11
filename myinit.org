@@ -917,7 +917,7 @@
 ** dashboard
 #+BEGIN_SRC emacs-lisp
   (use-package dashboard
-    ;; :disabled t
+    :disabled t
     :init
     (dashboard-setup-startup-hook)
     (setq dashboard-center-content t)
@@ -930,8 +930,8 @@
 ** music
 #+BEGIN_SRC emacs-lisp
   (use-package bongo
-    :after (hydra)
     ;; :if (eq system-type 'gnu/linux)
+    :after (hydra)
     :config
     (setq bongo-logo nil)
     (setq bongo-display-track-icons nil)
@@ -950,12 +950,12 @@
     (defun init-goto-bongo ()
       (interactive)
       (let ((bongo-playlist-buffer-name "*Bongo Playlist*"))
-        (unless (get-buffer bongo-playlist-buffer-name)
-          (bongo)
-          (bongo-insert-directory-tree "~/Music/my_music")
-          (goto-char (point-min))
-          (bongo-random-playback-mode))
-        (switch-to-buffer bongo-playlist-buffer-name))))
+	(unless (get-buffer bongo-playlist-buffer-name)
+	  (bongo)
+	  (bongo-insert-directory-tree "~/Music/my_music")
+	  (goto-char (point-min))
+	  (bongo-random-playback-mode))
+	(switch-to-buffer bongo-playlist-buffer-name))))
 #+END_SRC
 ** python
 #+BEGIN_SRC emacs-lisp
@@ -1056,10 +1056,6 @@
       (custom-set-faces
        '(aw-leading-char-face
          ((t (:inhrit ace-jump-face-foreground :height 3.0)))))))
-
-  (use-package benchmark-init
-    :init (benchmark-init/activate)
-    :hook (after-init . benchmark-init/deactivate))
 
   (use-package discover-my-major
     :bind ("C-h C-m" . discover-my-major))
@@ -1232,12 +1228,6 @@
    "," 'evil-switch-to-windows-last-buffer
    "." 'evil-avy-goto-char-timer
    "g." 'evil-repeat)
-
-  (general-define-key
-   "<f5>" 'revert-buffer
-   "C-s" 'helm-swoop-without-pre-input
-   "M-y" 'helm-show-kill-ring
-   "M-RET" 'lsp-execute-code-action)
 #+END_SRC
 ** hydras
 *** buffer
@@ -1250,7 +1240,7 @@
     ("Actions"
      (("+" er/expand-region "expand-region")
       ("b" bufler "bufler")
-      ("r" jst/mac-pbcopy "pbcopy")
+      ("y" jst/mac-pbcopy "pbcopy")
       ("s" ido-switch-buffer-other-window "switch buffer other window")
       ("S" jst/new-scratch-buffer "new scratch"))))
 #+END_SRC
@@ -1450,4 +1440,24 @@
    "T" 'hydra-toggle/body
    "w" 'hydra--window-exit/body
    "W" 'hydra--window-noexit/body)
+#+END_SRC
+** modes
+#+BEGIN_SRC emacs-lisp
+  (general-define-key
+   :states 'normal
+   :keymaps 'bongo-playlist-mode-map
+   "RET" 'bongo-play
+   "TAB" 'bongo-toggle-collapsed
+   "r" 'bongo-play-random
+   "p" 'bongo-pause/resume
+   "f" 'bongo-seek-forward-10
+   "F" 'bongo-seek-forward-60
+   "b" 'bongo-seek-backward-10
+   "B" 'bongo-seek-backward-60
+   "q" 'bongo-stop)
+
+  (general-define-key
+   :states 'normal
+   :keymaps 'dired-mode-map
+   ";" 'switch-to-buffer)
 #+END_SRC
