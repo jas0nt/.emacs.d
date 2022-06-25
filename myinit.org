@@ -440,7 +440,7 @@
     (corfu-auto-prefix 2)
     (corfu-auto-delay 0.25)
 
-    ;(corfu-min-width 80)
+    ;; (corfu-min-width 80)
     (corfu-max-width corfu-min-width)     ; Always have the same width
     (corfu-count 14)
     (corfu-scroll-margin 4)
@@ -477,17 +477,10 @@
     (add-hook 'minibuffer-setup-hook #'corfu-enable-always-in-minibuffer 1))
 
 
-  (use-package kind-icon
-    :after corfu
-    :custom
-    (kind-icon-use-icons t)
-    (kind-icon-default-face 'corfu-default) ; Have background color be the same as `corfu' face background
-    (kind-icon-blend-background nil)  ; Use midpoint color between foreground and background colors ("blended")?
-    (kind-icon-blend-frac 0.08)
+  (use-package markdown-mode
+    :mode ("README\\.md\\'" . gfm-mode)
+    :init (setq markdown-command "multimarkdown"))
 
-    :config
-    (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter) ; Enable `kind-icon'
-    )
 
   (use-package corfu-doc
     ;; NOTE 2022-02-05: At the time of writing, `corfu-doc' is not yet on melpa
@@ -602,54 +595,9 @@
   (use-package lsp-bridge
     :load-path "~/.emacs.d/elisp/lsp-bridge"
     :config
-    (require 'lsp-bridge-orderless)   ;; make lsp-bridge support fuzzy match, optional
-    (require 'lsp-bridge-icon)        ;; show icon for completion items, optional
-
-    ;; Enable auto completion in elisp mode.
-    (dolist (hook (list
-		   'emacs-lisp-mode-hook
-		   ))
-      (add-hook hook (lambda ()
-		       (setq-local corfu-auto t)
-		       )))
-
-    ;; Enable lsp-bridge.
-    (dolist (hook (list
-		   'c-mode-hook
-		   'c++-mode-hook
-		   'java-mode-hook
-		   'python-mode-hook
-		   'ruby-mode-hook
-		   'rust-mode-hook
-		   'elixir-mode-hook
-		   'go-mode-hook
-		   'haskell-mode-hook
-		   'haskell-literate-mode-hook
-		   'dart-mode-hook
-		   'scala-mode-hook
-		   'typescript-mode-hook
-		   'typescript-tsx-mode-hook
-		   'js2-mode-hook
-		   'js-mode-hook
-		   'rjsx-mode-hook
-		   'tuareg-mode-hook
-		   'latex-mode-hook
-		   'Tex-latex-mode-hook
-		   'texmode-hook
-		   'context-mode-hook
-		   'texinfo-mode-hook
-		   'bibtex-mode-hook
-		   'clojure-mode-hook
-		   'clojurec-mode-hook
-		   'clojurescript-mode-hook
-		   'clojurex-mode-hook
-		   ))
-      (add-hook hook (lambda ()
-		       (setq-local corfu-auto nil)  ;; let lsp-bridge control when popup completion frame
-		       (lsp-bridge-mode 1)
-		       )))
-
-    (setq lsp-bridge-enable-auto-import t)
+    ;; (require 'lsp-bridge)
+    (yas-global-mode 1)
+    (global-lsp-bridge-mode)
     )
 #+END_SRC
 ** terminal
@@ -1108,8 +1056,8 @@
 #+BEGIN_SRC emacs-lisp
   ;; set keys for Apple keyboard, for emacs in OS X
   (when (eq system-type 'darwin)
-    (setq mac-command-modifier 'meta) ; make cmd key do Meta
-    (setq mac-option-modifier 'super) ; make opt key do Super
+    (setq mac-command-modifier 'super) ; make cmd key do Meta
+    (setq mac-option-modifier 'meta) ; make opt key do Super
     (setq mac-control-modifier 'control) ; make Control key do Control
     (setq ns-function-modifier 'hyper)  ; make Fn key do Hyper
     )
