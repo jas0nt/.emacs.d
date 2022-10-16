@@ -252,129 +252,58 @@
     (when (memq window-system '(mac ns x))
       (exec-path-from-shell-initialize)))
 #+end_src
-** meow
+** evil
 #+BEGIN_SRC emacs-lisp
-  (defun jst/meow-yank()
-    (interactive)
-    (if (region-active-p)
-	(meow-replace)
-      (meow-yank)))
-
-
-  (use-package meow
+  (use-package evil
     :init
-    (defun meow-setup ()
-      (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
-      (meow-motion-overwrite-define-key
-       '("j" . meow-next)
-       '("k" . meow-prev)
-       '("<escape>" . ignore))
-      (meow-leader-define-key
-       '("<SPC>" . execute-extended-command)
-       ;; SPC j/k will run the original command in MOTION state.
-       '("j" . "H-j")
-       '("k" . "H-k")
-       ;; Use SPC (0-9) for digit arguments.
-       '("1" . meow-digit-argument)
-       '("2" . meow-digit-argument)
-       '("3" . meow-digit-argument)
-       '("4" . meow-digit-argument)
-       '("5" . meow-digit-argument)
-       '("6" . meow-digit-argument)
-       '("7" . meow-digit-argument)
-       '("8" . meow-digit-argument)
-       '("9" . meow-digit-argument)
-       '("0" . meow-digit-argument)
-       '("/" . meow-keypad-describe-key)
-       '("?" . meow-cheatsheet))
-
-      (meow-normal-define-key
-       '("@" . meow-kmacro-lines)
-       '("%" . meow-query-replace)
-       '("{" . backward-paragraph)
-       '("}" . forward-paragraph)
-       '("/" . meow-visit)
-       '("0" . meow-expand-0)
-       '("9" . meow-expand-9)
-       '("8" . meow-expand-8)
-       '("7" . meow-expand-7)
-       '("6" . meow-expand-6)
-       '("5" . meow-expand-5)
-       '("4" . meow-expand-4)
-       '("3" . meow-expand-3)
-       '("2" . meow-expand-2)
-       '("1" . meow-expand-1)
-       '("-" . negative-argument)
-       '(";" . meow-reverse)
-       '("," . meow-inner-of-thing)
-       '("." . meow-bounds-of-thing)
-       '("[" . meow-beginning-of-thing)
-       '("]" . meow-end-of-thing)
-       '("a" . meow-append)
-       '("b" . meow-back-word)
-       '("B" . meow-back-symbol)
-       '("c" . meow-change)
-       '("d" . meow-kill)
-       '("e" . meow-mark-word)
-       '("E" . meow-mark-symbol)
-       '("f" . meow-find)
-       '("g" . meow-cancel-selection)
-       '("G" . meow-grab)
-       '("h" . meow-left)
-       '("H" . meow-left-expand)
-       '("i" . meow-insert)
-       '("j" . meow-next)
-       '("J" . meow-next-expand)
-       '("k" . meow-prev)
-       '("K" . meow-prev-expand)
-       '("l" . meow-right)
-       '("L" . meow-right-expand)
-       '("m" . meow-join)
-       '("n" . meow-search)
-       '("o" . meow-open-below)
-       '("O" . meow-open-above)
-       '("p" . jst/meow-yank)
-       '("q" . meow-quit)
-       '("Q" . meow-goto-line)
-       '("r" . meow-replace)
-       '("R" . meow-swap-grab)
-       '("s" . meow-block)
-       '("S" . meow-to-block)
-       '("t" . meow-till)
-       '("u" . meow-undo)
-       '("U" . meow-undo-in-selection)
-       '("v" . meow-line)
-       '("V" . meow-goto-line)
-       '("w" . meow-next-word)
-       '("W" . meow-next-symbol)
-       '("x" . meow-delete)
-       '("X" . meow-backward-delete)
-       '("y" . meow-save)
-       '("Y" . meow-sync-grab)
-       '("z" . meow-pop-selection)
-       '("'" . repeat)
-       '("<escape>" . ignore)))
+    (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
+    (setq evil-want-keybinding nil)
+    (setq evil-disable-insert-state-bindings t)
+    (setq evil-want-C-i-jump nil)
+    (setq evil-want-C-u-scroll t)
     :config
-    (meow-thing-register 'single-quote '(regexp "'" "'") '(regexp "'" "'"))
-    (meow-thing-register 'angle '(regexp "<" ">") '(regexp "<" ">"))
+    (evil-mode 1)
+    (setq evil-insert-state-cursor '(hollow "yellow")
+	  evil-normal-state-cursor '(box "green")))
 
-    (setq meow-char-thing-table
-	  '((?( . round) (?) . round)
-	    (?{ . curly) (?} . curly)
-	    (?[ . square) (?] . square)
-	    (?< . angle) (?> . angle)
-	    (?\" . string)
-	    (?' . single-quote)
-	    (?b . buffer)
-	    (?w . window)
-	    (?. . sentence)
-	    (?v . line)
-	    (?f . defun)
-	    (?p . paragraph)
-	    (?s . symbol)))
+  (use-package evil-collection
+    :after (evil)
+    :init
+    (setq evil-collection-company-use-tng nil)
+    :config
+    (evil-collection-init))
 
-    (meow-setup)
-    (meow-global-mode 1))
+  (use-package evil-snipe
+    :after (evil)
+    :config
+    (evil-snipe-mode +1)
+    (evil-snipe-override-mode +1))
+
+  (use-package evil-surround
+    :ensure t
+    :config
+    (global-evil-surround-mode 1))
+
+  (use-package evil-nerd-commenter
+    :after (evil))
+
+  (use-package evil-pinyin
+    :after (evil)
+    :init
+    (setq-default evil-pinyin-scheme 'simplified-xiaohe-all)
+    (setq-default evil-pinyin-with-search-rule 'always)
+    :config
+    (evil-select-search-module 'evil-search-module 'evil-search)
+    (global-evil-pinyin-mode))
+
+  (use-package evil-exchange
+    :after (evil)
+    :config
+    (evil-exchange-install))
+
+  (use-package evil-smartparens
+    :after (evil smartparens)
+    :hook (smartparens-enabled-hook . evil-smartparens-mode))
 #+END_SRC
 ** edit
 #+BEGIN_SRC emacs-lisp
@@ -602,7 +531,7 @@
 #+END_SRC
 ** terminal
 #+BEGIN_SRC emacs-lisp
-  (setq-default shell-file-name "/bin/zsh")
+  (setq-default shell-file-name "/usr/local/bin/fish")
 
   (use-package eshell
     :ensure nil
@@ -695,7 +624,6 @@
 ** dashboard
 #+BEGIN_SRC emacs-lisp
   (use-package dashboard
-    :disabled t
     :init
     (dashboard-setup-startup-hook)
     (setq dashboard-center-content t)
@@ -750,25 +678,57 @@
 ** org
 #+BEGIN_SRC emacs-lisp
   (use-package org-modern
+    :disabled t
     :hook (org-mode . org-modern-mode)
     :config
     (setq org-confirm-babel-evaluate nil
-          org-src-fontify-natively t
-          org-src-tab-acts-natively t)
+	  org-src-fontify-natively t
+	  org-src-tab-acts-natively t)
 
     (defvar load-language-list '((emacs-lisp . t)
-                                 (perl . t)
-                                 (python . t)
-                                 (ruby . t)
-                                 (js . t)
-                                 (css . t)
-                                 (sass . t)
-                                 (C . t)
-                                 (java . t)
-                                 (plantuml . t)))
+				 (perl . t)
+				 (python . t)
+				 (ruby . t)
+				 (js . t)
+				 (css . t)
+				 (sass . t)
+				 (C . t)
+				 (java . t)
+				 (plantuml . t)))
 
     (org-babel-do-load-languages 'org-babel-load-languages
-                                 load-language-list))
+				 load-language-list)
+    ;; Add frame borders and window dividers
+    (dolist (face '(window-divider
+		    window-divider-first-pixel
+		    window-divider-last-pixel))
+      (face-spec-reset-face face)
+      (set-face-foreground face (face-attribute 'default :background)))
+    (set-face-background 'fringe (face-attribute 'default :background))
+
+    (setq
+     ;; Edit settings
+     org-auto-align-tags nil
+     org-tags-column 0
+     org-catch-invisible-edits 'show-and-error
+     org-special-ctrl-a/e t
+     org-insert-heading-respect-content t
+
+     ;; Org styling, hide markup etc.
+     org-hide-emphasis-markers t
+     org-pretty-entities t
+     org-ellipsis "…"
+
+     ;; Agenda styling
+     org-agenda-tags-column 0
+     org-agenda-block-separator ?─
+     org-agenda-time-grid
+     '((daily today require-timed)
+       (800 1000 1200 1400 1600 1800 2000)
+       " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+     org-agenda-current-time-string
+     "⭠ now ─────────────────────────────────────────────────")
+    )
 #+END_SRC
 ** markdown
 #+BEGIN_SRC emacs-lisp
@@ -1079,18 +1039,18 @@
    "C-x C-d" 'dirvish)
 
   (general-create-definer my-leader-def
-	:states '(normal insert visual emacs)
-	:keymaps 'override
-	:prefix my-leader-key
-	:non-normal-prefix "C-,")
+    :states '(normal insert visual emacs)
+    :keymaps 'override
+    :prefix my-leader-key
+    :non-normal-prefix "C-,")
 
-  ;; (general-define-key
-  ;;  :states '(normal visual)
-  ;;  "gl" 'evil-avy-goto-line
-  ;;  ";" 'switch-to-buffer
-  ;;  "," 'evil-switch-to-windows-last-buffer
-  ;;  "." 'evil-avy-goto-char-timer
-  ;;  "g." 'evil-repeat)
+  (general-define-key
+   :states '(normal visual)
+   "gl" 'evil-avy-goto-line
+   ";" 'switch-to-buffer
+   "," 'evil-switch-to-windows-last-buffer
+   "." 'evil-avy-goto-char-timer
+   "g." 'evil-repeat)
 #+END_SRC
 ** transient
 *** buffer
@@ -1251,7 +1211,6 @@
   (define-transient-command my-transient-toggle ()
     [
      ["toggle"
-      ("e" "english-helper" toggle-company-english-helper)
       ("f" "focus-mode" focus-mode)
       ("t" "transparency" jst/toggle-ui-transparency)
       ]
@@ -1306,39 +1265,37 @@
 #+END_SRC
 *** leader
 #+BEGIN_SRC emacs-lisp
-  ;; (my-leader-def
-  ;;   "<SPC>" 'execute-extended-command
-  ;;   "q" '(jst/kill-current-buffer :wk "kill-buffer")
-  ;;   "b" 'hydra-buffer/body
-  ;;   "c" 'hydra-comment/body
-  ;;   "f" 'hydra-file/body
-  ;;   "g" 'hydra-git/body
-  ;;   "j" 'hydra-jump/body
-  ;;   "m" 'hydra-music/body
-  ;;   "<ESC>" 'hydra-quit/body
-  ;;   "s" 'hydra-search/body
-  ;;   "t" 'hydra-terminal/body
-  ;;   "T" 'hydra-toggle/body
-  ;;   "w" 'hydra--window-exit/body
-  ;;   "W" 'hydra--window-noexit/body)
+  (my-leader-def
+    "<SPC>" 'execute-extended-command
+    "q" '(jst/kill-current-buffer :wk "kill-buffer")
+    "b" 'my-transient-buffer
+    "c" 'my-transient-comment
+    "f" 'my-transient-file
+    "v" 'my-transient-vc
+    "j" 'my-transient-jump
+    "m" 'my-transient-music
+    "<ESC>" 'my-transient-quit
+    "s" 'my-transient-search
+    "t" 'my-transient-terminal
+    "T" 'my-transient-toggle
+    "w" 'my-transient-window)
 
-
-  (meow-leader-define-key
-   ;; x, c, h, m, g are occupied
-   '("q" . (lambda ()
-	     (interactive)
-	     (progn
-	       (kill-current-buffer)
-	       (when (> (length (window-list)) 1)
-		 (delete-window)))))
-   '("," . meow-last-buffer)
-   '(";" . switch-to-buffer)
-   '("b" . my-transient-buffer)
-   '("f" . my-transient-file)
-   '("j" . my-transient-jump)
-   '("v" . my-transient-vc)
-   '("p" . my-transient-music)
-   '("s" . my-transient-search))
+  ;;(meow-leader-define-key
+  ;; ;; x, c, h, m, g are occupied
+  ;; '("q" . (lambda ()
+  ;;	   (interactive)
+  ;;	   (progn
+  ;;	     (kill-current-buffer)
+  ;;	     (when (> (length (window-list)) 1)
+  ;;	       (delete-window)))))
+  ;; '("," . meow-last-buffer)
+  ;; '(";" . switch-to-buffer)
+  ;; '("b" . my-transient-buffer)
+  ;; '("f" . my-transient-file)
+  ;; '("j" . my-transient-jump)
+  ;; '("v" . my-transient-vc)
+  ;; '("p" . my-transient-music)
+  ;; '("s" . my-transient-search))
 #+END_SRC
 ** modes
 #+BEGIN_SRC emacs-lisp
