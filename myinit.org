@@ -564,7 +564,7 @@
 #+END_SRC
 ** terminal
 #+BEGIN_SRC emacs-lisp
-  (setq-default shell-file-name "/usr/local/bin/fish")
+  (setq-default shell-file-name "/usr/bin/fish")
 
   (use-package eshell
     :ensure nil
@@ -840,6 +840,7 @@
   (use-package projectile)
 
   (use-package popper
+    :disabled t
     :defines popper-echo-dispatch-actions
     :commands popper-group-by-projectile
     :bind (:map popper-mode-map
@@ -978,8 +979,8 @@
     :config
     (setq doom-modeline-major-mode-icon nil)
     (setq doom-modeline-height 1)
-    (set-face-attribute 'mode-line nil :family "Source Code Pro" :height 140)
-    (set-face-attribute 'mode-line-inactive nil :family "Source Code Pro" :height 140))
+    (set-face-attribute 'mode-line nil :family "Source Code Pro" :height 70)
+    (set-face-attribute 'mode-line-inactive nil :family "Source Code Pro" :height 70))
 
   (use-package awesome-tray
     :disabled t
@@ -1018,7 +1019,7 @@
   (menu-bar-mode -1)
 
   ;;show line number
-  (global-linum-mode t)
+  (display-line-numbers-mode t)
 
   ;;disable welcome page
   (setq inhibit-splash-screen t)
@@ -1088,7 +1089,7 @@
 ** transient
 *** buffer
 #+BEGIN_SRC emacs-lisp
-  (define-transient-command my-transient-buffer ()
+  (transient-define-prefix my-transient-buffer ()
     [
      ["actions"
       ("+" "expand-region" er/expand-region)
@@ -1101,7 +1102,7 @@
 #+END_SRC
 *** comment
 #+BEGIN_SRC emacs-lisp
-  (define-transient-command my-transient-comment ()
+  (transient-define-prefix my-transient-comment ()
     [
      ["actions"
       ("c" "toggle comment" evilnc-comment-or-uncomment-lines)
@@ -1112,7 +1113,7 @@
 #+END_SRC
 *** file
 #+BEGIN_SRC emacs-lisp
-  (define-transient-command my-transient-file ()
+  (transient-define-prefix my-transient-file ()
     "transient-file"
     [
      ["find-file"
@@ -1138,7 +1139,7 @@
 #+END_SRC
 *** vc
 #+BEGIN_SRC emacs-lisp
-  (define-transient-command my-transient-vc ()
+  (transient-define-prefix my-transient-vc ()
     [
      ["actions"
       ("v" "status" magit-status)
@@ -1148,7 +1149,7 @@
 #+END_SRC
 *** jump
 #+BEGIN_SRC emacs-lisp
-  (define-transient-command my-transient-jump ()
+  (transient-define-prefix my-transient-jump ()
     [
      ["goto-char"
       ("j" "goto-char-timer" avy-goto-char-timer)
@@ -1167,7 +1168,7 @@
 #+END_SRC
 *** music
 #+BEGIN_SRC emacs-lisp
-  (define-transient-command my-transient-music ()
+  (transient-define-prefix my-transient-music ()
     [
      ["♫"
       ("m" "music-player" init-goto-bongo)
@@ -1197,7 +1198,7 @@
 #+END_SRC
 *** quit
 #+BEGIN_SRC emacs-lisp
-  (define-transient-command my-transient-quit ()
+  (transient-define-prefix my-transient-quit ()
     [
      ["❗"
       ("!" "exit emacs" save-buffers-kill-terminal)
@@ -1207,7 +1208,7 @@
 #+END_SRC
 *** search
 #+BEGIN_SRC emacs-lisp
-  (define-transient-command my-transient-search ()
+  (transient-define-prefix my-transient-search ()
     [
      ["content"
       ("i" "imenu" consult-imenu)
@@ -1232,7 +1233,7 @@
 #+END_SRC
 *** terminal
 #+BEGIN_SRC emacs-lisp
-  (define-transient-command my-transient-terminal ()
+  (transient-define-prefix my-transient-terminal ()
     [
      ["actions"
       ("t" ">_" ansi-term)
@@ -1241,7 +1242,7 @@
 #+END_SRC
 *** toggle
 #+BEGIN_SRC emacs-lisp
-  (define-transient-command my-transient-toggle ()
+  (transient-define-prefix my-transient-toggle ()
     [
      ["toggle"
       ("f" "focus-mode" focus-mode)
@@ -1251,7 +1252,7 @@
 #+END_SRC
 *** window
 #+BEGIN_SRC emacs-lisp
-  (define-transient-command my-transient-window ()
+  (transient-define-prefix my-transient-window ()
     [
      ["nav"
       ("h" "←" windmove-left :transient t)

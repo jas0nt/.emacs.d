@@ -25,3 +25,6 @@
 [submodule "elisp/lsp-bridge"]
 	path = elisp/lsp-bridge
 	url = https://github.com/manateelazycat/lsp-bridge.git
+[submodule "elisp/elisp/markmacro"]
+	path = elisp/elisp/markmacro
+	url = https://github.com/manateelazycat/markmacro.git
