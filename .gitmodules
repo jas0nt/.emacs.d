@@ -1,30 +1,12 @@
-[submodule "elisp/lazycat-theme"]
-	path = elisp/lazycat-theme
-	url = https://github.com/manateelazycat/lazycat-theme.git
-[submodule "elisp/aweshell"]
-	path = elisp/aweshell
-	url = https://github.com/manateelazycat/aweshell.git
-[submodule "elisp/awesome-tab"]
-	path = elisp/awesome-tab
-	url = https://github.com/manateelazycat/awesome-tab.git
 [submodule "elisp/awesome-tray"]
 	path = elisp/awesome-tray
 	url = https://github.com/manateelazycat/awesome-tray.git
-[submodule "elisp/company-english-helper"]
-	path = elisp/company-english-helper
-	url = https://github.com/manateelazycat/company-english-helper.git
 [submodule "elisp/nano-emacs"]
 	path = elisp/nano-emacs
 	url = https://github.com/rougier/nano-emacs.git
 [submodule "elisp/snails"]
 	path = elisp/snails
 	url = https://github.com/manateelazycat/snails.git
-[submodule "elisp/vertico-posframe"]
-	path = elisp/vertico-posframe
-	url = https://github.com/tumashu/vertico-posframe.git
-[submodule "elisp/lsp-bridge"]
-	path = elisp/lsp-bridge
-	url = https://github.com/manateelazycat/lsp-bridge.git
-[submodule "elisp/elisp/markmacro"]
-	path = elisp/elisp/markmacro
+[submodule "elisp/markmacro"]
+	path = elisp/markmacro
 	url = https://github.com/manateelazycat/markmacro.git

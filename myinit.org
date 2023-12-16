@@ -8,8 +8,8 @@
   (defconst main-color "#50fa7b")
 
   (defconst jst/my-font (if (eq system-type 'gnu/linux)
-                    "Source Code Pro-9"
-                  "Source Code Pro-14"))
+		    "NotoSansM Nerd Font-18"
+		  "Source Code Pro-14"))
 
 #+END_SRC
 * Func
@@ -144,27 +144,27 @@
   (setq gc-cons-threshold most-positive-fixnum)
 
   (defvar better-gc-cons-threshold 134217728 ; 128mb
-	"The default value to use for `gc-cons-threshold'.
+    "The default value to use for `gc-cons-threshold'.
 
   If you experience freezing, decrease this.  If you experience stuttering, increase this.")
 
   (add-hook 'emacs-startup-hook
-	    (lambda ()
-	      (if (boundp 'after-focus-change-function)
-		  (add-function :after after-focus-change-function
-				(lambda ()
-				  (unless (frame-focus-state)
-				    (garbage-collect))))
-		(add-hook 'after-focus-change-function 'garbage-collect))
-	      (defun gc-minibuffer-setup-hook ()
-		(setq gc-cons-threshold (* better-gc-cons-threshold 2)))
+        (lambda ()
+          (if (boundp 'after-focus-change-function)
+          (add-function :after after-focus-change-function
+                (lambda ()
+                  (unless (frame-focus-state)
+                    (garbage-collect))))
+        (add-hook 'after-focus-change-function 'garbage-collect))
+          (defun gc-minibuffer-setup-hook ()
+        (setq gc-cons-threshold (* better-gc-cons-threshold 2)))
 
-	      (defun gc-minibuffer-exit-hook ()
-		(garbage-collect)
-		(setq gc-cons-threshold better-gc-cons-threshold))
+          (defun gc-minibuffer-exit-hook ()
+        (garbage-collect)
+        (setq gc-cons-threshold better-gc-cons-threshold))
 
-	      (add-hook 'minibuffer-setup-hook #'gc-minibuffer-setup-hook)
-	      (add-hook 'minibuffer-exit-hook #'gc-minibuffer-exit-hook)))
+          (add-hook 'minibuffer-setup-hook #'gc-minibuffer-setup-hook)
+          (add-hook 'minibuffer-exit-hook #'gc-minibuffer-exit-hook)))
 
 
   (prefer-coding-system 'utf-8)
@@ -208,11 +208,13 @@
 
   ;;emacs deamon
   (if (and (fboundp 'server-running-p) 
-         (not (server-running-p)))
-   (server-start))
+       (not (server-running-p)))
+      (server-start))
 
   ;;tab-width
-  (setq tab-width 4)
+  (setq-default indent-tabs-mode nil)
+  (setq-default tab-width 4)
+  (setq indent-line-function 'insert-tab)
 #+end_src
 
 * Config
@@ -252,15 +254,71 @@
     (when (memq window-system '(mac ns x))
       (exec-path-from-shell-initialize)))
 #+end_src
+** Evil
+#+BEGIN_SRC emacs-lisp
+  (use-package evil
+    :init
+    (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
+    (setq evil-want-keybinding nil)
+    (setq evil-disable-insert-state-bindings t)
+    (setq evil-want-C-i-jump nil)
+    (setq evil-want-C-u-scroll t)
+    :config
+    (evil-mode 1)
+    (setq evil-insert-state-cursor '(hollow "yellow")
+        evil-normal-state-cursor '(box "green")))
+
+  (use-package evil-collection
+    :after (evil)
+    :init
+    (setq evil-collection-company-use-tng nil)
+    :config
+    (evil-collection-init))
+
+  (use-package evil-snipe
+    :after (evil)
+    :config
+    (evil-snipe-mode +1)
+    (evil-snipe-override-mode +1))
+
+  (use-package evil-surround
+    :ensure t
+    :config
+    (global-evil-surround-mode 1))
+
+  (use-package evil-nerd-commenter
+    :after (evil))
+
+  (use-package evil-pinyin
+    :after (evil)
+    :init
+    (setq-default evil-pinyin-scheme 'simplified-xiaohe-all)
+    (setq-default evil-pinyin-with-search-rule 'always)
+    :config
+    (evil-select-search-module 'evil-search-module 'evil-search)
+    (global-evil-pinyin-mode))
+
+  (use-package evil-exchange
+    :after (evil)
+    :config
+    (evil-exchange-install))
+
+  (use-package evil-smartparens
+    :after (evil smartparens)
+    :hook (smartparens-enabled-hook . evil-smartparens-mode))
+
+  (use-package god-mode)
+#+END_SRC
 ** meow
 #+BEGIN_SRC emacs-lisp
   (defun jst/meow-yank()
     (interactive)
     (if (region-active-p)
-	(meow-replace)
+    (meow-replace)
       (meow-yank)))
 
   (use-package meow
+    :disabled t
     :init
     (defun meow-setup ()
       (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
@@ -360,19 +418,19 @@
     (meow-thing-register 'angle '(regexp "<" ">") '(regexp "<" ">"))
 
     (setq meow-char-thing-table
-	  '((?( . round) (?) . round)
-	    (?{ . curly) (?} . curly)
-	    (?[ . square) (?] . square)
-	    (?< . angle) (?> . angle)
-	    (?\" . string)
-	    (?' . single-quote)
-	    (?b . buffer)
-	    (?w . window)
-	    (?. . sentence)
-	    (?v . line)
-	    (?f . defun)
-	    (?p . paragraph)
-	    (?s . symbol)))
+      '((?( . round) (?) . round)
+        (?{ . curly) (?} . curly)
+        (?[ . square) (?] . square)
+        (?< . angle) (?> . angle)
+        (?\" . string)
+        (?' . single-quote)
+        (?b . buffer)
+        (?w . window)
+        (?. . sentence)
+        (?v . line)
+        (?f . defun)
+        (?p . paragraph)
+        (?s . symbol)))
 
     (meow-setup)
     (meow-global-mode 1))
@@ -397,6 +455,7 @@
   (use-package expand-region)
 
   (use-package aggressive-indent
+    :disabled t
     :config
     (global-aggressive-indent-mode 1))
 
@@ -419,6 +478,7 @@
     (global-undo-tree-mode))
 
   (use-package flycheck
+    :disabled t
     :init
     (global-flycheck-mode))
 
@@ -554,17 +614,27 @@
 #+END_SRC
 ** lsp
 #+BEGIN_SRC emacs-lisp
+  ;;(use-package lsp-bridge
+  ;;  :load-path "~/.emacs.d/elisp/lsp-bridge"
+  ;;  :config
+  ;;  ;; (require 'lsp-bridge)
+  ;;  (yas-global-mode 1)
+  ;;  (global-lsp-bridge-mode)
+  ;;  )
+
   (use-package lsp-bridge
-    :load-path "~/.emacs.d/elisp/lsp-bridge"
-    :config
-    ;; (require 'lsp-bridge)
-    (yas-global-mode 1)
-    (global-lsp-bridge-mode)
-    )
+    :disabled t
+    :straight '(lsp-bridge :type git :host github :repo "manateelazycat/lsp-bridge"
+               :files (:defaults "*.el" "*.py" "acm" "core" "langserver" "multiserver" "resources")
+               :build (:not compile))
+    :init
+    (global-lsp-bridge-mode))
+
+  (use-package nix-mode)
 #+END_SRC
 ** terminal
 #+BEGIN_SRC emacs-lisp
-  (setq-default shell-file-name "/usr/bin/fish")
+  (setq-default shell-file-name "/home/jason/.nix-profile/bin/fish")
 
   (use-package eshell
     :ensure nil
@@ -684,17 +754,17 @@
     (setq bongo-prefer-library-buffers nil)
     (setq bongo-insert-whole-directory-trees t)
     ;;(setq bongo-join-inserted-tracks nil)
-    (setq bongo-enabled-backends '(vlc))
+    (setq bongo-enabled-backends '(mpv))
 
     (defun init-goto-bongo ()
       (interactive)
       (let ((bongo-playlist-buffer-name "*Bongo Playlist*"))
-	(unless (get-buffer bongo-playlist-buffer-name)
-	  (bongo)
-	  (bongo-insert-directory-tree "~/Music/my_music")
-	  (goto-char (point-min))
-	  (bongo-random-playback-mode))
-	(switch-to-buffer bongo-playlist-buffer-name))))
+    (unless (get-buffer bongo-playlist-buffer-name)
+      (bongo)
+      (bongo-insert-directory-tree "~/Music/my_music")
+      (goto-char (point-min))
+      (bongo-random-playback-mode))
+    (switch-to-buffer bongo-playlist-buffer-name))))
 #+END_SRC
 ** python
 #+BEGIN_SRC emacs-lisp
@@ -790,7 +860,7 @@
 	(pyim-cregexp-build result)))
     (advice-add 'orderless-regexp :around #'my-orderless-regexp))
 
-  (use-package youdao-dictionary)
+  (use-package bing-dict)
   (use-package fanyi)
 
   ;; 中文输入法
@@ -817,7 +887,7 @@
       (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
       (custom-set-faces
        '(aw-leading-char-face
-	 ((t (:inhrit ace-jump-face-foreground :height 3.0)))))))
+     ((t (:inhrit ace-jump-face-foreground :height 3.0)))))))
 
   (use-package discover-my-major
     :bind ("C-h C-m" . discover-my-major))
@@ -844,71 +914,71 @@
     :defines popper-echo-dispatch-actions
     :commands popper-group-by-projectile
     :bind (:map popper-mode-map
-		("C-h z" . popper-toggle-latest)
-		("C-`"   . popper-cycle)
-		("C-M-<tab>" . popper-toggle-type))
+        ("C-h z" . popper-toggle-latest)
+        ("C-`"   . popper-cycle)
+        ("C-M-<tab>" . popper-toggle-type))
     :hook (after-init . popper-mode)
     :init
     (setq popper-reference-buffers
-	  '("\\*Messages\\*"
-	    "Output\\*$" "\\*Pp Eval Output\\*$"
-	    "\\*Compile-Log\\*"
-	    "\\*Completions\\*"
-	    "\\*Warnings\\*"
-	    "\\*Async Shell Command\\*"
-	    "\\*Apropos\\*"
-	    "\\*Backtrace\\*"
-	    "\\*Calendar\\*"
-	    "\\*Finder\\*"
-	    "\\*Embark Actions\\*"
+      '("\\*Messages\\*"
+        "Output\\*$" "\\*Pp Eval Output\\*$"
+        "\\*Compile-Log\\*"
+        "\\*Completions\\*"
+        "\\*Warnings\\*"
+        "\\*Async Shell Command\\*"
+        "\\*Apropos\\*"
+        "\\*Backtrace\\*"
+        "\\*Calendar\\*"
+        "\\*Finder\\*"
+        "\\*Embark Actions\\*"
 
-	    bookmark-bmenu-mode
-	    comint-mode
-	    compilation-mode
-	    help-mode helpful-mode
-	    tabulated-list-mode
-	    Buffer-menu-mode
+        bookmark-bmenu-mode
+        comint-mode
+        compilation-mode
+        help-mode helpful-mode
+        tabulated-list-mode
+        Buffer-menu-mode
 
-	    gnus-article-mode devdocs-mode
-	    grep-mode occur-mode rg-mode deadgrep-mode ag-mode pt-mode
-	    ivy-occur-mode ivy-occur-grep-mode
-	    process-menu-mode list-environment-mode cargo-process-mode
-	    youdao-dictionary-mode osx-dictionary-mode fanyi-mode
+        gnus-article-mode devdocs-mode
+        grep-mode occur-mode rg-mode deadgrep-mode ag-mode pt-mode
+        ivy-occur-mode ivy-occur-grep-mode
+        process-menu-mode list-environment-mode cargo-process-mode
+        youdao-dictionary-mode osx-dictionary-mode fanyi-mode
 
-	    "^\\*eshell.*\\*.*$" eshell-mode
-	    "^\\*shell.*\\*.*$"  shell-mode
-	    "^\\*terminal.*\\*.*$" term-mode
-	    "^\\*vterm.*\\*.*$"  vterm-mode
+        "^\\*eshell.*\\*.*$" eshell-mode
+        "^\\*shell.*\\*.*$"  shell-mode
+        "^\\*terminal.*\\*.*$" term-mode
+        "^\\*vterm.*\\*.*$"  vterm-mode
 
-	    "\\*DAP Templates\\*$" dap-server-log-mode
-	    "\\*ELP Profiling Restuls\\*" profiler-report-mode
-	    "\\*Flycheck errors\\*$" " \\*Flycheck checker\\*$"
-	    "\\*Paradox Report\\*$" "\\*package update results\\*$" "\\*Package-Lint\\*$"
-	    "\\*[Wo]*Man.*\\*$"
-	    "\\*ert\\*$" overseer-buffer-mode
-	    "\\*gud-debug\\*$"
-	    "\\*lsp-help\\*$" "\\*lsp session\\*$"
-	    "\\*quickrun\\*$"
-	    "\\*tldr\\*$"
-	    "\\*vc-.*\\*$"
-	    "^\\*elfeed-entry\\*$"
-	    "^\\*macro expansion\\**"
+        "\\*DAP Templates\\*$" dap-server-log-mode
+        "\\*ELP Profiling Restuls\\*" profiler-report-mode
+        "\\*Flycheck errors\\*$" " \\*Flycheck checker\\*$"
+        "\\*Paradox Report\\*$" "\\*package update results\\*$" "\\*Package-Lint\\*$"
+        "\\*[Wo]*Man.*\\*$"
+        "\\*ert\\*$" overseer-buffer-mode
+        "\\*gud-debug\\*$"
+        "\\*lsp-help\\*$" "\\*lsp session\\*$"
+        "\\*quickrun\\*$"
+        "\\*tldr\\*$"
+        "\\*vc-.*\\*$"
+        "^\\*elfeed-entry\\*$"
+        "^\\*macro expansion\\**"
 
-	    "\\*Agenda Commands\\*" "\\*Org Agenda.*\\*"
-	    "\\*Org Select\\*" "\\*Capture\\*" "^CAPTURE-.*\\.org*"
-	    "\\*Gofmt Errors\\*$" "\\*Go Test\\*$" godoc-mode
-	    "\\*docker-containers\\*" "\\*docker-images\\*" "\\*docker-networks\\*" "\\*docker-volumes\\*"
-	    "\\*prolog\\*" inferior-python-mode inf-ruby-mode swift-repl-mode
-	    "\\*rustfmt\\*$" rustic-compilation-mode rustic-cargo-clippy-mode
-	    rustic-cargo-outdated-mode rustic-cargo-test-moed))
+        "\\*Agenda Commands\\*" "\\*Org Agenda.*\\*"
+        "\\*Org Select\\*" "\\*Capture\\*" "^CAPTURE-.*\\.org*"
+        "\\*Gofmt Errors\\*$" "\\*Go Test\\*$" godoc-mode
+        "\\*docker-containers\\*" "\\*docker-images\\*" "\\*docker-networks\\*" "\\*docker-volumes\\*"
+        "\\*prolog\\*" inferior-python-mode inf-ruby-mode swift-repl-mode
+        "\\*rustfmt\\*$" rustic-compilation-mode rustic-cargo-clippy-mode
+        rustic-cargo-outdated-mode rustic-cargo-test-moed))
 
     (with-eval-after-load 'projectile
       (setq popper-group-function #'popper-group-by-projectile))
 
     (when (display-grayscale-p)
       (setq popper-mode-line
-	    '(:eval
-	      (format " %s " (all-the-icons-octicon "pin" :height 0.9 :v-adjust 0.0 :face 'mode-line-emphasis)))))
+        '(:eval
+          (format " %s " (all-the-icons-octicon "pin" :height 0.9 :v-adjust 0.0 :face 'mode-line-emphasis)))))
 
     (setq popper-echo-dispatch-actions t)
     :config
@@ -916,22 +986,22 @@
 
     (with-no-warnings
       (defun my-popper-fit-window-height (win)
-	"Determine the height of popup window WIN by fitting it to the buffer's content."
-	(fit-window-to-buffer
-	 win
-	 (floor (frame-height) 3)
-	 (floor (frame-height) 3)))
+    "Determine the height of popup window WIN by fitting it to the buffer's content."
+    (fit-window-to-buffer
+     win
+     (floor (frame-height) 3)
+     (floor (frame-height) 3)))
       (setq popper-window-height #'my-popper-fit-window-height)
 
       (defun popper-close-window-hack (&rest _)
-	"Close popper window via `C-g'."
-	;; `C-g' can deactivate region
-	(when (and (called-interactively-p 'interactive)
-		   (not (region-active-p))
-		   popper-open-popup-alist)
-	  (let ((window (caar popper-open-popup-alist)))
-	    (when (window-live-p window)
-	      (delete-window window)))))
+    "Close popper window via `C-g'."
+    ;; `C-g' can deactivate region
+    (when (and (called-interactively-p 'interactive)
+           (not (region-active-p))
+           popper-open-popup-alist)
+      (let ((window (caar popper-open-popup-alist)))
+        (when (window-live-p window)
+          (delete-window window)))))
       (advice-add #'keyboard-quit :before #'popper-close-window-hack)))
 
   (use-package powerthesaurus)
@@ -979,8 +1049,8 @@
     :config
     (setq doom-modeline-major-mode-icon nil)
     (setq doom-modeline-height 1)
-    (set-face-attribute 'mode-line nil :family "Source Code Pro" :height 70)
-    (set-face-attribute 'mode-line-inactive nil :family "Source Code Pro" :height 70))
+    (set-face-attribute 'mode-line nil :family "Source Code Pro" :height 150)
+    (set-face-attribute 'mode-line-inactive nil :family "Source Code Pro" :height 150))
 
   (use-package awesome-tray
     :disabled t
@@ -1060,10 +1130,10 @@
 #+BEGIN_SRC emacs-lisp
   (use-package general)
 
-  ;; (use-package which-key
-  ;;   :config
-  ;;   (setq which-key-idle-delay 0.5)
-  ;;   (which-key-mode))
+  (use-package which-key
+    :config
+    (setq which-key-idle-delay 0.5)
+    (which-key-mode))
 
   (general-define-key
    "<f5>" 'revert-buffer
@@ -1072,19 +1142,19 @@
    "C-x C-b" 'bufler
    "C-x C-d" 'dirvish)
 
-  ;; (general-create-definer my-leader-def
-  ;;   :states '(normal insert visual emacs)
-  ;;   :keymaps 'override
-  ;;   :prefix my-leader-key
-  ;;   :non-normal-prefix "C-,")
+  (general-create-definer my-leader-def
+    :states '(normal insert visual emacs)
+    :keymaps 'override
+    :prefix my-leader-key
+    :non-normal-prefix "C-,")
 
-  ;; (general-define-key
-  ;;  :states '(normal visual)
-  ;;  "gl" 'evil-avy-goto-line
-  ;;  ";" 'switch-to-buffer
-  ;;  "," 'evil-switch-to-windows-last-buffer
-  ;;  "." 'evil-avy-goto-char-timer
-  ;;  "g." 'evil-repeat)
+  (general-define-key
+   :states '(normal visual)
+   "gl" 'evil-avy-goto-line
+   ";" 'switch-to-buffer
+   "," 'evil-switch-to-windows-last-buffer
+   "." 'evil-avy-goto-char-timer
+   "g." 'evil-repeat)
 #+END_SRC
 ** transient
 *** buffer
@@ -1225,7 +1295,7 @@
 
      ["lookup"
       ("g" "google" google-this)
-      ("d" "dict" youdao-dictionary-search-at-point+)
+      ("d" "dict" bing-dict-brief)
       ("D" "fanyi" fanyi-dwim2)
       ("l" "browse-url" browse-url)
       ]
@@ -1299,37 +1369,37 @@
 #+END_SRC
 *** leader
 #+BEGIN_SRC emacs-lisp
-  ;; (my-leader-def
-  ;;   "<SPC>" 'execute-extended-command
-  ;;   "q" '(jst/kill-current-buffer :wk "kill-buffer")
-  ;;   "b" 'my-transient-buffer
-  ;;   "c" 'my-transient-comment
-  ;;   "f" 'my-transient-file
-  ;;   "v" 'my-transient-vc
-  ;;   "j" 'my-transient-jump
-  ;;   "m" 'my-transient-music
-  ;;   "<ESC>" 'my-transient-quit
-  ;;   "s" 'my-transient-search
-  ;;   "t" 'my-transient-terminal
-  ;;   "T" 'my-transient-toggle
-  ;;   "w" 'my-transient-window)
+  (my-leader-def
+    "<SPC>" 'execute-extended-command
+    "q" '(jst/kill-current-buffer :wk "kill-buffer")
+    "b" 'my-transient-buffer
+    "c" 'my-transient-comment
+    "f" 'my-transient-file
+    "v" 'my-transient-vc
+    "j" 'my-transient-jump
+    "m" 'my-transient-music
+    "<ESC>" 'my-transient-quit
+    "s" 'my-transient-search
+    "t" 'my-transient-terminal
+    "T" 'my-transient-toggle
+    "w" 'my-transient-window)
 
-  (meow-leader-define-key
-   ;; x, c, h, m, g are occupied
-   '("q" . (lambda ()
-	     (interactive)
-	     (progn
-	       (kill-current-buffer)
-	       (when (> (length (window-list)) 1)
-		 (delete-window)))))
-   '("," . meow-last-buffer)
-   '(";" . switch-to-buffer)
-   '("b" . my-transient-buffer)
-   '("f" . my-transient-file)
-   '("j" . my-transient-jump)
-   '("v" . my-transient-vc)
-   '("p" . my-transient-music)
-   '("s" . my-transient-search))
+  ;;(meow-leader-define-key
+  ;; ;; x, c, h, m, g are occupied
+  ;; '("q" . (lambda ()
+  ;;	   (interactive)
+  ;;	   (progn
+  ;;	     (kill-current-buffer)
+  ;;	     (when (> (length (window-list)) 1)
+  ;;	   (delete-window)))))
+  ;; '("," . meow-last-buffer)
+  ;; '(";" . switch-to-buffer)
+  ;; '("b" . my-transient-buffer)
+  ;; '("f" . my-transient-file)
+  ;; '("j" . my-transient-jump)
+  ;; '("v" . my-transient-vc)
+  ;; '("p" . my-transient-music)
+  ;; '("s" . my-transient-search))
 #+END_SRC
 ** modes
 #+BEGIN_SRC emacs-lisp
