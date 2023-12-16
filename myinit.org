@@ -1329,7 +1329,7 @@
       ("j" "↓" windmove-down :transient t)
       ("k" "↑" windmove-up :transient t)
       ("l" "→" windmove-right :transient t)
-      ("g" "➶" ace-window :transient t)
+      ("g" "goto" ace-window :transient t)
       ]
 
      ["swap"
@@ -1337,32 +1337,32 @@
       ("J" "⮏" windmove-swap-states-down :transient t)
       ("K" "⮍" windmove-swap-states-up :transient t)
       ("L" "⮎" windmove-swap-states-right :transient t)
-      ("s" "🗘" ace-swap-window :transient t)
+      ("s" "swap" ace-swap-window :transient t)
       ]
 
      ["split"
-      ("/" "⦶ vertical" (lambda ()
-			  (interactive)
-			  (split-window-right)
-			  (windmove-right)))
-      ("?" "⦵ horizontal" (lambda ()
-			    (interactive)
-			    (split-window-below)
-			    (windmove-down)))
+      ("/" "vertical" (lambda ()
+              (interactive)
+              (split-window-right)
+              (windmove-right)))
+      ("?" "horizontal" (lambda ()
+                (interactive)
+                (split-window-below)
+                (windmove-down)))
       ]
 
      ["resize"
       ("0" "⊞ balance" balance-windows :transient t)
-      ("=" "🡙" enlarge-window :transient t)
-      ("-" "🡫" shrink-window :transient t)
-      ("." "🡘" enlarge-window-horizontally :transient t)
-      ("," "🡨" shrink-window-horizontally :transient t)
+      ("=" "inc H" enlarge-window :transient t)
+      ("-" "dec H" shrink-window :transient t)
+      ("." "inc W" enlarge-window-horizontally :transient t)
+      ("," "dec W" shrink-window-horizontally :transient t)
       ]
 
      ["actions"
-      ("d" "X 𐤕" delete-window :transient t)
-      ("D" "X other" ace-delete-window)
-      ("m" "✡ maximum" delete-other-windows)
+      ("d" "del" delete-window :transient t)
+      ("D" "del other" ace-delete-window)
+      ("m" "maximum" delete-other-windows)
       (";" "switch" switch-to-buffer)
       ]
      ])
