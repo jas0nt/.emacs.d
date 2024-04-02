@@ -8,7 +8,7 @@
   (defconst main-color "#50fa7b")
 
   (defconst jst/my-font (if (eq system-type 'gnu/linux)
-		    "NotoSansM Nerd Font-18"
+		    "FiraMono Nerd Font-10"
 		  "Source Code Pro-14"))
 
 #+END_SRC
@@ -257,6 +257,7 @@
 ** Evil
 #+BEGIN_SRC emacs-lisp
   (use-package evil
+    :disabled t
     :init
     (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
     (setq evil-want-keybinding nil)
@@ -269,6 +270,7 @@
         evil-normal-state-cursor '(box "green")))
 
   (use-package evil-collection
+    :disabled t
     :after (evil)
     :init
     (setq evil-collection-company-use-tng nil)
@@ -306,8 +308,6 @@
   (use-package evil-smartparens
     :after (evil smartparens)
     :hook (smartparens-enabled-hook . evil-smartparens-mode))
-
-  (use-package god-mode)
 #+END_SRC
 ** meow
 #+BEGIN_SRC emacs-lisp
@@ -318,7 +318,6 @@
       (meow-yank)))
 
   (use-package meow
-    :disabled t
     :init
     (defun meow-setup ()
       (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
@@ -623,7 +622,6 @@
   ;;  )
 
   (use-package lsp-bridge
-    :disabled t
     :straight '(lsp-bridge :type git :host github :repo "manateelazycat/lsp-bridge"
                :files (:defaults "*.el" "*.py" "acm" "core" "langserver" "multiserver" "resources")
                :build (:not compile))
@@ -1012,10 +1010,10 @@
     (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
     (add-to-list 'default-frame-alist '(ns-appearance . dark))
     (add-hook 'after-load-theme-hook
-	      (lambda ()
-		(let ((bg (frame-parameter nil 'background-mode)))
-		  (set-frame-parameter nil 'ns-appearance bg)
-		  (setcdr (assq 'ns-appearance default-frame-alist) bg)))))
+          (lambda ()
+        (let ((bg (frame-parameter nil 'background-mode)))
+          (set-frame-parameter nil 'ns-appearance bg)
+          (setcdr (assq 'ns-appearance default-frame-alist) bg)))))
 
   ;; theme
   (use-package dracula-theme
@@ -1041,7 +1039,7 @@
       (run-with-timer 0.1 nil #'set-face-background 'mode-line jst/modeline-bg)))
 
   (setq visible-bell nil
-	ring-bell-function 'jst/flash-mode-line)
+    ring-bell-function 'jst/flash-mode-line)
 
   (use-package doom-modeline
     :after (all-the-icons)
@@ -1049,15 +1047,15 @@
     :config
     (setq doom-modeline-major-mode-icon nil)
     (setq doom-modeline-height 1)
-    (set-face-attribute 'mode-line nil :family "Source Code Pro" :height 150)
-    (set-face-attribute 'mode-line-inactive nil :family "Source Code Pro" :height 150))
+    (set-face-attribute 'mode-line nil :family "FiraCode Nerd Font" :height 120)
+    (set-face-attribute 'mode-line-inactive nil :family "FiraCode Nerd Font" :height 120))
 
   (use-package awesome-tray
     :disabled t
     :load-path "~/.emacs.d/elisp/awesome-tray"
     :init
     (setq awesome-tray-active-modules
-	  '("evil" "input-method" "location" "buffer-name" "git" "file-path" "mode-name"))
+      '("evil" "input-method" "location" "buffer-name" "git" "file-path" "mode-name"))
     :config
     (awesome-tray-mode 1)
     (eval-after-load 'awesome-tray
@@ -1078,7 +1076,7 @@
   ;;font
   (add-to-list 'default-frame-alist `(font . ,jst/my-font))
   (when (eq system-type 'darwin)
-	(set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
+    (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
 
   ;;hide tool bar
   (tool-bar-mode -1)
@@ -1107,7 +1105,7 @@
 
   ;;highlight current line
   (when (display-graphic-p)
-	(global-hl-line-mode))
+    (global-hl-line-mode))
 
   (setq visible-bell nil)
 
@@ -1369,37 +1367,37 @@
 #+END_SRC
 *** leader
 #+BEGIN_SRC emacs-lisp
-  (my-leader-def
-    "<SPC>" 'execute-extended-command
-    "q" '(jst/kill-current-buffer :wk "kill-buffer")
-    "b" 'my-transient-buffer
-    "c" 'my-transient-comment
-    "f" 'my-transient-file
-    "v" 'my-transient-vc
-    "j" 'my-transient-jump
-    "m" 'my-transient-music
-    "<ESC>" 'my-transient-quit
-    "s" 'my-transient-search
-    "t" 'my-transient-terminal
-    "T" 'my-transient-toggle
-    "w" 'my-transient-window)
+  ;; (my-leader-def
+  ;;   "<SPC>" 'execute-extended-command
+  ;;   "q" '(jst/kill-current-buffer :wk "kill-buffer")
+  ;;   "b" 'my-transient-buffer
+  ;;   "c" 'my-transient-comment
+  ;;   "f" 'my-transient-file
+  ;;   "v" 'my-transient-vc
+  ;;   "j" 'my-transient-jump
+  ;;   "m" 'my-transient-music
+  ;;   "<ESC>" 'my-transient-quit
+  ;;   "s" 'my-transient-search
+  ;;   "t" 'my-transient-terminal
+  ;;   "T" 'my-transient-toggle
+  ;;   "w" 'my-transient-window)
 
-  ;;(meow-leader-define-key
-  ;; ;; x, c, h, m, g are occupied
-  ;; '("q" . (lambda ()
-  ;;	   (interactive)
-  ;;	   (progn
-  ;;	     (kill-current-buffer)
-  ;;	     (when (> (length (window-list)) 1)
-  ;;	   (delete-window)))))
-  ;; '("," . meow-last-buffer)
-  ;; '(";" . switch-to-buffer)
-  ;; '("b" . my-transient-buffer)
-  ;; '("f" . my-transient-file)
-  ;; '("j" . my-transient-jump)
-  ;; '("v" . my-transient-vc)
-  ;; '("p" . my-transient-music)
-  ;; '("s" . my-transient-search))
+  (meow-leader-define-key
+   ;; x, c, h, m, g are occupied
+   '("q" . (lambda ()
+         (interactive)
+         (progn
+           (kill-current-buffer)
+           (when (> (length (window-list)) 1)
+         (delete-window)))))
+   '("," . meow-last-buffer)
+   '(";" . switch-to-buffer)
+   '("b" . my-transient-buffer)
+   '("f" . my-transient-file)
+   '("j" . my-transient-jump)
+   '("v" . my-transient-vc)
+   '("p" . my-transient-music)
+   '("s" . my-transient-search))
 #+END_SRC
 ** modes
 #+BEGIN_SRC emacs-lisp
