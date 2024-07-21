@@ -38,5 +38,8 @@
     (set-face-background 'mode-line bell-color)
     (run-with-timer 0.1 nil #'set-face-background 'mode-line jst/modeline-bg)))
 
+(setq visible-bell nil
+  ring-bell-function 'jst/flash-mode-line)
+
 
 (provide 'init-theme)

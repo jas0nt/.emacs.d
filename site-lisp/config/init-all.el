@@ -23,7 +23,6 @@
   (with-temp-message ""              ;抹掉插件启动的输出
     (require 'init-pkgs)
     (require 'init-theme)
-    (require 'init-fullscreen)
     (require 'init-generic)
     (require 'init-common)
     (require 'init-meow)
