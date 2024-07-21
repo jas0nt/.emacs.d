@@ -1,54 +1,17 @@
 # Compiled
 *.elc
 
-# Packaging
-.cask
-
 # Backup files
 *~
 
 # Undo-tree save-files
 *.~undo-tree
 
-abbrev_defs
-auto-save-list/
-elpa/
-recentf
-url/
-
-myinit.el
-custom.el
-
-#restclient
-network-security.data
-
-eshell/
-
-tramp
-
-/transient/
-/projectile-bookmarks.eld
-/ido.last
-/bookmarks
-/meghanada/
-/elpy/
-/.cache/
-/workspace/
-/eclipse.jdt.ls/test-runner/
-/.dap-breakpoints
-.lsp-session-*
-.mc-lists.el
 history
-
-librime/
-rime/
-quelpa/
-var/
-
-.lsp-eslint-choices
-.persistent-scratch
-persistent-scratch/
+recentf
 
 eln-cache/
-
+elpa/
+auto-save-list/
+transient/
 straight/
