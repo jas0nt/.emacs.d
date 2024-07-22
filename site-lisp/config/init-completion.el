@@ -12,8 +12,7 @@
 
 (consult-customize
    consult-ripgrep consult-git-grep consult-grep
-   consult-bookmark consult-recent-file consult-xref
-   :preview-key (kbd "M-."))
+   consult-bookmark consult-recent-file consult-xref)
 
 
 (provide 'init-completion)

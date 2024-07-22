@@ -34,6 +34,7 @@
     (require 'init-dashboard)
     (require 'init-python)
     (require 'init-lsp)
+    (require 'init-project)
     (require 'init-other)
 
     ;; 可以延后加载的
