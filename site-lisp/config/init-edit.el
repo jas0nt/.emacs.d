@@ -1,12 +1,14 @@
-(require 'undo-tree)
-(require 'rainbow-mode)
-(require 'rainbow-delimiters)
 
+(use-package undo-tree
+  :init
+  (global-undo-tree-mode))
 
-(rainbow-delimiters-mode)
-(add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
+(use-package rainbow-mode)
 
-(global-undo-tree-mode)
+(use-package rainbow-delimiters
+  :config
+  (rainbow-delimiters-mode)
+  (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
 
 
 (provide 'init-edit)

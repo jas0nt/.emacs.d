@@ -1,5 +1,6 @@
-(require 'dirvish)
+(use-package dirvish
+  :config
+  (setq dired-listing-switches "-alht"))
 
-(setq dired-listing-switches "-alht")
 
 (provide 'init-dired)

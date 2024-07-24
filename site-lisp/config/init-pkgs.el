@@ -4,10 +4,7 @@
 		   ("melpa" . "https://melpa.org/packages/")))
 
 (package-initialize)
-;; install use-package
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
+
 (require 'use-package-ensure)
 (setq use-package-always-ensure t)
 
@@ -23,5 +20,6 @@
 (goto-char (point-max))
 (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
+
 
 (provide 'init-pkgs)

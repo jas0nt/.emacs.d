@@ -1,11 +1,16 @@
 (require 'python)
-(require 'python-mode)
-(require 'pyvenv)
 
-(add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
-(add-hook 'python-mode-hook #'pyvenv-mode)
-(setenv "WORKON_HOME" "~/.venv")
+(use-package python-mode
+  :mode "\\.py\\'")
 
-(pyvenv-workon "base")
+(use-package pyvenv
+  :config
+  ;(pyvenv-mode 1)
+  (add-hook 'python-mode-hook #'pyvenv-mode)
+  (setenv "WORKON_HOME" "~/.venv")
+  (pyvenv-workon "base"))
+
+(use-package flymake-python-pyflakes)
+
 
 (provide 'init-python)

@@ -1,8 +1,5 @@
-(require 'general)
-(require 'transient)
-(require 'bufler)
-(require 'deadgrep)
-(require 'google-this)
+(use-package general)
+
 (defconst my-leader-key "<SPC>")
 
 (general-define-key
@@ -36,7 +33,7 @@
   [
    ["content"
     ("i" "imenu" consult-imenu)
-    ("r" "rg" consult-ag)
+    ("r" "rg" consult-ripgrep)
     ("R" "rg+" deadgrep)
     ("m" "multi-buffer" consult-line-multi)
     ]

@@ -27,7 +27,7 @@
 (setq frame-resize-pixelwise t) ;设置缩放的模式,避免Mac平台最大化窗口以后右边和下边有空隙
 
 (recentf-mode 1)
-(setq recentf-max-menu-items 15)
+(setq recentf-max-menu-items 25)
 
 ;; 对大文件或超长行提供性能优化
 (setq-default bidi-display-reordering nil)

@@ -1,11 +1,12 @@
-(require 'meow)
 (defun jst/meow-yank()
   (interactive)
   (if (region-active-p)
   (meow-replace)
     (meow-yank)))
 
-(defun meow-setup ()
+(use-package meow
+  :init
+  (defun meow-setup ()
     (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
     (meow-motion-overwrite-define-key
      '("j" . meow-next)
@@ -97,13 +98,12 @@
      '("'" . repeat)
      '("+" . er/expand-region)
      '("<escape>" . ignore)))
+  :config
+  (add-to-list 'meow-mode-state-list '(blink-search-mode . insert))
+  (meow-thing-register 'single-quote '(regexp "'" "'") '(regexp "'" "'"))
+  (meow-thing-register 'angle '(regexp "<" ">") '(regexp "<" ">"))
 
-
-(add-to-list 'meow-mode-state-list '(blink-search-mode . insert))
-(meow-thing-register 'single-quote '(regexp "'" "'") '(regexp "'" "'"))
-(meow-thing-register 'angle '(regexp "<" ">") '(regexp "<" ">"))
-
-(setq meow-char-thing-table
+  (setq meow-char-thing-table
     '((?( . round) (?) . round)
       (?{ . curly) (?} . curly)
       (?[ . square) (?] . square)
@@ -118,8 +118,8 @@
       (?p . paragraph)
       (?s . symbol)))
 
+  (meow-setup)
+  (meow-global-mode 1))
 
-(meow-setup)
-(meow-global-mode 1)
 
 (provide 'init-meow)
