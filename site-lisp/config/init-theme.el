@@ -21,7 +21,12 @@
     (run-with-timer 0.1 nil #'set-face-background 'mode-line jst/modeline-bg)))
 
 (setq visible-bell nil
-  ring-bell-function 'jst/flash-mode-line)
+      ring-bell-function 'jst/flash-mode-line)
+
+(use-package beacon
+  :init
+  (setq beacon-color "#50fa7b")
+  (beacon-mode 1))
 
 
 (provide 'init-theme)
