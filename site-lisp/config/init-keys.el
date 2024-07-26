@@ -109,6 +109,7 @@
  '("," . meow-last-buffer)
  '(";" . switch-to-buffer)
  '("e" . treemacs)
+ '("/" . evilnc-comment-or-uncomment-lines)
  '("f" . my-transient-file)
  '("w" . my-transient-window)
  '("s" . my-transient-search))

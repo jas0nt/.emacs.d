@@ -10,5 +10,7 @@
   (rainbow-delimiters-mode)
   (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
 
+(use-package evil-nerd-commenter)
+
 
 (provide 'init-edit)
