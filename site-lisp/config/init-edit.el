@@ -1,4 +1,3 @@
-
 (use-package undo-tree
   :init
   (global-undo-tree-mode))
@@ -11,6 +10,8 @@
   (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
 
 (use-package evil-nerd-commenter)
+
+(use-package expand-region)
 
 
 (provide 'init-edit)
