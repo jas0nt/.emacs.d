@@ -2,7 +2,7 @@
   (cond ((eq window-system 'pgtk)
          (set-face-attribute 'default nil :height 140 :family "WenQuanYi Micro Hei Mono"))
         (t
-         (let ((emacs-font-size 10)
+         (let ((emacs-font-size 15)
                (chinese-font-name  "Source Han Sans")
                english-font-name)
            (cond

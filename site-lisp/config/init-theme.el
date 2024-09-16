@@ -10,8 +10,8 @@
   :config
   (setq doom-modeline-major-mode-icon nil)
   (setq doom-modeline-height 1)
-  (set-face-attribute 'mode-line nil :family "FiraCode Nerd Font" :height 120)
-  (set-face-attribute 'mode-line-inactive nil :family "FiraCode Nerd Font" :height 120))
+  (set-face-attribute 'mode-line nil :family "FiraCode Nerd Font" :height 150)
+  (set-face-attribute 'mode-line-inactive nil :family "FiraCode Nerd Font" :height 150))
 
 
 (defconst jst/modeline-bg (face-attribute 'mode-line :background))
