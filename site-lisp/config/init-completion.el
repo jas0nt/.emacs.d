@@ -43,4 +43,8 @@
 (use-package consult-ag)
 (use-package consult-projectile)
 
+(use-package savehist
+  :init
+  (savehist-mode))
+
 (provide 'init-completion)
