@@ -34,6 +34,7 @@
     (require 'init-project)
     (require 'init-dashboard)
     (require 'init-python)
+    (require 'init-rust)
     (require 'init-lsp)
     (require 'init-other)
 
