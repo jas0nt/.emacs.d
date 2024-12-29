@@ -1,3 +1,4 @@
+(require 'transient)
 (use-package general)
 
 (defconst my-leader-key "<SPC>")
@@ -109,6 +110,7 @@
  '("," . meow-last-buffer)
  '(";" . switch-to-buffer)
  '("e" . treemacs)
+ '("v" . magit)
  '("/" . evilnc-comment-or-uncomment-lines)
  '("f" . my-transient-file)
  '("w" . my-transient-window)
