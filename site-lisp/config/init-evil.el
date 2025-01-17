@@ -90,6 +90,7 @@
 (my-leader-def
   "<SPC>" 'execute-extended-command
   "q" '(jst/kill-current-buffer :wk "kill-buffer")
+  "e" 'treemacs
   "/" 'evilnc-comment-or-uncomment-lines
   "f" 'my-transient-file
   "j" 'my-transient-jump
