@@ -122,4 +122,22 @@
   (meow-global-mode 1))
 
 
+(meow-leader-define-key
+ ;; x, c, h, m, g are occupied
+ '("q" . (lambda ()
+       (interactive)
+       (progn
+         (kill-current-buffer)
+         (when (> (length (window-list)) 1)
+       (delete-window)))))
+ '("," . meow-last-buffer)
+ '(";" . switch-to-buffer)
+ '("e" . treemacs)
+ '("v" . magit)
+ '("/" . evilnc-comment-or-uncomment-lines)
+ '("f" . my-transient-file)
+ '("w" . my-transient-window)
+ '("s" . my-transient-search))
+
+
 (provide 'init-meow)

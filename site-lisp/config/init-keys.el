@@ -1,14 +1,18 @@
 (require 'transient)
 (use-package general)
 
-(defconst my-leader-key "<SPC>")
+(use-package which-key
+  :config
+  (setq which-key-idle-delay 0.5)
+  (which-key-mode)
+  (which-key-enable-god-mode-support))
 
 (general-define-key
  "<f5>" 'revert-buffer
  "C-s" 'consult-line
+ "M-y" 'yank-pop
  "C-x C-b" 'bufler
  "C-x C-d" 'dirvish)
-
 
 (transient-define-prefix my-transient-file ()
   "transient-file"
@@ -26,9 +30,31 @@
    ["actions"
     ("s" "save-buffer" save-buffer)
     ("S" "save-some-buffers" save-some-buffers)
+    ("q" "quit" transient-quit-all)
     ]
    ]
   )
+
+(transient-define-prefix my-transient-jump ()
+  [
+   ["goto-char"
+    ("j" "goto-char-timer" avy-goto-char-timer)
+    ("1" "goto-char" avy-goto-char)
+    ("2" "goto-char-2" avy-goto-char-2)
+    ]
+
+   ["goto-word"
+    ("w" "goto-word" avy-goto-word-1)
+    ]
+ 
+   ["goto-line"
+    ("l" "goto-line" avy-goto-line)
+    ]
+
+   ["actions"
+    ("q" "quit" transient-quit-all)
+    ]
+   ])
 
 (transient-define-prefix my-transient-search ()
   [
@@ -38,7 +64,7 @@
     ("R" "rg+" deadgrep)
     ("m" "multi-buffer" consult-line-multi)
     ]
-
+   
    ["file"
     ("b" "bookmark" consult-bookmark)
     ("L" "locate" consult-locate)
@@ -49,6 +75,10 @@
     ("d" "dict" bing-dict-brief)
     ("D" "fanyi" fanyi-dwim2)
     ("l" "browse-url" browse-url)
+    ]
+
+   ["actions"
+    ("q" "quit" transient-quit-all)
     ]
    ])
 
@@ -98,22 +128,5 @@
     ]
    ])
 
-
-(meow-leader-define-key
- ;; x, c, h, m, g are occupied
- '("q" . (lambda ()
-       (interactive)
-       (progn
-         (kill-current-buffer)
-         (when (> (length (window-list)) 1)
-       (delete-window)))))
- '("," . meow-last-buffer)
- '(";" . switch-to-buffer)
- '("e" . treemacs)
- '("v" . magit)
- '("/" . evilnc-comment-or-uncomment-lines)
- '("f" . my-transient-file)
- '("w" . my-transient-window)
- '("s" . my-transient-search))
 
 (provide 'init-keys)
