@@ -33,6 +33,7 @@
     (require 'init-edit)
     (require 'init-dired)
     (require 'init-project)
+    (require 'init-vc)
     (require 'init-dashboard)
     (require 'init-python)
     (require 'init-rust)

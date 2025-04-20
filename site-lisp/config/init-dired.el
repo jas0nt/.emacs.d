@@ -1,5 +1,4 @@
 (use-package dirvish
-  :ensure t
   :init
   (dirvish-override-dired-mode)
   :custom

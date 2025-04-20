@@ -102,7 +102,7 @@
   (add-to-list 'meow-mode-state-list '(blink-search-mode . insert))
   (meow-thing-register 'single-quote '(regexp "'" "'") '(regexp "'" "'"))
   (meow-thing-register 'angle '(regexp "<" ">") '(regexp "<" ">"))
-
+  
   (setq meow-char-thing-table
     '((?( . round) (?) . round)
       (?{ . curly) (?} . curly)
@@ -131,9 +131,9 @@
          (when (> (length (window-list)) 1)
        (delete-window)))))
  '("," . meow-last-buffer)
- '(";" . switch-to-buffer)
- '("e" . treemacs)
- '("v" . magit)
+ '(";" . bufler-switch-buffer)
+ '("e" . dirvish-side)
+ '("v" . project-vc-dir)
  '("/" . evilnc-comment-or-uncomment-lines)
  '("f" . my-transient-file)
  '("w" . my-transient-window)

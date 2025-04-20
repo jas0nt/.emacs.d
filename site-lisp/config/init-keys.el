@@ -128,5 +128,22 @@
     ]
    ])
 
+(general-define-key
+ :keymaps 'bufler-list-mode-map
+ "r" 'bufler-list
+ "q" '(lambda ()
+	(interactive)
+	(progn
+	  (kill-current-buffer)
+	  (when (> (length (window-list)) 1)
+	    (delete-window))))
+ "d" '(lambda ()
+	(interactive)
+	(when
+	    (yes-or-no-p "kill buffer?")
+	  (bufler-list-buffer-kill)))
+ "s" 'bufler-list-buffer-save
+ "RET" 'bufler-list-buffer-switch)
+
 
 (provide 'init-keys)
