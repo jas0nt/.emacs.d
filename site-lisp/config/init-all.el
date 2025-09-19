@@ -26,8 +26,8 @@
     (require 'init-generic)
     (require 'init-common)
     (require 'init-keys)
-    ;; (require 'init-evil)
-    (require 'init-meow)
+    (require 'init-evil)
+    ;; (require 'init-meow)
     (require 'init-completion)
     (require 'init-chinese)
     (require 'init-edit)
@@ -37,7 +37,7 @@
     (require 'init-dashboard)
     (require 'init-python)
     (require 'init-rust)
-    (require 'init-lsp)
+    ;; (require 'init-lsp)
     (require 'init-other)
 
     ;; 可以延后加载的
