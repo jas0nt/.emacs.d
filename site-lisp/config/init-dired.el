@@ -1,6 +1,8 @@
 (use-package dirvish
   :init
   (dirvish-override-dired-mode)
+  (evil-set-initial-state 'dired-mode 'emacs)
+  (evil-set-initial-state 'dirvish-mode 'emacs)
   :custom
   (dirvish-quick-access-entries ; It's a custom option, `setq' won't work
    '(("h" "~/"                          "Home")
@@ -23,23 +25,29 @@
   :bind
   (("C-x C-d" . dirvish)
    :map dirvish-mode-map               ; Dirvish inherits `dired-mode-map'
+   ("q"   . dirvish-quit)
+   ("T"   . dirvish-layout-toggle)
    ("h"   . dired-up-directory)
    ("l"   . dired-find-file)
    ("j"   . dired-next-line)
    ("k"   . dired-previous-line)
-   ("/"   . dired-fd)
+   ("/"   . consult-line)
    ("?"   . dirvish-dispatch)          ; [?] a helpful cheatsheet
-   ("a"   . dirvish-setup-menu)        ; [a]ttributes settings:`t' toggles mtime, `f' toggles fullframe, etc.
-   ("f"   . dirvish-file-info-menu)    ; [f]ile info
-   ("o"   . dirvish-quick-access)      ; [o]pen `dirvish-quick-access-entries'
-   ("s"   . dirvish-quicksort)         ; [s]ort flie list
-   ("r"   . dirvish-history-jump)      ; [r]ecent visited
+   ("a"   . dired-create-empty-file)
+   ("A"   . dired-create-directory)
+   ("c"   . dirvish-file-info-menu)    ; copy
+   ("g"   . dirvish-quick-access)      ; go to `dirvish-quick-access-entries'
+   ("n"   . dirvish-narrow)
+   ("N"   . revert-buffer)
+   ("s"   . dirvish-quicksort)         ; sort flie list
+   ("r"   . dired-toggle-read-only)    ; batch rename
    ("*"   . dirvish-mark-menu)
    ("y"   . dirvish-yank-menu)
    ("TAB" . dirvish-subtree-toggle)
-   ("M-f" . dirvish-history-go-forward)
-   ("M-b" . dirvish-history-go-backward)
-   ("M-e" . dirvish-emerge-menu)))
+   ("J"   . dirvish-history-jump)      ; recent visited
+   ("L"   . dirvish-history-go-forward)
+   ("H"   . dirvish-history-go-backward)
+   ))
 
 
 (provide 'init-dired)

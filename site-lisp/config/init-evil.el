@@ -8,7 +8,7 @@
   :config
   (evil-mode 1)
   (setq evil-insert-state-cursor '(hollow "yellow")
-      evil-normal-state-cursor '(box "green")))
+      evil-normal-state-cursor '(box "#50fa7b")))
 
 (use-package evil-collection
   :after (evil)

@@ -68,15 +68,4 @@
   (jst/string-trim-final-newline (shell-command-to-string command)))
 
 
-(defun jst/mac-pbcopy ()
-  "copy selected region to system clipboard"
-  (interactive)
-  (shell-command-on-region (point) (mark) "pbcopy"))
-
-(defun jst/mac-reveal-in-finder ()
-  "reveal current directory in finder"
-  (interactive)
-  (shell-command "open -R ."))
-
-
 (provide 'init-common)
