@@ -1,17 +1,16 @@
 # Compiled
 *.elc
+*.el#
 
 # Backup files
 *~
 
 # Undo-tree save-files
 *.~undo-tree
-
-history
 recentf
 
+cache/
 eln-cache/
 elpa/
 auto-save-list/
-transient/
 straight/

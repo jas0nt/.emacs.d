@@ -287,7 +287,9 @@
 
 (use-package savehist
   :init
-  (savehist-mode))
+  (savehist-mode)
+  :custom
+  (savehist-file (expand-file-name "history" my-emacs-cache-dir)))
 
 (use-package consult)
 (use-package consult-projectile)

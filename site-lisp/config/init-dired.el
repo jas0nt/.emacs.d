@@ -4,13 +4,13 @@
   (evil-set-initial-state 'dired-mode 'emacs)
   (evil-set-initial-state 'dirvish-mode 'emacs)
   :custom
+  (dirvish-cache-dir (expand-file-name "dirvish/" my-emacs-cache-dir))
   (dirvish-quick-access-entries ; It's a custom option, `setq' won't work
    '(("h" "~/"                          "Home")
      ("d" "~/Downloads/"                "Downloads")
      ("x" "/run/media/"                 "Drives")
      ("t" "~/.local/share/Trash/files/" "TrashCan")))
   :config
-  ;; (setq dired-listing-switches "-alht")
   (setq dired-listing-switches
         "-l --almost-all --human-readable --group-directories-first --no-group")
   (put 'dired-find-alternate-file 'disabled nil)
@@ -33,6 +33,7 @@
    ("k"   . dired-previous-line)
    ("/"   . consult-line)
    ("?"   . dirvish-dispatch)          ; [?] a helpful cheatsheet
+   ("RET" . dired-do-open)
    ("a"   . dired-create-empty-file)
    ("A"   . dired-create-directory)
    ("c"   . dirvish-file-info-menu)    ; copy

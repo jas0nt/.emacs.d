@@ -55,4 +55,32 @@
 (modify-coding-system-alist 'process "*" 'utf-8)
 
 
+(defvar my-emacs-cache-dir (expand-file-name "cache/" user-emacs-directory)
+  "存放 Emacs 插件缓存文件的目录。")
+
+(unless (file-exists-p my-emacs-cache-dir)
+  (make-directory my-emacs-cache-dir t))
+
+(defun my/set-cache-files (&rest file-specs)
+  "批量设置缓存文件路径，自动确保所在目录存在。
+FILE-SPECS 是 (变量 文件名) 形式的列表。"
+  (dolist (spec file-specs)
+    (let* ((var (car spec))
+           (file-path (expand-file-name (cadr spec) my-emacs-cache-dir))
+           (dir-path (file-name-directory file-path)))
+      ;; 自动创建目录（如果不存在）
+      (unless (file-exists-p dir-path)
+        (make-directory dir-path t))
+      ;; 设置变量
+      (set var file-path))))
+
+(my/set-cache-files
+ '(custom-file "custom.el")
+ '(bookmark-default-file "bookmarks")
+ '(url-configuration-directory "url/"))
+
+
+(load custom-file :noerror)
+
+
 (provide 'init-generic)
