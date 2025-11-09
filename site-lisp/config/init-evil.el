@@ -62,6 +62,8 @@
 (general-define-key
  :states '(normal visual)
  "gl" 'evil-avy-goto-line
+ "g/" 'evil-avy-goto-char-timer
+ "gw" 'ace-window
  "gn" 'evil-next-buffer
  "gp" 'evil-prev-buffer
  "g." 'evil-repeat

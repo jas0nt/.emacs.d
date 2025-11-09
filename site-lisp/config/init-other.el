@@ -1,7 +1,9 @@
 (use-package google-this)
 (use-package bufler)
 (use-package deadgrep)
-(use-package ace-window)
+(use-package ace-window
+  :config
+  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
 (use-package try)
 
 
