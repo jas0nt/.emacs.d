@@ -1,5 +1,4 @@
 (require 'transient)
-(setq transient-history-file (locate-user-emacs-file (expand-file-name "transient_history.el" my-emacs-cache-dir)))
 
 (use-package general)
 

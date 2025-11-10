@@ -293,6 +293,7 @@
 
 (use-package consult)
 (use-package consult-projectile)
+(use-package posframe)
 
 
 (provide 'init-completion)
