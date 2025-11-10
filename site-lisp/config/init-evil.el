@@ -98,7 +98,8 @@
   "j" 'my-transient-jump
   "<ESC>" 'my-transient-quit
   "s" 'my-transient-search
-  "w" 'my-transient-window)
+  "w" 'my-transient-window
+  "p" 'my-transient-music)
 
 
 (provide 'init-evil)

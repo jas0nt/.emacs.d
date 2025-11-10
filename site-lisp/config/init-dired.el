@@ -8,6 +8,7 @@
   (dirvish-quick-access-entries ; It's a custom option, `setq' won't work
    '(("h" "~/"                          "Home")
      ("d" "~/Downloads/"                "Downloads")
+     ("m" "~/Music/"                    "Music")
      ("x" "/run/media/"                 "Drives")
      ("t" "~/.local/share/Trash/files/" "TrashCan")))
   :config
@@ -31,13 +32,15 @@
    ("l"   . dired-find-file)
    ("j"   . dired-next-line)
    ("k"   . dired-previous-line)
+   ("C-d" . scroll-up-command)
+   ("C-u" . scroll-down-command)
    ("/"   . consult-line)
    ("?"   . dirvish-dispatch)          ; [?] a helpful cheatsheet
    ("RET" . dired-do-open)
    ("a"   . dired-create-empty-file)
    ("A"   . dired-create-directory)
    ("c"   . dirvish-file-info-menu)    ; copy
-   ("g"   . dirvish-quick-access)      ; go to `dirvish-quick-access-entries'
+   ("o"   . dirvish-quick-access)      ; go to `dirvish-quick-access-entries'
    ("n"   . dirvish-narrow)
    ("N"   . revert-buffer)
    ("s"   . dirvish-quicksort)         ; sort flie list
@@ -48,6 +51,10 @@
    ("J"   . dirvish-history-jump)      ; recent visited
    ("L"   . dirvish-history-go-forward)
    ("H"   . dirvish-history-go-backward)
+   ("gg"  . beginning-of-buffer)
+   ("G"   . end-of-buffer)
+   ("gl"  . evil-avy-goto-line)
+   ("g/"  . evil-avy-goto-char-timer)
    ))
 
 

@@ -77,6 +77,9 @@ FILE-SPECS 是 (变量 文件名) 形式的列表。"
 (my/set-cache-files
  '(custom-file "custom.el")
  '(bookmark-default-file "bookmarks")
+ '(transient-levels-file "transient/levels.el")
+ '(transient-values-file "transient/values.el")
+ '(transient-history-file "transient/history.el")
  '(url-configuration-directory "url/"))
 
 

@@ -27,7 +27,6 @@
     (require 'init-common)
     (require 'init-keys)
     (require 'init-evil)
-    ;; (require 'init-meow)
     (require 'init-completion)
     (require 'init-chinese)
     (require 'init-edit)
@@ -45,6 +44,7 @@
      1 nil
      #'(lambda ()
          (require 'init-idle)
+	 (require 'init-music)
          ))))
 
 (provide 'init-all)

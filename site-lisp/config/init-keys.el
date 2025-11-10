@@ -13,8 +13,7 @@
  "<f5>" 'revert-buffer
  "C-s" 'consult-line
  "M-y" 'yank-pop
- "C-x C-b" 'bufler
- "C-x C-d" 'dirvish)
+ "C-x C-b" 'bufler)
 
 (transient-define-prefix my-transient-file ()
   "transient-file"
