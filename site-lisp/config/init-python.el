@@ -5,7 +5,7 @@
 
 (use-package pyvenv
   :config
-  ;(pyvenv-mode 1)
+  (pyvenv-mode 1)
   (add-hook 'python-mode-hook #'pyvenv-mode)
   (setenv "WORKON_HOME" "~/.venv")
   (pyvenv-workon "base"))
