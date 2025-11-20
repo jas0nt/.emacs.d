@@ -80,8 +80,8 @@ FILE-SPECS 是 (变量 文件名) 形式的列表。"
  '(transient-levels-file "transient/levels.el")
  '(transient-values-file "transient/values.el")
  '(transient-history-file "transient/history.el")
+ '(tramp-persistency-file-name "tramp")
  '(url-configuration-directory "url/"))
-
 
 (load custom-file :noerror)
 

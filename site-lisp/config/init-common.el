@@ -34,17 +34,14 @@
 
 ;;;###autoload
 (defun jst/toggle-ui-transparency ()
-  "toggle UI transparency"
+  "Toggle transparency using the modern Emacs 29+ alpha-background."
   (interactive)
-  (let ((alpha (frame-parameter nil 'alpha)))
+  (let ((alpha (frame-parameter nil 'alpha-background)))
     (set-frame-parameter
-     nil 'alpha
-     (if (eql (cond ((numberp alpha) alpha)
-                    ((numberp (cdr alpha)) (cdr alpha))
-                    ;; Also handle undocumented (<active> <inactive>) form.
-                    ((numberp (cadr alpha)) (cadr alpha)))
-              100)
-         '(85 . 50) '(100 . 100)))))
+     nil 'alpha-background
+     (if (or (not alpha) (= alpha 100))
+         75    ; Turn on transparency
+       100)))) ; Turn off (100% opaque)
 
 ;;;###autoload
 (defun jst/kill-current-buffer ()

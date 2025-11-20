@@ -39,12 +39,19 @@
     (require 'init-lsp)
     (require 'init-other)
 
+    ;; HOOK: Reset GC after startup is complete
+    (add-hook 'emacs-startup-hook
+              (lambda ()
+		(setq gc-cons-threshold (* 100 1024 1024) ; Reset to 100MB
+                      gc-cons-percentage 0.1)))           ; Reset to default
+
     ;; 可以延后加载的
     (run-with-idle-timer
      1 nil
      #'(lambda ()
          (require 'init-idle)
 	 (require 'init-music)
-         ))))
+         ))
+    ))
 
 (provide 'init-all)

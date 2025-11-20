@@ -8,4 +8,7 @@
 ; fullscreen
 (setq initial-frame-alist (quote ((fullscreen . maximized))))
 
+; alpha-background
+(set-frame-parameter nil 'alpha-background 80)
+
 (provide 'init-ui)

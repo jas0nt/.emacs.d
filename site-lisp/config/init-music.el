@@ -1,6 +1,4 @@
 (use-package emms
-  :init
-  ;; (evil-set-initial-state 'emms-playlist-mode 'emacs)
   :custom
   (emms-directory (expand-file-name "emms" my-emacs-cache-dir))
   :config
