@@ -1,7 +1,12 @@
-(use-package vc
+(use-package magit
   :bind
-  (("C-x C-v" . project-vc-dir)))
+  (("C-x C-v" . magit)))
 
-(use-package vc-msg)
+(use-package magit-delta)
+
+(use-package diff-hl
+  :after 'magit
+  :config
+  (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh))
 
 (provide 'init-vc)

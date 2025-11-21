@@ -190,4 +190,11 @@
   :config
   (set-face-attribute 'diredfl-dir-name nil :bold t))
 
+(use-package dired-k
+  :config
+  (setq dired-k-style 'git)
+  :hook
+  ((dired-mode . dired-k)))
+
+
 (provide 'init-dired)
