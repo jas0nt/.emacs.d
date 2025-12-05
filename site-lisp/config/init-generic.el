@@ -81,6 +81,7 @@ FILE-SPECS 是 (变量 文件名) 形式的列表。"
  '(transient-values-file "transient/values.el")
  '(transient-history-file "transient/history.el")
  '(tramp-persistency-file-name "tramp")
+ '(svg-lib-icons-dir "svg-lib/")
  '(url-configuration-directory "url/"))
 
 (load custom-file :noerror)

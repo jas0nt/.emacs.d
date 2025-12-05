@@ -26,6 +26,7 @@
     (evil-set-initial-state 'dirvish-mode 'emacs))
   
   :custom
+  (dirvish-default-layout nil)
   (dirvish-cache-dir (expand-file-name "dirvish/" my-emacs-cache-dir))
   (dirvish-quick-access-entries
    '(("h" "~/"                          "Home")
@@ -43,6 +44,21 @@
 
   :config
   (dirvish-peek-mode) ; Preview files in minibuffer
+
+  (defun my-switch-to-last-non-file-manager ()
+    "Switch to the last used buffer that is not dired-mode or dirvish-mode."
+    (interactive)
+    (let ((target-buffer
+           (seq-find (lambda (buf)
+                       (and 
+			(not (eq buf (current-buffer)))
+			(not (string-prefix-p " " (buffer-name buf)))
+			(with-current-buffer buf
+                          (not (derived-mode-p 'dired-mode 'dirvish-mode)))))
+                     (buffer-list))))
+      (if target-buffer
+          (switch-to-buffer target-buffer)
+	(message "No previous non-file-manager buffer found."))))
 
   ;; -----------------------------------------------------------------------
   ;; Custom Function: Open Kitty Cleanly
@@ -119,9 +135,11 @@
   :bind
   (("C-x C-d" . dirvish)
    :map dirvish-mode-map
-   ("q"   . dirvish-quit)
+   ("Q"   . dirvish-quit)
+   ("q"   . my-switch-to-last-non-file-manager)
    ("C-c" . my-dirvish-tab-remove-current)
-   (";"   . my-dirvish-tab-list)
+   (","   . evil-switch-to-windows-last-buffer)
+   (";"   . bufler-switch-buffer)
    
    ;; Tab Bindings
    ("C-1" . my-dirvish-tab-bind-1)

@@ -67,7 +67,7 @@
  "gn" 'evil-next-buffer
  "gp" 'evil-prev-buffer
  "g." 'evil-repeat
- ";" 'switch-to-buffer
+ ";" 'bufler-switch-buffer
  "," 'evil-switch-to-windows-last-buffer)
 
 ;; Define generic function
@@ -96,7 +96,6 @@
   "/" 'evilnc-comment-or-uncomment-lines
   "f" 'my-transient-file
   "j" 'my-transient-jump
-  "<ESC>" 'my-transient-quit
   "s" 'my-transient-search
   "w" 'my-transient-window
   "p" 'my-transient-music)
