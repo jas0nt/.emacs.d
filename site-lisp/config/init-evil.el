@@ -67,7 +67,7 @@
  "gn" 'evil-next-buffer
  "gp" 'evil-prev-buffer
  "g." 'evil-repeat
- ";" 'bufler-switch-buffer
+ ";" 'switch-to-buffer
  "," 'evil-switch-to-windows-last-buffer)
 
 ;; Define generic function

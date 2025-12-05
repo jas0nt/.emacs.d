@@ -24,8 +24,9 @@
  "r" '(emms-random :which-key "random")
  "m" '(emms-mark-track :which-key "Mark Track")
  "d" '(emms-mark-kill-marked-tracks :which-key "Kill Track")
- "sm" '(emms-playlist-limit-to-info-album :which-key "mode album")
+ "sA" '(emms-playlist-limit-to-all :which-key "mode All")
  "sa" '(emms-playlist-limit-to-info-artist :which-key "mode artist")
+ "sb" '(emms-playlist-limit-to-info-album :which-key "mode album")
  )
 
 

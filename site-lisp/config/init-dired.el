@@ -139,7 +139,7 @@
    ("q"   . my-switch-to-last-non-file-manager)
    ("C-c" . my-dirvish-tab-remove-current)
    (","   . evil-switch-to-windows-last-buffer)
-   (";"   . bufler-switch-buffer)
+   (";"   . switch-to-buffer)
    
    ;; Tab Bindings
    ("C-1" . my-dirvish-tab-bind-1)

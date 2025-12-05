@@ -4,6 +4,7 @@
 ;; In-Buffer Completion (Corfu)
 ;; -----------------------------------------------------------------------
 (use-package corfu
+  :disabled t
   :init
   (global-corfu-mode)
   :custom
