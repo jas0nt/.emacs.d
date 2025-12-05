@@ -24,6 +24,7 @@
     (require 'init-pkgs)
     (require 'init-theme)
     (require 'init-generic)
+    (require 'init-buffer)
     (require 'init-common)
     (require 'init-keys)
     (require 'init-evil)
