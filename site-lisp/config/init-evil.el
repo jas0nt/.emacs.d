@@ -24,7 +24,6 @@
   (evil-snipe-override-mode +1))
 
 (use-package evil-surround
-  :ensure t
   :config
   (global-evil-surround-mode 1))
 
@@ -49,18 +48,16 @@
   :after (evil smartparens)
   :hook (smartparens-enabled-hook . evil-smartparens-mode))
 
-(use-package god-mode)
+(use-package evil-keypad
+  :after evil
+  :config
+  (setq evil-keypad-activation-states '(normal visual emacs))
+  (evil-keypad-global-mode 1))
 
-
-(defconst my-leader-key "<SPC>")
-(general-create-definer my-leader-def
-  :states '(normal insert visual emacs)
-  :keymaps 'override
-  :prefix my-leader-key
-  :non-normal-prefix "C-,")
 
 (general-define-key
  :states '(normal visual)
+ "=" 'er/expand-region
  "gl" 'evil-avy-goto-line
  "g/" 'evil-avy-goto-char-timer
  "gw" 'ace-window
@@ -69,36 +66,6 @@
  "g." 'evil-repeat
  ";" 'switch-to-buffer
  "," 'evil-switch-to-windows-last-buffer)
-
-;; Define generic function
-(defun my/god-execute-with-key (key)
-  "Invoke `god-execute-with-current-bindings` and simulate pressing KEY."
-  (interactive)
-  (call-interactively 'god-execute-with-current-bindings)
-  (setq unread-command-events (listify-key-sequence key)))
-
-;; Bind keys dynamically
-(dolist (key-command '(("x" . "x")
-                       ("c" . "c")
-                       ("h" . "h")
-                       ("m" . "g")))
-  (let ((key (car key-command))
-        (simulated-key (cdr key-command)))
-    (eval
-     `(my-leader-def
-       ,key
-       (lambda () (interactive) (my/god-execute-with-key ,simulated-key))))))
-
-(my-leader-def
-  "<SPC>" 'execute-extended-command
-  "q" '(jst/kill-current-buffer :wk "kill-buffer")
-  "e" 'dirvish-side
-  "/" 'evilnc-comment-or-uncomment-lines
-  "f" 'my-transient-file
-  "j" 'my-transient-jump
-  "s" 'my-transient-search
-  "w" 'my-transient-window
-  "p" 'my-transient-music)
 
 
 (provide 'init-evil)

@@ -18,16 +18,11 @@
 (general-define-key
  :states 'normal
  :keymaps 'emms-playlist-mode-map
- "X" '(emms-stop :which-key "Music Quit")
- "x" '(emms-pause :which-key "Music Pause")
  "R" '(emms-shuffle :which-key "shuffle")
- "r" '(emms-random :which-key "random")
- "m" '(emms-mark-track :which-key "Mark Track")
- "d" '(emms-mark-kill-marked-tracks :which-key "Kill Track")
- "sA" '(emms-playlist-limit-to-all :which-key "mode All")
- "sa" '(emms-playlist-limit-to-info-artist :which-key "mode artist")
- "sb" '(emms-playlist-limit-to-info-album :which-key "mode album")
- )
+ "<SPC>" '(emms-mark-track :which-key "Mark Track")
+ "mA" '(emms-playlist-limit-to-all :which-key "mode All")
+ "ma" '(emms-playlist-limit-to-info-artist :which-key "mode artist")
+ "mb" '(emms-playlist-limit-to-info-album :which-key "mode album"))
 
 
 (transient-define-prefix my-transient-music ()

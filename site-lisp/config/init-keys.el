@@ -8,11 +8,6 @@
   (which-key-mode)
   (which-key-enable-god-mode-support))
 
-(general-define-key
- "<f5>" 'revert-buffer
- "C-s" 'consult-line
- "M-y" 'yank-pop
- "C-x C-b" 'ibuffer)
 
 (transient-define-prefix my-transient-file ()
   "transient-file"
@@ -128,22 +123,21 @@
     ]
    ])
 
+
 (general-define-key
- :keymaps 'bufler-list-mode-map
- "r" 'bufler-list
- "q" '(lambda ()
-	(interactive)
-	(progn
-	  (kill-current-buffer)
-	  (when (> (length (window-list)) 1)
-	    (delete-window))))
- "d" '(lambda ()
-	(interactive)
-	(when
-	    (yes-or-no-p "kill buffer?")
-	  (bufler-list-buffer-kill)))
- "s" 'bufler-list-buffer-save
- "RET" 'bufler-list-buffer-switch)
+ "<f5>" 'revert-buffer
+ "C-s" 'consult-line
+ "M-y" 'yank-pop
+ "C-x C-b" 'ibuffer
+ "C-c <SPC>" 'execute-extended-command
+ "C-c q" '(jst/kill-current-buffer :wk "kill-buffer")
+ "C-c e" 'dirvish-side
+ "C-c /" 'evilnc-comment-or-uncomment-lines
+ "C-c f" 'my-transient-file
+ "C-c j" 'my-transient-jump
+ "C-c s" 'my-transient-search
+ "C-c w" 'my-transient-window
+ "C-c p" 'my-transient-music)
 
 
 (provide 'init-keys)

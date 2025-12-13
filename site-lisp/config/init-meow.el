@@ -125,19 +125,21 @@
 (meow-leader-define-key
  ;; x, c, h, m, g are occupied
  '("q" . (lambda ()
-       (interactive)
-       (progn
-         (kill-current-buffer)
-         (when (> (length (window-list)) 1)
-       (delete-window)))))
+	   (interactive)
+	   (progn
+             (kill-current-buffer)
+             (when (> (length (window-list)) 1)
+	       (delete-window)))))
  '("," . meow-last-buffer)
- '(";" . bufler-switch-buffer)
+ '(";" . switch-to-buffer)
+ '("/" . evilnc-comment-or-uncomment-lines)
  '("e" . dirvish-side)
  '("v" . project-vc-dir)
- '("/" . evilnc-comment-or-uncomment-lines)
  '("f" . my-transient-file)
+ '("j" . my-transient-jump)
+ '("s" . my-transient-search)
  '("w" . my-transient-window)
- '("s" . my-transient-search))
+ '("p" . my-transient-music))
 
 
 (provide 'init-meow)
