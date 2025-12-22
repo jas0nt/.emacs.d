@@ -171,6 +171,7 @@
    ("TAB" . dirvish-subtree-toggle)
    
    ;; Navigation & Actions
+   ("z"   . dired-jump-with-zoxide)
    ("h"   . dired-up-directory)
    ("l"   . dired-find-file)
    ("j"   . dired-next-line)
@@ -214,6 +215,13 @@
   (setq dired-k-style 'git)
   :hook
   ((dired-mode . dired-k)))
+
+(use-package zoxide
+  :config
+  (defun dired-jump-with-zoxide (&optional other-window)
+    (interactive "P")
+    (zoxide-open-with nil (lambda (file) (dired-jump other-window file)) t)))
+
 
 
 (provide 'init-dired)

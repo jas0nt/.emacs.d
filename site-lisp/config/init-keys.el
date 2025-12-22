@@ -61,6 +61,7 @@
     ]
    
    ["file"
+    ("z" "fzf" fzf)
     ("b" "bookmark" consult-bookmark)
     ("L" "locate" consult-locate)
     ]
