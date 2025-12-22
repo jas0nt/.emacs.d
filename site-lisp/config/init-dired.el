@@ -137,7 +137,7 @@
    :map dirvish-mode-map
    ("Q"   . dirvish-quit)
    ("q"   . my-switch-to-last-non-file-manager)
-   ("C-c" . my-dirvish-tab-remove-current)
+   ("!" . my-dirvish-tab-remove-current)
    (","   . evil-switch-to-windows-last-buffer)
    (";"   . switch-to-buffer)
    
@@ -197,6 +197,7 @@
    ("H"   . dirvish-history-go-backward)
    ("gg"  . beginning-of-buffer)
    ("G"   . end-of-buffer)
+   ("gw"  . ace-window)
    ("gl"  . evil-avy-goto-line)
    ("g/"  . evil-avy-goto-char-timer)))
 

@@ -23,15 +23,6 @@
         ("S-TAB" . corfu-previous)
         ([backtab] . corfu-previous)))
 
-;; Add icons to the completion popup (optional, looks great)
-(use-package kind-icon
-  :ensure t
-  :after corfu
-  :custom
-  (kind-icon-default-face 'corfu-default)
-  :config
-  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
-
 ;; -----------------------------------------------------------------------
 ;; Minibuffer Completion (Vertico + Orderless)
 ;; -----------------------------------------------------------------------

@@ -128,10 +128,10 @@
  "<f5>" 'revert-buffer
  "C-s" 'consult-line
  "M-y" 'yank-pop
- "C-x C-b" 'ibuffer
  "C-c <SPC>" 'execute-extended-command
  "C-c q" '(jst/kill-current-buffer :wk "kill-buffer")
  "C-c e" 'dirvish-side
+ "C-c ;" 'ibuffer
  "C-c /" 'evilnc-comment-or-uncomment-lines
  "C-c f" 'my-transient-file
  "C-c j" 'my-transient-jump
