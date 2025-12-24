@@ -198,7 +198,6 @@
    ("H"   . dirvish-history-go-backward)
    ("gg"  . beginning-of-buffer)
    ("G"   . end-of-buffer)
-   ("gw"  . ace-window)
    ("gl"  . evil-avy-goto-line)
    ("g/"  . evil-avy-goto-char-timer)))
 

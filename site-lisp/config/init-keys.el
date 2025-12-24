@@ -132,6 +132,7 @@
  "C-c <SPC>" 'execute-extended-command
  "C-c q" '(jst/kill-current-buffer :wk "kill-buffer")
  "C-c e" 'dirvish-side
+ "C-c ," 'ace-window
  "C-c ;" 'ibuffer
  "C-c /" 'evilnc-comment-or-uncomment-lines
  "C-c f" 'my-transient-file
