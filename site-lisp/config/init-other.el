@@ -1,6 +1,12 @@
 (use-package google-this)
 (use-package deadgrep)
 
+(use-package savehist
+  :init
+  (savehist-mode)
+  :custom
+  (savehist-file (expand-file-name "history" my-emacs-cache-dir)))
+
 (use-package fzf
   :config
   (setq fzf/args "-x --color bw --print-query --margin=1,0 --no-hscroll"

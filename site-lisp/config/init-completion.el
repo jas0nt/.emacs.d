@@ -83,12 +83,6 @@
   ;; TAB tries to indent, then completes
   (setq tab-always-indent 'complete))
 
-(use-package savehist
-  :init
-  (savehist-mode)
-  :custom
-  (savehist-file (expand-file-name "history" my-emacs-cache-dir)))
-
 ;; -----------------------------------------------------------------------
 ;; Consult & Search
 ;; -----------------------------------------------------------------------

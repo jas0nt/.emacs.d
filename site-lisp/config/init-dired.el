@@ -74,6 +74,7 @@
   ;; -----------------------------------------------------------------------
   ;; Custom Logic: Numbered Tabs (0-9)
   ;; -----------------------------------------------------------------------
+  (add-to-list 'savehist-additional-variables 'my-dirvish-tab-list)
   (defvar my-dirvish-tab-list (make-vector 10 nil)
     "Vector to store tab paths, indexed from 0-9.")
 
