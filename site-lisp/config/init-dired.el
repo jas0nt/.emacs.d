@@ -11,7 +11,7 @@
   (dired-dwim-target t)
   ;; Standard listing switches
   (dired-listing-switches
-   "-l --almost-all --human-readable --group-directories-first --no-group")
+   "-lt --almost-all --human-readable --group-directories-first --no-group")
   :config
   ;; Enable the 'a' command (dired-find-alternate-file) if you ever want to manually
   ;; kill the buffer while navigating.
