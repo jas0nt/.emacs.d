@@ -128,7 +128,7 @@
 (general-define-key
  "<f5>" 'revert-buffer
  "C-s" 'consult-line
- "M-y" 'yank-pop
+ "M-y" 'consult-yank-pop
  "C-c <SPC>" 'execute-extended-command
  "C-c q" '(jst/kill-current-buffer :wk "kill-buffer")
  "C-c e" 'dirvish-side
