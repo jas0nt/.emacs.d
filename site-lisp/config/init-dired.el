@@ -44,6 +44,7 @@
 
   :config
   (dirvish-peek-mode) ; Preview files in minibuffer
+  (dirvish-side-follow-mode t) ; Preview files in minibuffer
 
   (defun my-switch-to-last-non-file-manager ()
     "Switch to the last used buffer that is not dired-mode or dirvish-mode."
