@@ -11,7 +11,7 @@
   (dired-dwim-target t)
   ;; Standard listing switches
   (dired-listing-switches
-   "-lt --almost-all --human-readable --group-directories-first --no-group")
+   "-l --almost-all --human-readable --group-directories-first --no-group")
   :config
   ;; Enable the 'a' command (dired-find-alternate-file) if you ever want to manually
   ;; kill the buffer while navigating.
@@ -26,7 +26,7 @@
     (evil-set-initial-state 'dirvish-mode 'emacs))
   
   :custom
-  (dirvish-default-layout nil)
+  ;; (dirvish-default-layout nil)
   (dirvish-cache-dir (expand-file-name "dirvish/" my-emacs-cache-dir))
   (dirvish-quick-access-entries
    '(("h" "~/"                          "Home")
@@ -137,11 +137,10 @@
   :bind
   (("C-x C-d" . dirvish)
    :map dirvish-mode-map
-   ("Q"   . dirvish-quit)
-   ("q"   . my-switch-to-last-non-file-manager)
+   ("q" . dirvish-quit)
    ("!" . my-dirvish-tab-remove-current)
-   (","   . evil-switch-to-windows-last-buffer)
-   (";"   . switch-to-buffer)
+   ("," . evil-switch-to-windows-last-buffer)
+   (";" . switch-to-buffer)
    
    ;; Tab Bindings
    ("C-1" . my-dirvish-tab-bind-1)
