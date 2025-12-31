@@ -43,13 +43,10 @@
 (general-define-key
  :states 'normal
  :keymaps 'emms-playlist-mode-map
- "q" 'kill-this-buffer
- "R" '(emms-shuffle :which-key "Shuffle")
- "<SPC>" '(emms-mark-track :which-key "Mark Track")
- "D" '(emms-playlist-mode-kill-track :which-key "Remove track")
- 
  ;; Sorting/Filtering
- "s a" '(emms-playlist-sort-by-natural-order :which-key "Sort default")
+ "s a" '(emms-playlist-sort-by-info-artist :which-key "Sort Artist")
+ "s b" '(emms-playlist-sort-by-info-album :which-key "Sort Album")
+ "s n" '(emms-playlist-sort-by-name :which-key "Sort Name")
  "m A" '(emms-playlist-limit-to-all :which-key "Show All")
  "m a" '(emms-playlist-limit-to-info-artist :which-key "Filter Artist")
  "m b" '(emms-playlist-limit-to-info-album :which-key "Filter Album"))
@@ -61,15 +58,15 @@
   [
    ["Playback"
     ("x" "Play/Pause" emms-pause)
-    ("s" "Stop" emms-stop)
-    ("n" "Next" emms-next)
-    ("p" "Prev" emms-previous)
+    ("X" "Stop" emms-stop)
+    ("j" "Next" emms-next)
+    ("k" "Prev" emms-previous)
     ("r" "Random/Shuffle" emms-shuffle)
     ]
    
    ["Seek & Volume"
-    ("l" "Seek +10s" emms-seek-forward :transient t)
-    ("h" "Seek -10s" emms-seek-backward :transient t)
+    (">" "Seek +10s" emms-seek-forward :transient t)
+    ("<" "Seek -10s" emms-seek-backward :transient t)
     ("=" "Vol Up" emms-volume-raise :transient t)
     ("-" "Vol Down" emms-volume-lower :transient t)
     ]
