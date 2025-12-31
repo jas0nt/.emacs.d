@@ -1,81 +1,76 @@
-;; 增加IO性能
+;;;; --- General UI & UX Settings ---
+
+;; Use y/n for prompts, not yes/no
+(fset 'yes-or-no-p 'y-or-n-p)
+
+;; Disable distracting UI elements
+(blink-cursor-mode -1)
+;; (setq ring-bell-function 'ignore) ; Uncomment to disable all bells
+(setq use-dialog-box nil)
+(setq inhibit-startup-screen t)
+(setq initial-scratch-message nil) ; nil is cleaner than "" for some session managers
+
+;; Editor behavior
+(global-subword-mode 1)         ; Treat CamelCase as multiple words
+(setq-default comment-style 'indent)
+(setq mouse-yank-at-point t)
+(setq select-enable-clipboard t) ; Modern way to integrate with system clipboard
+(setq split-width-threshold nil) ; Always split windows vertically
+(setq word-wrap-by-category t)   ; Better word wrapping for CJK characters
+(setq completion-auto-select nil)
+(setq ad-redefinition-action 'accept) ; Suppress warnings when a function is redefined
+
+;; Platform-specific tweaks
+(setq frame-resize-pixelwise t) ; For pixel-perfect resizing, useful on macOS
+
+;;;; --- Performance Optimizations ---
+
+;; IO Performance
 (setq process-adaptive-read-buffering nil)
-(setq read-process-output-max (* 1024 1024))
+(setq read-process-output-max (* 1024 1024)) ; 1MB
 
-(fset 'yes-or-no-p 'y-or-n-p)           ;以 y/n代表 yes/no
-(blink-cursor-mode -1)                  ;指针不闪动
-(transient-mark-mode 1)                 ;标记高亮
-(global-subword-mode 1)                 ;Word移动支持 FooBar 的格式
-(setq use-dialog-box nil)               ;never pop dialog
-(setq inhibit-startup-screen t)         ;inhibit start screen
-(setq initial-scratch-message "")       ;关闭启动空白buffer, 这个buffer会干扰session恢复
-(setq-default comment-style 'indent)    ;设定自动缩进的注释风格
-;(setq ring-bell-function 'ignore)       ;关闭烦人的出错时的提示声
-(setq default-major-mode 'text-mode)    ;设置默认地主模式为TEXT模式
-(setq mouse-yank-at-point t)            ;粘贴于光标处,而不是鼠标指针处
-(setq x-select-enable-clipboard t)      ;支持emacs和外部程序的粘贴
-(setq split-width-threshold nil)        ;分屏的时候使用上下分屏
-(setq inhibit-compacting-font-caches t) ;使用字体缓存，避免卡顿
-(setq confirm-kill-processes nil)       ;退出自动杀掉进程
-(setq async-bytecomp-allowed-packages nil) ;避免magit报错
-(setq word-wrap-by-category t)             ;按照中文折行
-(add-hook 'find-file-hook 'rainbow-mode t) ;增强的括号高亮
+;; Font caching
+(setq inhibit-compacting-font-caches t)
 
-(setq completion-auto-select nil)       ;避免默认自动选择
-
-(setq ad-redefinition-action 'accept)   ;不要烦人的 redefine warning
-(setq frame-resize-pixelwise t) ;设置缩放的模式,避免Mac平台最大化窗口以后右边和下边有空隙
-
-(recentf-mode 1)
-(setq recentf-max-menu-items 25)
-
-;; 对大文件或超长行提供性能优化
+;; Large file performance improvements
 (setq-default bidi-display-reordering nil)
+(setq bidi-inhibit-bpa t)
 (setq-default bidi-paragraph-direction 'left-to-right)
-(setq bidi-inhibit-bpa t
-      long-line-threshold 1000
-      large-hscroll-threshold 1000
-      syntax-wholeline-max 1000)
+(setq large-file-warning-threshold 100000000) ; 100MB
+(setq long-line-threshold 2000)
 
-;; 平滑地进行半屏滚动，避免滚动后recenter操作
+;; Smooth Scrolling
 (setq scroll-step 1
-      scroll-conservatively 10000)
+      scroll-conservatively 10000
+      scroll-preserve-screen-position t)
 
+;;;; --- Encoding ---
 
+;; Set UTF-8 as the default encoding everywhere. More concise for modern Emacs.
+(set-language-environment "UTF-8")
 (prefer-coding-system 'utf-8)
-(setq locale-coding-system 'utf-8)
-(set-language-environment 'utf-8)
-(set-default-coding-systems 'utf-8)
-(set-buffer-file-coding-system 'utf-8)
-(set-clipboard-coding-system 'utf-8)
-(set-file-name-coding-system 'utf-8)
-(set-keyboard-coding-system 'utf-8)
-(set-terminal-coding-system 'utf-8)
-(set-selection-coding-system 'utf-8)
-(modify-coding-system-alist 'process "*" 'utf-8)
 
 
 (defvar my-emacs-cache-dir (expand-file-name "cache/" user-emacs-directory)
-  "存放 Emacs 插件缓存文件的目录。")
+  "Directory for Emacs plugin cache files.")
 
 (unless (file-exists-p my-emacs-cache-dir)
   (make-directory my-emacs-cache-dir t))
 
 (defun my/set-cache-files (&rest file-specs)
-  "批量设置缓存文件路径，自动确保所在目录存在。
-FILE-SPECS 是 (变量 文件名) 形式的列表。"
+  "Set cache file paths in bulk, ensuring parent directories exist.
+FILE-SPECS is a list of (variable filename) lists."
   (dolist (spec file-specs)
     (let* ((var (car spec))
            (file-path (expand-file-name (cadr spec) my-emacs-cache-dir))
            (dir-path (file-name-directory file-path)))
-      ;; 自动创建目录（如果不存在）
       (unless (file-exists-p dir-path)
         (make-directory dir-path t))
-      ;; 设置变量
       (set var file-path))))
 
 (my/set-cache-files
  '(custom-file "custom.el")
+ '(recentf-save-file "recentf")
  '(bookmark-default-file "bookmarks")
  '(transient-levels-file "transient/levels.el")
  '(transient-values-file "transient/values.el")
@@ -84,6 +79,7 @@ FILE-SPECS 是 (变量 文件名) 形式的列表。"
  '(svg-lib-icons-dir "svg-lib/")
  '(url-configuration-directory "url/"))
 
+;; Load customizations after setting the file path
 (load custom-file :noerror)
 
 
