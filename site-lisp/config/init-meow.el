@@ -131,7 +131,7 @@
              (when (> (length (window-list)) 1)
 	       (delete-window)))))
  '("," . meow-last-buffer)
- '(";" . switch-to-buffer)
+ '(";" . consult-buffer)
  '("/" . evilnc-comment-or-uncomment-lines)
  '("e" . dirvish-side)
  '("v" . project-vc-dir)

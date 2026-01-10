@@ -119,7 +119,7 @@
     ("d" "del" delete-window :transient t)
     ("D" "del other" ace-delete-window)
     ("m" "maximum" delete-other-windows)
-    (";" "switch" switch-to-buffer)
+    (";" "switch" consult-buffer)
     ("q" "quit" transient-quit-all)
     ]
    ])

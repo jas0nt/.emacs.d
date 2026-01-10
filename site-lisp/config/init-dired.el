@@ -140,7 +140,7 @@
    ("q" . dirvish-quit)
    ("!" . my-dirvish-tab-remove-current)
    ("," . evil-switch-to-windows-last-buffer)
-   (";" . switch-to-buffer)
+   (";" . consult-buffer)
    
    ;; Tab Bindings
    ("C-1" . my-dirvish-tab-bind-1)

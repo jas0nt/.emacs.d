@@ -63,7 +63,7 @@
  "gn" 'evil-next-buffer
  "gp" 'evil-prev-buffer
  "g." 'evil-repeat
- ";" 'switch-to-buffer
+ ";" 'consult-buffer
  "," 'evil-switch-to-windows-last-buffer)
 
 
