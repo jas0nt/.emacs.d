@@ -1,21 +1,23 @@
 (use-package evil
   :init
+  (setq evil-want-minibuffer nil)
   (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
   (setq evil-want-keybinding nil)
   (setq evil-disable-insert-state-bindings t)
   (setq evil-want-C-i-jump nil)
   (setq evil-want-C-u-scroll t)
+  (setq evil-insert-state-cursor '(hollow "yellow")
+	evil-normal-state-cursor '(box "#50fa7b"))
   :config
   (evil-mode 1)
-  (setq evil-insert-state-cursor '(hollow "yellow")
-      evil-normal-state-cursor '(box "#50fa7b")))
-
-(use-package evil-collection
-  :after (evil)
-  :init
-  (setq evil-collection-company-use-tng nil)
-  :config
-  (evil-collection-init))
+  (defun my/evil-smart-state ()
+    (unless (minibufferp)
+      (if (or (derived-mode-p 'prog-mode)
+	      (derived-mode-p 'text-mode)
+	      (derived-mode-p 'conf-mode))
+	  (evil-normal-state)
+	(evil-emacs-state))))
+  (add-hook 'after-change-major-mode-hook #'my/evil-smart-state))
 
 (use-package evil-snipe
   :after (evil)
@@ -56,15 +58,13 @@
 
 
 (general-define-key
+ :states '(visual)
+ "R" 'evil-multiedit-match-all)
+
+(general-define-key
  :states '(normal visual)
  "=" 'er/expand-region
- "gl" 'evil-avy-goto-line
- "g/" 'evil-avy-goto-char-timer
- "gn" 'evil-next-buffer
- "gp" 'evil-prev-buffer
- "g." 'evil-repeat
- ";" 'consult-buffer
- "," 'evil-switch-to-windows-last-buffer)
+ "g." 'evil-repeat)
 
 
 (provide 'init-evil)

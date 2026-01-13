@@ -127,14 +127,24 @@
 
 (general-define-key
  "<f5>" 'revert-buffer
- "C-s" 'consult-line
+ "M-<up>" 'switch-to-prev-buffer
+ "M-<down>" 'switch-to-next-buffer
+ "M-<left>" '(lambda () (interactive) (other-window -1))
+ "M-<right>" 'other-window
+ "M-o" 'ace-window
  "M-y" 'consult-yank-pop
- "C-c <SPC>" 'execute-extended-command
- "C-c q" '(jst/kill-current-buffer :wk "kill-buffer")
+
+ "C-," '(lambda ()
+	  (interactive)
+	  (switch-to-buffer (other-buffer (current-buffer) 1)))
+ "C-;" 'consult-buffer
+ "C-s" 'consult-line
+ "C-=" 'er/expand-region
+ "C-/" 'evilnc-comment-or-uncomment-lines
+ "C-x b" 'consult-buffer
+
+ "C-c C-k" 'kill-current-buffer
  "C-c e" 'dirvish-side
- "C-c ," 'ace-window
- "C-c ;" 'ibuffer
- "C-c /" 'evilnc-comment-or-uncomment-lines
  "C-c f" 'my-transient-file
  "C-c j" 'my-transient-jump
  "C-c s" 'my-transient-search
