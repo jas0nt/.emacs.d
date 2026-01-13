@@ -1,4 +1,6 @@
 (use-package ibuffer
+  :bind
+  ("C-x C-b" . ibuffer)
    :custom
    (ibuffer-saved-filters
     '(("My-Dired"

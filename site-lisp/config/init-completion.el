@@ -48,8 +48,8 @@
 (use-package embark
   :ensure t
   :bind
-  (("C-." . embark-act)         ;; The main trigger
-   ("C-;" . embark-dwim)        ;; "Do What I Mean"
+  (("C-c ." . embark-act)         ;; The main trigger
+   ("C-c ;" . embark-dwim)        ;; "Do What I Mean"
    ("C-h B" . embark-bindings)) ;; Alternative for `describe-bindings`
   :init
   ;; Replace the key help with a completing-read interface
