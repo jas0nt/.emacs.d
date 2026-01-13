@@ -4,8 +4,10 @@
   :init
   (yas-global-mode 1))
 
-(require 'lsp-bridge)
-(global-lsp-bridge-mode)
+(use-package lsp-bridge
+  :vc (:url "https://github.com/manateelazycat/lsp-bridge" :rev "master")
+  :config
+  (global-lsp-bridge-mode))
 
 (use-package nix-mode
   :mode "\\.nix\\'")
