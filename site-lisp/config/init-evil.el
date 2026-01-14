@@ -29,9 +29,6 @@
   :config
   (global-evil-surround-mode 1))
 
-(use-package evil-nerd-commenter
-  :after (evil))
-
 (use-package evil-pinyin
   :after (evil)
   :init
@@ -55,11 +52,6 @@
   :config
   (setq evil-keypad-activation-states '(normal visual emacs))
   (evil-keypad-global-mode 1))
-
-
-(general-define-key
- :states '(visual)
- "R" 'evil-multiedit-match-all)
 
 (general-define-key
  :states '(normal visual)

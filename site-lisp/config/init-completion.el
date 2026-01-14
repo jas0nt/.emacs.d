@@ -13,9 +13,6 @@
   (corfu-preselect 'prompt)      ; Always preselect the prompt
   (corfu-quit-no-match 'separator) ; Quit if no match (easier to type new things)
   
-  ;; Optional: optimize display for speed
-  ;; (corfu-echo-documentation nil) 
-  
   :bind
   (:map corfu-map
         ("TAB" . corfu-next)
