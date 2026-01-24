@@ -71,7 +71,10 @@ FILE-SPECS is a list of (variable filename) lists."
 (my/set-cache-files
  '(custom-file "custom.el")
  '(recentf-save-file "recentf")
+ '(desktop-dirname "desktop/")
  '(bookmark-default-file "bookmarks")
+ '(savehist-file "history")
+ '(save-place-file "places")
  '(transient-levels-file "transient/levels.el")
  '(transient-values-file "transient/values.el")
  '(transient-history-file "transient/history.el")

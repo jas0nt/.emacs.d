@@ -3,9 +3,7 @@
 
 (use-package savehist
   :init
-  (savehist-mode)
-  :custom
-  (savehist-file (expand-file-name "history" my-emacs-cache-dir)))
+  (savehist-mode))
 
 (use-package fzf
   :config
