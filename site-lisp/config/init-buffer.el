@@ -1,15 +1,15 @@
 (use-package ibuffer
   :bind
   ("C-x C-b" . ibuffer)
-   :custom
-   (ibuffer-saved-filters
-    '(("My-Dired"
-       (or (mode . dired-mode)
-	   (mode . dirvish-mode)))
-      ("My-Emacs-Internals"
-       (or (name . "^\\*Messages\\*$")
-	   (name . "^\\*Help\\*$")
-	   (name . "^\\*scratch\\*$")))))
+  :custom
+  (ibuffer-saved-filters
+   '(("My-Dired"
+      (or (mode . dired-mode)
+	  (mode . dirvish-mode)))
+     ("My-Emacs-Internals"
+      (or (name . "^\\*Messages\\*$")
+	  (name . "^\\*Help\\*$")
+	  (name . "^\\*scratch\\*$")))))
   :config
   (setq ibuffer-expert t)
   (setq ibuffer-display-summary nil)
@@ -30,6 +30,16 @@
           (mark " "
                 (name 16 -1)
                 " " filename))))
+
+(use-package ibuffer-project
+  :after (ibuffer)
+  :config
+  (add-hook
+   'ibuffer-hook
+   (lambda ()
+     (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
+     (unless (eq ibuffer-sorting-mode 'project-file-relative)
+       (ibuffer-do-sort-by-project-file-relative)))))
 
 (use-package olivetti
   :ensure t

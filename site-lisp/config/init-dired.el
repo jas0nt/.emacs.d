@@ -3,18 +3,11 @@
 (use-package dired
   :ensure nil  ; Built-in package
   :custom
-  ;; REVERTED: Do not kill previous buffer automatically. 
-  ;; This allows marks to persist in background buffers so you can move/copy between them.
   (dired-kill-when-opening-new-dired-buffer nil)
-  
-  ;; If two dired windows are open, copy/rename defaults to the other window.
   (dired-dwim-target t)
-  ;; Standard listing switches
   (dired-listing-switches
    "-l --almost-all --human-readable --group-directories-first --no-group")
   :config
-  ;; Enable the 'a' command (dired-find-alternate-file) if you ever want to manually
-  ;; kill the buffer while navigating.
   (put 'dired-find-alternate-file 'disabled nil))
 
 (use-package dirvish
@@ -26,7 +19,7 @@
     (evil-set-initial-state 'dirvish-mode 'emacs))
   
   :custom
-  ;; (dirvish-default-layout nil)
+  (dirvish-default-layout nil)
   (dirvish-cache-dir (expand-file-name "dirvish/" my-emacs-cache-dir))
   (dirvish-quick-access-entries
    '(("h" "~/"                          "Home")
@@ -172,6 +165,7 @@
    ("TAB" . dirvish-subtree-toggle)
    
    ;; Navigation & Actions
+   ("b"   . bookmark-jump)
    ("z"   . dired-jump-with-zoxide)
    ("h"   . dired-up-directory)
    ("l"   . dired-find-file)
@@ -187,7 +181,6 @@
    ("c"   . dirvish-file-info-menu)
    ("o"   . dirvish-quick-access)
    ("n"   . dirvish-narrow)
-   ("N"   . revert-buffer)
    ("s"   . dirvish-quicksort)
    ("r"   . dired-toggle-read-only)    ; Activates wdired (editable buffer)
    ("*"   . dirvish-mark-menu)
@@ -197,6 +190,7 @@
    ("J"   . dirvish-history-jump)
    ("L"   . dirvish-history-go-forward)
    ("H"   . dirvish-history-go-backward)
+   ("gr"  . revert-buffer)
    ("gg"  . beginning-of-buffer)
    ("G"   . end-of-buffer)
    ("gl"  . evil-avy-goto-line)
