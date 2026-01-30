@@ -54,6 +54,12 @@
           (switch-to-buffer target-buffer)
 	(message "No previous non-file-manager buffer found."))))
 
+  (defun my-dired-do-open-current-only ()
+    "Open the file at point using an external app, ignoring any marked files."
+    (interactive)
+    (let ((dired-marker-char ?\0)) 
+      (dired-do-open)))
+
   ;; -----------------------------------------------------------------------
   ;; Custom Function: Open Kitty Cleanly
   ;; -----------------------------------------------------------------------
@@ -175,7 +181,8 @@
    ("C-u" . scroll-down-command)
    ("/"   . consult-line)
    ("?"   . dirvish-dispatch)
-   ("RET" . dired-do-open)
+   ("RET" . my-dired-do-open-current-only)
+   ("C-RET" . dired-do-open)
    ("a"   . dired-create-empty-file)
    ("A"   . dired-create-directory)
    ("c"   . dirvish-file-info-menu)
