@@ -1,8 +1,15 @@
 (use-package emms
-  :commands (emms emms-play-directory emms-smart-browse emms-play-file
-		  emms-pause emms-stop emms-previous emms-next emms-shuffle
-		  emms-seek-forward emms-seek-backward
-		  emms-volume-raise emms-volume-lower)
+  :init
+  (with-eval-after-load 'evil
+    (evil-set-initial-state 'emms-playlist-mode 'emacs)
+    (evil-set-initial-state 'emms-browser-mode 'emacs)
+    (evil-set-initial-state 'emms-metaplaylist-mode 'emacs))
+
+  :commands
+  (emms emms-play-directory emms-smart-browse emms-play-file
+	emms-pause emms-stop emms-previous emms-next emms-shuffle
+	emms-seek-forward emms-seek-backward
+	emms-volume-raise emms-volume-lower)
   :custom
   (emms-directory (expand-file-name "emms" my-emacs-cache-dir))
   :config
@@ -36,20 +43,23 @@
   ;; Mode Line & Persistence
   (emms-mode-line-mode 1)
   (emms-playing-time-mode 1)
-  (emms-history-load))
+  (emms-history-load)
 
-;;;; --- Evil Keybindings for Playlist Buffer ---
+  :bind
+  (
+   :map emms-playlist-mode-map
+   ("q" . emms-stop)
+   ("<SPC>" . emms-pause)
+   ("." . emms-playlist-mode-center-current)
+   ("j" . next-line)
+   ("k" . previous-line)
+   ("h" . emms-previous)
+   ("l" . emms-next)
+   ("r" . emms-random)
+   ("R" . emms-shuffle)
+   (">" . emms-seek-forward)
+   ("<" . emms-seek-backward)))
 
-(general-define-key
- :states 'normal
- :keymaps 'emms-playlist-mode-map
- ;; Sorting/Filtering
- "s a" '(emms-playlist-sort-by-info-artist :which-key "Sort Artist")
- "s b" '(emms-playlist-sort-by-info-album :which-key "Sort Album")
- "s n" '(emms-playlist-sort-by-name :which-key "Sort Name")
- "m A" '(emms-playlist-limit-to-all :which-key "Show All")
- "m a" '(emms-playlist-limit-to-info-artist :which-key "Filter Artist")
- "m b" '(emms-playlist-limit-to-info-album :which-key "Filter Album"))
 
 ;;;; --- Transient Music Controller ---
 
@@ -57,11 +67,11 @@
   "Music Controller (EMMS)"
   [
    ["Playback"
-    ("x" "Play/Pause" emms-pause)
-    ("X" "Stop" emms-stop)
+    ("<SPC>" "Play/Pause" emms-pause)
+    ("Q" "Stop" emms-stop)
     ("j" "Next" emms-next)
     ("k" "Prev" emms-previous)
-    ("r" "Random/Shuffle" emms-shuffle)
+    ("r" "Random/Shuffle" emms-random)
     ]
    
    ["Seek & Volume"
@@ -72,7 +82,7 @@
     ]
 
    ["Open"
-    ("e" "Show Playlist" emms)
+    ("p" "Show Playlist" emms)
     ("d" "Directory" emms-play-directory)
     ("f" "File" emms-play-file)
     ("b" "Browser" emms-smart-browse)
