@@ -171,7 +171,7 @@
    ("TAB" . dirvish-subtree-toggle)
    
    ;; Navigation & Actions
-   ("b"   . bookmark-jump)
+   ("'"   . bookmark-jump)
    ("z"   . dired-jump-with-zoxide)
    ("h"   . dired-up-directory)
    ("l"   . dired-find-file)
