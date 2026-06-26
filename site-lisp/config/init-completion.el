@@ -88,4 +88,11 @@
 (use-package consult-projectile)
 (use-package posframe)
 
+(use-package nerd-icons-completion
+  :after marginalia
+  :config
+  (nerd-icons-completion-mode)
+  (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
+
+
 (provide 'init-completion)
