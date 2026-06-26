@@ -96,7 +96,7 @@
      '("Y" . meow-sync-grab)
      '("z" . meow-pop-selection)
      '("'" . repeat)
-     '("+" . er/expand-region)
+     '("=" . er/expand-region)
      '("<escape>" . ignore)))
   :config
   (add-to-list 'meow-mode-state-list '(blink-search-mode . insert))

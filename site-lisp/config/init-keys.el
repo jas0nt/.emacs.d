@@ -61,6 +61,7 @@
     ]
    
    ["file"
+    ("f" "fd" consult-fd)
     ("z" "fzf" fzf)
     ("b" "bookmark" consult-bookmark)
     ("L" "locate" consult-locate)
@@ -138,13 +139,14 @@
 	  (interactive)
 	  (switch-to-buffer (other-buffer (current-buffer) 1)))
  "C-;" 'consult-buffer
+ "C-'" 'avy-goto-char-2
  "C-s" 'consult-line
  "C-=" 'er/expand-region
  "C-/" 'evilnc-comment-or-uncomment-lines
  "C-x b" 'consult-buffer
 
+ "C-c C-c" 'delete-window
  "C-c C-k" 'kill-current-buffer
- "C-c e" 'dirvish-side
  "C-c f" 'my-transient-file
  "C-c j" 'my-transient-jump
  "C-c s" 'my-transient-search

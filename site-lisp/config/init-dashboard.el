@@ -3,7 +3,7 @@
   (dashboard-center-content t)
   (dashboard-vertically-center-content t)
   (dashboard-image-banner-max-height 1000)
-  (dashboard-icon-type 'all-the-icons)
+  (dashboard-icon-type 'nerd-icons)
   (dashboard-set-heading-icons t)
   (dashboard-set-file-icons t)
   (dashboard-projects-backend 'projectile)

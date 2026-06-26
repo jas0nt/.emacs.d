@@ -1,5 +1,3 @@
-(use-package all-the-icons)
-
 (use-package doom-themes
   :custom
   (doom-themes-enable-bold t)
@@ -10,7 +8,6 @@
   (doom-themes-org-config))
 
 (use-package doom-modeline
-  :after (all-the-icons)
   :init (doom-modeline-mode 1)
   :config
   (setq doom-modeline-major-mode-icon nil)
