@@ -1,6 +1,14 @@
 (use-package ibuffer
   :bind
   ("C-x C-b" . ibuffer)
+  (
+   :map ibuffer-mode-map
+   ("h" . ibuffer-backward-filter-group)
+   ("j" . ibuffer-forward-line)
+   ("k" . ibuffer-backward-line)
+   ("l" . ibuffer-forward-filter-group)
+   ("z" . dired-jump-with-zoxide)
+   ("<tab>" . ibuffer-toggle-filter-group))
   :custom
   (ibuffer-saved-filters
    '(("My-Dired"
@@ -47,8 +55,8 @@
   :config
   (setq olivetti-body-width 100))
 
-(use-package all-the-icons-ibuffer
-  :hook (ibuffer-mode . all-the-icons-ibuffer-mode))
+(use-package nerd-icons-ibuffer
+  :hook (ibuffer-mode . nerd-icons-ibuffer-mode))
 
 (use-package ibuffer-vc
  :hook (ibuffer-mode . ibuffer-vc-set-filter-groups-by-vc-root))
