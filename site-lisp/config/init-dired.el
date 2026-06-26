@@ -124,17 +124,17 @@ If no files are marked, append the file at point to the existing stash instead."
       (setq my-dired-stash nil)
       (revert-buffer)))
 
-  ;; -----------------------------------------------------------------------
-  ;; rsync 命令生成（先标记，后统一执行）
+;; -----------------------------------------------------------------------
+  ;; rsync command generation (stash first, run later)
   ;; -----------------------------------------------------------------------
   (defvar my-dired-rsync-script-file
     (expand-file-name "dired-rsync-commands.sh"
                       (or (bound-and-true-p my-emacs-cache-dir)
                           user-emacs-directory))
-    "累积生成的 rsync 命令的脚本文件路径。")
+    "Path to the accumulated rsync commands script file.")
 
   (defun my-dired--ensure-rsync-script ()
-    "若脚本文件不存在则创建，写入 shebang，并赋予可执行权限。"
+    "Create the script file with a shebang if it doesn't exist, and make it executable."
     (unless (file-exists-p my-dired-rsync-script-file)
       (make-directory (file-name-directory my-dired-rsync-script-file) t)
       (with-temp-buffer
@@ -144,7 +144,7 @@ If no files are marked, append the file at point to the existing stash instead."
     (set-file-modes my-dired-rsync-script-file #o755))
 
   (defun my-dired--rsync-append (comment cmd)
-    "把一条注释 COMMENT 和命令 CMD 追加写入脚本文件末尾。"
+    "Append a COMMENT line and a command CMD to the end of the script file."
     (my-dired--ensure-rsync-script)
     (with-temp-buffer
       (insert "# " comment "\n")
@@ -152,8 +152,8 @@ If no files are marked, append the file at point to the existing stash instead."
       (write-region (point-min) (point-max) my-dired-rsync-script-file t 'silent)))
 
   (defun my-dired--rsync-cmd (mode files dest-dir)
-    "构造把 FILES 复制/移动到 DEST-DIR 的 rsync 命令字符串。
-MODE 为 `copy' 或 `move'。"
+    "Build an rsync command string that copies/moves FILES into DEST-DIR.
+MODE is either `copy' or `move'."
     (let* ((dest (file-name-as-directory (expand-file-name dest-dir)))
            (flags (if (eq mode 'move)
                       "-avh --progress --remove-source-files"
@@ -163,8 +163,8 @@ MODE 为 `copy' 或 `move'。"
       (format "rsync %s -- %s %s" flags sources (shell-quote-argument dest))))
 
   (defun my-dired-rsync-copy-here ()
-    "为当前 stash 里的文件生成一条 rsync 复制命令（目标为当前目录），
-追加写入脚本文件。不清空 stash。"
+    "Generate an rsync COPY command for the stashed files into the current
+directory and append it to the script file. Does not clear the stash."
     (interactive)
     (unless (derived-mode-p 'dired-mode)
       (user-error "Run this from a Dired buffer"))
@@ -178,8 +178,8 @@ MODE 为 `copy' 或 `move'。"
                n my-dired-rsync-script-file)))
 
   (defun my-dired-rsync-move-here ()
-    "为当前 stash 里的文件生成一条 rsync 移动命令（目标为当前目录），
-追加写入脚本文件，然后清空 stash。"
+    "Generate an rsync MOVE command for the stashed files into the current
+directory, append it to the script file, then clear the stash."
     (interactive)
     (unless (derived-mode-p 'dired-mode)
       (user-error "Run this from a Dired buffer"))
@@ -194,17 +194,35 @@ MODE 为 `copy' 或 `move'。"
                n my-dired-rsync-script-file)))
 
   (defun my-dired-rsync-script-open ()
-    "打开生成的 rsync 脚本以供检查/编辑。"
+    "Open the generated rsync script for review/editing."
     (interactive)
     (my-dired--ensure-rsync-script)
     (find-file my-dired-rsync-script-file))
 
   (defun my-dired-rsync-script-clear ()
-    "删除已累积的脚本文件，让下一次命令重新开始。"
+    "Delete the accumulated script file so the next command starts fresh."
     (interactive)
     (when (file-exists-p my-dired-rsync-script-file)
       (delete-file my-dired-rsync-script-file))
     (message "Cleared rsync script: %s" my-dired-rsync-script-file))
+
+  (defun my-dired-rsync-script-execute ()
+    "Run the rsync script asynchronously without blocking Emacs.
+Prompts for confirmation first, and shows live progress in a
+compilation buffer."
+    (interactive)
+    (unless (file-exists-p my-dired-rsync-script-file)
+      (user-error "Rsync script does not exist: %s" my-dired-rsync-script-file))
+    (unless (y-or-n-p
+             (format "Run rsync script %s now? "
+                     (abbreviate-file-name my-dired-rsync-script-file)))
+      (user-error "Execution cancelled"))
+    (let* ((default-directory (file-name-directory my-dired-rsync-script-file))
+           (buf-name "*rsync-execute*")
+           (compilation-buffer-name-function (lambda (_mode) buf-name)))
+      (compile (format "bash %s" (shell-quote-argument my-dired-rsync-script-file)))
+      (with-current-buffer buf-name
+        (setq-local compilation-scroll-output t))))
   
   ;; -----------------------------------------------------------------------
   ;; Custom Logic: Numbered Tabs (0-9)
@@ -315,8 +333,7 @@ MODE 为 `copy' 或 `move'。"
    ("P" . my-dired-paste-move-here)
    ("i" . my-dired-rsync-copy-here)
    ("I" . my-dired-rsync-move-here)
-   ("v" . my-dired-rsync-script-open)
-   ("V" . my-dired-rsync-script-clear)
+   ("v" . my-transient-rtask)
 
    ("r" . wdired-change-to-wdired-mode)
    ("f" . consult-fd)

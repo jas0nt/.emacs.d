@@ -30,6 +30,20 @@
    ]
   )
 
+(transient-define-prefix my-transient-rtask ()
+  "transient-rsync-task"
+  [
+   ["rsync-task"
+    ("v" "view tasks" my-dired-rsync-script-open)
+    ("c" "clear tasks" my-dired-rsync-script-clear)
+    ("x" "execute tasks" my-dired-rsync-script-execute)
+    ]
+   ["actions"
+    ("q" "quit" transient-quit-all)
+    ]
+   ]
+  )
+
 (transient-define-prefix my-transient-jump ()
   [
    ["goto-char"
