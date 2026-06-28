@@ -1,9 +1,3 @@
-(defun jst/meow-yank()
-  (interactive)
-  (if (region-active-p)
-  (meow-replace)
-    (meow-yank)))
-
 (use-package meow
   :init
   (defun meow-setup ()
@@ -34,8 +28,8 @@
     (meow-normal-define-key
      '("@" . meow-kmacro-lines)
      '("%" . meow-query-replace)
-     '("{" . backward-paragraph)
-     '("}" . forward-paragraph)
+     '("[" . backward-paragraph)
+     '("]" . forward-paragraph)
      '("/" . meow-visit)
      '("0" . meow-expand-0)
      '("9" . meow-expand-9)
@@ -51,8 +45,8 @@
      '(";" . meow-reverse)
      '("," . meow-inner-of-thing)
      '("." . meow-bounds-of-thing)
-     '("[" . meow-beginning-of-thing)
-     '("]" . meow-end-of-thing)
+     '("<" . meow-beginning-of-thing)
+     '(">" . meow-end-of-thing)
      '("a" . meow-append)
      '("b" . meow-back-word)
      '("B" . meow-back-symbol)
@@ -76,7 +70,7 @@
      '("n" . meow-search)
      '("o" . meow-open-below)
      '("O" . meow-open-above)
-     '("p" . jst/meow-yank)
+     '("p" . meow-yank)
      '("q" . meow-quit)
      '("Q" . meow-goto-line)
      '("r" . meow-replace)
@@ -121,7 +115,6 @@
   (meow-setup)
   (meow-global-mode 1))
 
-
 (meow-leader-define-key
  ;; x, c, h, m, g are occupied
  '("q" . (lambda ()
@@ -130,11 +123,7 @@
              (kill-current-buffer)
              (when (> (length (window-list)) 1)
 	       (delete-window)))))
- '("," . meow-last-buffer)
- '(";" . consult-buffer)
- '("/" . evilnc-comment-or-uncomment-lines)
- '("e" . dirvish-side)
- '("v" . project-vc-dir)
+ '("v" . magit)
  '("f" . my-transient-file)
  '("j" . my-transient-jump)
  '("s" . my-transient-search)
@@ -143,3 +132,4 @@
 
 
 (provide 'init-meow)
+

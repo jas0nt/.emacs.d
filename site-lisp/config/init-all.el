@@ -30,7 +30,7 @@
     (require 'init-common)
     (require 'init-keys)
     ;; (require 'init-evil)
-    ;; (require 'init-meow)
+    (require 'init-meow)
     (require 'init-completion)
     (require 'init-chinese)
     (require 'init-edit)
