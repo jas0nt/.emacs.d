@@ -5,6 +5,7 @@
 (use-package which-key
   :config
   (setq which-key-idle-delay 0.5)
+  (setq which-key-idle-secondary-delay 0.05)
   (which-key-mode)
   (which-key-enable-god-mode-support))
 
@@ -25,20 +26,6 @@
    ["actions"
     ("s" "save-buffer" save-buffer)
     ("S" "save-some-buffers" save-some-buffers)
-    ("q" "quit" transient-quit-all)
-    ]
-   ]
-  )
-
-(transient-define-prefix my-transient-rtask ()
-  "transient-rsync-task"
-  [
-   ["rsync-task"
-    ("v" "view tasks" my-dired-rsync-script-open)
-    ("c" "clear tasks" my-dired-rsync-script-clear)
-    ("x" "execute tasks" my-dired-rsync-script-execute)
-    ]
-   ["actions"
     ("q" "quit" transient-quit-all)
     ]
    ]
@@ -156,10 +143,9 @@
  "C-'" 'avy-goto-char-2
  "C-s" 'consult-line
  "C-=" 'er/expand-region
- "C-/" 'evilnc-comment-or-uncomment-lines
  "C-x b" 'consult-buffer
 
- "C-c C-c" 'delete-window
+ "C-c C-/" 'evilnc-comment-or-uncomment-lines
  "C-c C-k" 'kill-current-buffer
  "C-c f" 'my-transient-file
  "C-c j" 'my-transient-jump

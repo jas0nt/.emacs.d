@@ -8,22 +8,20 @@
   :init
   (global-corfu-mode)
   :custom
-  (corfu-auto t)                 ; Enable auto completion
-  (corfu-cycle t)                ; Enable cycling for `corfu-next/previous'
-  (corfu-preselect 'prompt)      ; Always preselect the prompt
-  (corfu-quit-no-match 'separator) ; Quit if no match (easier to type new things)
-  
+  (corfu-auto t)                    ; Enable auto completion
+  (corfu-cycle t)                   ; Enable cycling for `corfu-next/previous'
+  (corfu-preselect 'prompt)         ; Always preselect the prompt
+  (corfu-quit-no-match 'separator)  ; Quit if no match (easier to type new things)
   :bind
   (:map corfu-map
-        ("TAB" . corfu-next)
-        ([tab] . corfu-next)
-        ("S-TAB" . corfu-previous)
+        ("TAB"     . corfu-next)
+        ([tab]     . corfu-next)
+        ("S-TAB"   . corfu-previous)
         ([backtab] . corfu-previous)))
 
 ;; -----------------------------------------------------------------------
 ;; Minibuffer Completion (Vertico + Orderless)
 ;; -----------------------------------------------------------------------
-
 (use-package orderless
   :init
   (setq completion-styles '(orderless basic)
@@ -41,18 +39,14 @@
 ;; -----------------------------------------------------------------------
 ;; Actions & Context Menu (Embark)
 ;; -----------------------------------------------------------------------
-
 (use-package embark
-  :ensure t
-  :bind
-  (("C-c ." . embark-act)         ;; The main trigger
-   ("C-c ;" . embark-dwim)        ;; "Do What I Mean"
-   ("C-h B" . embark-bindings)) ;; Alternative for `describe-bindings`
   :init
-  ;; Replace the key help with a completing-read interface
+  ;; Replace the key help with a completing-read interface.
   (setq prefix-help-command #'embark-prefix-help-command)
+  :bind
+  (("C-." . embark-act))
   :config
-  ;; Hide the mode line of the Embark live/completions buffers
+  ;; Hide the mode line of the Embark live/completions buffers.
   (add-to-list 'display-buffer-alist
                '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
                  nil
@@ -67,23 +61,22 @@
 ;; -----------------------------------------------------------------------
 ;; Core Emacs Completion Tweaks
 ;; -----------------------------------------------------------------------
-
 (use-package dabbrev
-  ;; Swap M-/ and C-M-/
-  :bind (("M-/" . dabbrev-completion)
-         ("C-M-/" . dabbrev-expand)))
+  :bind
+  ;; Swap M-/ and C-M-/.
+  (("M-/"   . dabbrev-completion)
+   ("C-M-/" . dabbrev-expand)))
 
 (use-package emacs
   :init
-  ;; TAB cycle if there are only few candidates
+  ;; TAB cycles if there are only a few candidates.
   (setq completion-cycle-threshold 3)
-  ;; TAB tries to indent, then completes
+  ;; TAB tries to indent, then completes.
   (setq tab-always-indent 'complete))
 
 ;; -----------------------------------------------------------------------
 ;; Consult & Search
 ;; -----------------------------------------------------------------------
-
 (use-package consult)
 (use-package consult-projectile)
 (use-package posframe)
@@ -94,5 +87,5 @@
   (nerd-icons-completion-mode)
   (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
 
-
 (provide 'init-completion)
+;;; init-completion.el ends here
