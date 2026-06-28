@@ -1,4 +1,5 @@
 (use-package ibuffer
+  ;; :hook (ibuffer-mode . olivetti-mode)
   :bind
   ("C-x C-b" . ibuffer)
   (
@@ -48,12 +49,6 @@
      (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
      (unless (eq ibuffer-sorting-mode 'project-file-relative)
        (ibuffer-do-sort-by-project-file-relative)))))
-
-(use-package olivetti
-  :ensure t
-  :hook (ibuffer-mode . olivetti-mode)
-  :config
-  (setq olivetti-body-width 100))
 
 (use-package nerd-icons-ibuffer
   :hook (ibuffer-mode . nerd-icons-ibuffer-mode))
