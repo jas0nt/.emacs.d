@@ -26,8 +26,10 @@
 ;;       ring-bell-function 'jst/flash-mode-line)
 
 (use-package beacon
+  :custom
+  (beacon-color "#50fa7b")
+  (beacon-size 20)
   :init
-  (setq beacon-color "#50fa7b")
   (beacon-mode 1))
 
 

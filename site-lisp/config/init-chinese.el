@@ -20,7 +20,7 @@
    '(rime-highlight-candidate-face ((t (:background "#ff79c6" :foreground "#f8f8f2"))))
    '(rime-code-face ((t (:foreground "#6272a4")))))
 
-  (my/set-cache-files
+  (my-set-cache-files
    '(rime-user-data-dir "rime/"))
 
   (setq rime-share-data-dir "~/.local/share/fcitx5/rime")
