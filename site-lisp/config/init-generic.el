@@ -1,15 +1,27 @@
 ;;; init-generic.el --- General UI, UX, performance and encoding settings -*- lexical-binding: t -*-
 
 ;; -----------------------------------------------------------------------
+;; UI Chrome
+;; -----------------------------------------------------------------------
+
+;; Disable unused UI elements.
+(tool-bar-mode -1)
+(menu-bar-mode -1)
+(scroll-bar-mode -1)
+(blink-cursor-mode -1)
+
+;; Start maximized.
+(setq initial-frame-alist '((fullscreen . maximized)))
+
+;; Uncomment to enable background transparency (0-100, lower = more transparent).
+;; (set-frame-parameter nil 'alpha-background 75)
+
+;; -----------------------------------------------------------------------
 ;; General UI & UX Settings
 ;; -----------------------------------------------------------------------
 
 ;; Use y/n for prompts, not yes/no.
 (fset 'yes-or-no-p 'y-or-n-p)
-
-;; Disable distracting UI elements.
-(blink-cursor-mode -1)
-;; (setq ring-bell-function 'ignore) ; Uncomment to disable all bells
 
 (setq use-dialog-box nil
       inhibit-startup-screen t
@@ -17,13 +29,15 @@
 
 ;; Editor behavior.
 (global-subword-mode 1) ; Treat CamelCase as multiple words
-(setq-default comment-style 'indent)
+(setq-default comment-style 'indent
+              cursor-type 'box)
 (setq mouse-yank-at-point t
-      select-enable-clipboard t       ; Modern way to integrate with system clipboard
+      select-enable-clipboard t       ; Integrate with the system clipboard
       split-width-threshold nil       ; Always split windows vertically
       word-wrap-by-category t         ; Better word wrapping for CJK characters
       completion-auto-select nil
       ad-redefinition-action 'accept) ; Suppress warnings when a function is redefined
+(add-hook 'before-save-hook #'delete-trailing-whitespace)
 
 ;; Platform-specific tweaks.
 (setq frame-resize-pixelwise t) ; For pixel-perfect resizing, useful on macOS
@@ -41,21 +55,23 @@
 
 ;; Large file performance improvements.
 (setq-default bidi-display-reordering nil
-               bidi-paragraph-direction 'left-to-right)
+              bidi-paragraph-direction 'left-to-right)
 (setq bidi-inhibit-bpa t
       large-file-warning-threshold 100000000 ; 100MB
       long-line-threshold 2000)
 
 ;; Smooth scrolling.
-(setq scroll-step 1
-      scroll-conservatively 10000
-      scroll-preserve-screen-position t)
+;; (setq scroll-step 1
+;;       scroll-conservatively 10000
+;;       scroll-preserve-screen-position t)
+(when (>= emacs-major-version 29)
+  (pixel-scroll-precision-mode 1))
 
 ;; -----------------------------------------------------------------------
 ;; Encoding
 ;; -----------------------------------------------------------------------
 
-;; Set UTF-8 as the default encoding everywhere. More concise for modern Emacs.
+;; Set UTF-8 as the default encoding everywhere.
 (set-language-environment "UTF-8")
 (prefer-coding-system 'utf-8)
 

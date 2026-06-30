@@ -26,11 +26,6 @@
 (use-package rainbow-mode
   :hook (prog-mode . rainbow-mode))
 
-(use-package recentf
-  :config
-  (recentf-mode 1)
-  (setq recentf-max-menu-items 25))
-
 (use-package evil-nerd-commenter)
 
 (use-package expand-region)

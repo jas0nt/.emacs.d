@@ -1,5 +1,4 @@
-(require 'transient)
-
+(use-package transient)
 (use-package general)
 
 (use-package which-key
@@ -41,10 +40,15 @@
 
    ["goto-word"
     ("w" "goto-word" avy-goto-word-1)
+    ("W" "goto-symbol" avy-goto-symbol-1)
     ]
- 
+   
    ["goto-line"
     ("l" "goto-line" avy-goto-line)
+    ]
+   
+   ["edit"
+    ("k" "kill-region" avy-kill-region)
     ]
 
    ["actions"
@@ -80,6 +84,21 @@
     ]
    ])
 
+
+(winner-mode 1)
+
+(defun my-split-window-vertical ()
+  "Split window right and move point to the new window."
+  (interactive)
+  (split-window-right)
+  (windmove-right))
+
+(defun my-split-window-horizontal ()
+  "Split window below and move point to the new window."
+  (interactive)
+  (split-window-below)
+  (windmove-down))
+
 (transient-define-prefix my-transient-window ()
   [
    ["nav"
@@ -99,14 +118,8 @@
     ]
 
    ["split"
-    ("/" "vertical" (lambda ()
-            (interactive)
-            (split-window-right)
-            (windmove-right)))
-    ("?" "horizontal" (lambda ()
-              (interactive)
-              (split-window-below)
-              (windmove-down)))
+    ("/" "vertical" my-split-window-vertical)
+    ("?" "horizontal" my-split-window-horizontal)
     ]
 
    ["resize"
@@ -122,6 +135,8 @@
     ("D" "del other" ace-delete-window)
     ("m" "maximum" delete-other-windows)
     (";" "switch" consult-buffer)
+    ("u" "undo layout" winner-undo :transient t)
+    ("U" "redo layout" winner-redo :transient t)
     ("q" "quit" transient-quit-all)
     ]
    ])
