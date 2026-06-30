@@ -1,35 +1,39 @@
-(require 'cl-lib)
+;;; init.el --- Emacs entry point -*- lexical-binding: t -*-
 
-(defun add-subdirs-to-load-path (search-dir)
-  (interactive)
-  (let* ((dir (file-name-as-directory search-dir)))
-    (dolist (subdir
-             ;; 过滤出不必要的目录，提升Emacs启动速度
-             (cl-remove-if
-              #'(lambda (subdir)
-                  (or
-                   ;; 不是目录的文件都移除
-                   (not (file-directory-p (concat dir subdir)))
-                   ;; 父目录、 语言相关和版本控制目录都移除
-                   (member subdir '("." ".." 
-                                    "dist" "node_modules" "__pycache__" 
-                                    "RCS" "CVS" "rcs" "cvs" ".git" ".github")))) 
-              (directory-files dir)))
-      (let ((subdir-path (concat dir (file-name-as-directory subdir))))
-        ;; 目录下有 .el .so .dll 文件的路径才添加到 `load-path' 中，提升Emacs启动速度
-        (when (cl-some #'(lambda (subdir-file)
-                           (and (file-regular-p (concat subdir-path subdir-file))
-                                ;; .so .dll 文件指非Elisp语言编写的Emacs动态库
-                                (member (file-name-extension subdir-file) '("el" "so" "dll"))))
-                       (directory-files subdir-path))
+;; -----------------------------------------------------------------------
+;; Load Path Setup
+;; -----------------------------------------------------------------------
 
-          ;; 注意：`add-to-list' 函数的第三个参数必须为 t ，表示加到列表末尾
-          ;; 这样Emacs会从父目录到子目录的顺序搜索Elisp插件，顺序反过来会导致Emacs无法正常启动
-          (add-to-list 'load-path subdir-path t))
+(defun my-add-subdirs-to-load-path (search-dir)
+  "Recursively add subdirectories of SEARCH-DIR to `load-path'.
+Only directories containing at least one .el, .so, or .dll file are
+added. Common non-Elisp directories (node_modules, .git, etc.) are
+skipped to keep startup fast."
+  (let ((dir (file-name-as-directory search-dir)))
+    (dolist (subdir (directory-files dir))
+      (unless (member subdir '("." ".."
+                               "dist" "node_modules" "__pycache__"
+                               "RCS" "CVS" "rcs" "cvs" ".git" ".github"))
+        (let ((subdir-path (concat dir (file-name-as-directory subdir))))
+          (when (and (file-directory-p subdir-path)
+                     (seq-some (lambda (f)
+                                 (and (file-regular-p (concat subdir-path f))
+                                      (member (file-name-extension f)
+                                              '("el" "so" "dll"))))
+                               (directory-files subdir-path)))
+            ;; Append rather than prepend, so parent directories take
+            ;; precedence over subdirectories in load order.
+            (add-to-list 'load-path subdir-path t))
+          ;; Recurse into every subdirectory regardless of whether it
+          ;; was added to load-path, since it may contain qualifying children.
+          (my-add-subdirs-to-load-path subdir-path))))))
 
-        ;; 继续递归搜索子目录
-        (add-subdirs-to-load-path subdir-path)))))
+(my-add-subdirs-to-load-path "~/.emacs.d/site-lisp")
 
-(add-subdirs-to-load-path "~/.emacs.d/site-lisp")
+;; -----------------------------------------------------------------------
+;; Bootstrap
+;; -----------------------------------------------------------------------
 
 (require 'init-all)
+
+;;; init.el ends here
