@@ -3,7 +3,6 @@
 ;; Load font and accelerator settings before the startup optimization block,
 ;; so font rendering is correct from the first frame.
 (require 'init-font)
-(require 'init-accelerate)
 
 ;; -----------------------------------------------------------------------
 ;; Startup Performance Block
@@ -31,6 +30,7 @@
   (require 'init-pkgs)
   (require 'init-theme)
   (require 'init-generic)
+  (require 'init-session)
   (require 'init-buffer)
   (require 'init-common)
   (require 'init-keys)
@@ -63,7 +63,6 @@
    1 nil
    (lambda ()
      (require 'init-idle)
-  (require 'init-session)
      (require 'init-music))))
 
 (provide 'init-all)

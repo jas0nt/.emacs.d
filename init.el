@@ -15,18 +15,19 @@ skipped to keep startup fast."
                                "dist" "node_modules" "__pycache__"
                                "RCS" "CVS" "rcs" "cvs" ".git" ".github"))
         (let ((subdir-path (concat dir (file-name-as-directory subdir))))
-          (when (and (file-directory-p subdir-path)
-                     (seq-some (lambda (f)
-                                 (and (file-regular-p (concat subdir-path f))
-                                      (member (file-name-extension f)
-                                              '("el" "so" "dll"))))
-                               (directory-files subdir-path)))
-            ;; Append rather than prepend, so parent directories take
-            ;; precedence over subdirectories in load order.
-            (add-to-list 'load-path subdir-path t))
-          ;; Recurse into every subdirectory regardless of whether it
-          ;; was added to load-path, since it may contain qualifying children.
-          (my-add-subdirs-to-load-path subdir-path))))))
+          ;; Only process actual directories; skip plain files entirely.
+          (when (file-directory-p subdir-path)
+            (when (seq-some (lambda (f)
+                              (and (file-regular-p (concat subdir-path f))
+                                   (member (file-name-extension f)
+                                           '("el" "so" "dll"))))
+                            (directory-files subdir-path))
+              ;; Append rather than prepend so parent directories take
+              ;; precedence over subdirectories in load order.
+              (add-to-list 'load-path subdir-path t))
+            ;; Recurse regardless of whether this dir was added to load-path,
+            ;; since its children may still qualify.
+            (my-add-subdirs-to-load-path subdir-path)))))))
 
 (my-add-subdirs-to-load-path "~/.emacs.d/site-lisp")
 

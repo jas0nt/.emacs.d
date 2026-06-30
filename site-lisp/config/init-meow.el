@@ -96,7 +96,7 @@
   (add-to-list 'meow-mode-state-list '(blink-search-mode . insert))
   (meow-thing-register 'single-quote '(regexp "'" "'") '(regexp "'" "'"))
   (meow-thing-register 'angle '(regexp "<" ">") '(regexp "<" ">"))
-  
+
   (setq meow-char-thing-table
     '((?( . round) (?) . round)
       (?{ . curly) (?} . curly)
@@ -132,4 +132,3 @@
 
 
 (provide 'init-meow)
-

@@ -1,22 +1,6 @@
 ;;; init-generic.el --- General UI, UX, performance and encoding settings -*- lexical-binding: t -*-
 
 ;; -----------------------------------------------------------------------
-;; UI Chrome
-;; -----------------------------------------------------------------------
-
-;; Disable unused UI elements.
-(tool-bar-mode -1)
-(menu-bar-mode -1)
-(scroll-bar-mode -1)
-(blink-cursor-mode -1)
-
-;; Start maximized.
-(setq initial-frame-alist '((fullscreen . maximized)))
-
-;; Uncomment to enable background transparency (0-100, lower = more transparent).
-;; (set-frame-parameter nil 'alpha-background 75)
-
-;; -----------------------------------------------------------------------
 ;; General UI & UX Settings
 ;; -----------------------------------------------------------------------
 
@@ -60,10 +44,6 @@
       large-file-warning-threshold 100000000 ; 100MB
       long-line-threshold 2000)
 
-;; Smooth scrolling.
-;; (setq scroll-step 1
-;;       scroll-conservatively 10000
-;;       scroll-preserve-screen-position t)
 (when (>= emacs-major-version 29)
   (pixel-scroll-precision-mode 1))
 
@@ -97,12 +77,13 @@ FILE-SPECS is a list of (VARIABLE FILENAME) lists."
       (set var file-path))))
 
 (my-set-cache-files
- '(custom-file                 "custom.el")
+ '(custom-file                  "custom.el")
  '(recentf-save-file            "recentf")
  '(desktop-dirname              "desktop/")
  '(bookmark-default-file        "bookmarks")
  '(savehist-file                "history")
  '(save-place-file              "places")
+ '(auto-save-list-file-prefix   "auto-save-list/.saves-")
  '(transient-levels-file        "transient/levels.el")
  '(transient-values-file        "transient/values.el")
  '(transient-history-file       "transient/history.el")
