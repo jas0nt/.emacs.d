@@ -12,17 +12,8 @@
   (put 'dired-find-alternate-file 'disabled nil)
 
   ;; -----------------------------------------------------------------------
-  ;; Shared helper
+  ;; Shared helpers
   ;; -----------------------------------------------------------------------
-  (defun my--dired-file-at-point-or-marked ()
-    "Return an absolute path of the first marked file; else the file at
-point; if neither, return `default-directory'. Non-nil and always existing."
-    (let* ((files (or (dired-get-marked-files nil nil)
-                       (let ((f (ignore-errors (dired-get-file-for-visit))))
-                         (when f (list f)))))
-           (p (or (car files) default-directory)))
-      (expand-file-name p)))
-
   (defun my--dired-file-at-point ()
     "Return the absolute path of the file at point, ignoring any marks.
 Falls back to `default-directory' if point is not on a file line."
@@ -110,7 +101,7 @@ Falls back to `default-directory' if point is not on a file line."
      ("d" "Directory"          my-dired-copy-directory)])
 
   ;; -----------------------------------------------------------------------
-  ;; Stash (custom copy/paste/move)
+  ;; Stash (files queued for copy/move)
   ;; -----------------------------------------------------------------------
   (defvar my-dired-stash nil
     "List of absolute file names stashed from a Dired buffer.")
@@ -157,42 +148,14 @@ stash instead."
         (dired-rename-file from to nil)))
     (message "Moved %d file(s) to %s" (length files) dest-dir))
 
-  (defun my-dired-paste-copy-here ()
-    "Copy stashed files into the current Dired directory."
-    (interactive)
-    (unless (derived-mode-p 'dired-mode)
-      (user-error "Run this from a Dired buffer"))
-    (unless my-dired-stash
-      (user-error "Nothing stashed"))
-    (let ((dest (dired-current-directory)))
-      (my--dired-copy-file-list my-dired-stash dest)
-      (revert-buffer)))
-
-  (defun my-dired-paste-move-here ()
-    "Move stashed files into the current Dired directory."
-    (interactive)
-    (unless (derived-mode-p 'dired-mode)
-      (user-error "Run this from a Dired buffer"))
-    (unless my-dired-stash
-      (user-error "Nothing stashed"))
-    (let ((dest (dired-current-directory)))
-      (when (member dest (mapcar #'file-name-directory my-dired-stash))
-        (unless (y-or-n-p "Move into the same directory? (may overwrite)")
-          (user-error "Move cancelled")))
-      (my--dired-move-file-list my-dired-stash dest)
-      (setq my-dired-stash nil)
-      (revert-buffer)))
-
-
   ;; -----------------------------------------------------------------------
-  ;; Rsync command generation (stash first, run later; transient menu
-  ;; bound to "v")
+  ;; Rsync script accumulation (used by script mode)
   ;; -----------------------------------------------------------------------
   (defvar my-dired-rsync-script-file
     (expand-file-name "dired-rsync-commands.sh"
-                       (or (bound-and-true-p my-emacs-cache-dir)
-                           user-emacs-directory))
-    "Path to the accumulated rsync commands script file.")
+                      (or (bound-and-true-p my-emacs-cache-dir)
+                          user-emacs-directory))
+    "Path to the accumulated rsync/rm commands script file.")
 
   (defun my-dired--ensure-rsync-script ()
     "Create the script file with a shebang if it doesn't exist, and make
@@ -221,46 +184,13 @@ MODE is either `copy' or `move'."
                       "-avh --progress --remove-source-files"
                     "-avh --progress"))
            (sources (mapconcat (lambda (f) (shell-quote-argument (expand-file-name f)))
-                                files " ")))
+                               files " ")))
       (format "rsync %s -- %s %s" flags sources (shell-quote-argument dest))))
 
   (defun my-dired--rsync-delete-cmd (files)
-    "Build an rm command string that deletes FILES."
+    "Build the target portion of an rm command string that deletes FILES."
     (mapconcat (lambda (f) (shell-quote-argument (expand-file-name f)))
                files " "))
-
-  (defun my-dired-rsync-copy-here ()
-    "Generate an rsync COPY command for the stashed files into the
-current directory and append it to the script file. Does not clear
-the stash."
-    (interactive)
-    (unless (derived-mode-p 'dired-mode)
-      (user-error "Run this from a Dired buffer"))
-    (unless my-dired-stash
-      (user-error "Nothing stashed"))
-    (let* ((dest (dired-current-directory))
-           (n (length my-dired-stash))
-           (cmd (my-dired--rsync-cmd 'copy my-dired-stash dest)))
-      (my-dired--rsync-append (format "copy %d file(s) -> %s" n dest) cmd)
-      (message "Appended rsync COPY command (%d file(s)) to %s"
-               n my-dired-rsync-script-file)))
-
-  (defun my-dired-rsync-move-here ()
-    "Generate an rsync MOVE command for the stashed files into the
-current directory, append it to the script file, then clear the
-stash."
-    (interactive)
-    (unless (derived-mode-p 'dired-mode)
-      (user-error "Run this from a Dired buffer"))
-    (unless my-dired-stash
-      (user-error "Nothing stashed"))
-    (let* ((dest (dired-current-directory))
-           (n (length my-dired-stash))
-           (cmd (my-dired--rsync-cmd 'move my-dired-stash dest)))
-      (my-dired--rsync-append (format "move %d file(s) -> %s" n dest) cmd)
-      (setq my-dired-stash nil)
-      (message "Appended rsync MOVE command (%d file(s)) to %s; stash cleared"
-               n my-dired-rsync-script-file)))
 
   (defun my-dired--flagged-for-deletion ()
     "Return the list of absolute file names currently flagged for
@@ -275,29 +205,9 @@ deletion (marked with `d', dired-del-marker) in this Dired buffer."
               (push absname files)))
           (forward-line 1)))
       (nreverse files)))
-  
-  (defun my-dired-rsync-delete-here ()
-    "Generate a delete command for the files currently flagged for
-deletion (via `d', `dired-flag-file-deletion') in this buffer, and
-append it to the script file. Does not touch the stash."
-    (interactive)
-    (unless (derived-mode-p 'dired-mode)
-      (user-error "Run this from a Dired buffer"))
-    (let ((files (my-dired--flagged-for-deletion)))
-      (unless files
-        (user-error "No files flagged for deletion (use `d' to flag)"))
-      (let* ((n (length files))
-             (targets (my-dired--rsync-delete-cmd files))
-             (cmd (format "rm -rf -- %s" targets)))
-        (my-dired--rsync-append (format "delete %d file(s)" n) cmd)
-        ;; Unflag them now that the delete command has been recorded,
-        ;; so the buffer no longer shows them as pending deletion.
-        (dired-unmark-all-files dired-del-marker)
-        (message "Appended DELETE command (%d file(s)) to %s"
-                 n my-dired-rsync-script-file))))
 
   (defun my-dired-rsync-script-open ()
-    "Open the generated rsync script for review/editing."
+    "Open the generated rsync/rm script for review/editing."
     (interactive)
     (my-dired--ensure-rsync-script)
     (find-file my-dired-rsync-script-file))
@@ -310,7 +220,7 @@ append it to the script file. Does not touch the stash."
     (message "Cleared rsync script: %s" my-dired-rsync-script-file))
 
   (defun my-dired-rsync-script-execute ()
-    "Run the rsync script asynchronously without blocking Emacs.
+    "Run the accumulated script asynchronously without blocking Emacs.
 Prompts for confirmation first, and shows live progress in a
 compilation buffer."
     (interactive)
@@ -328,19 +238,121 @@ compilation buffer."
         (setq-local compilation-scroll-output t))))
 
   (transient-define-prefix my-dired-rsync-transient ()
-    "Rsync script task menu."
-    [["Rsync Copy/Move"
-      :if-derived 'dired-mode
-      ("p" "Copy here"     my-dired-rsync-copy-here)
-      ("P" "Move here"     my-dired-rsync-move-here)
-      ("d" "Delete"        my-dired-rsync-delete-here)]
-     ["Rsync script"
-      :if-derived 'dired-mode
-      ("v" "Open script"    my-dired-rsync-script-open)
-      ("c" "Clear script"   my-dired-rsync-script-clear)
-      ("x" "Execute script" my-dired-rsync-script-execute)]
-     ["Actions"
-      ("q" "Quit" transient-quit-all)]])
+    "Rsync script management menu."
+    ["Rsync script"
+     :if-derived 'dired-mode
+     ("v" "Open script"    my-dired-rsync-script-open)
+     ("c" "Clear script"   my-dired-rsync-script-clear)
+     ("x" "Execute script" my-dired-rsync-script-execute)]
+    ["Actions"
+     ("q" "Quit" transient-quit-all)])
+
+  ;; -----------------------------------------------------------------------
+  ;; Script mode toggle: same keys (y/p/P/d/x), immediate vs. scripted
+  ;; -----------------------------------------------------------------------
+  (defvar my-dired-script-mode nil
+    "When non-nil, the p/P/x action keys generate shell commands into
+`my-dired-rsync-script-file' instead of executing immediately.
+This is a global toggle shared by all Dired buffers.")
+
+  (defun my-dired-toggle-script-mode ()
+    "Toggle between immediate Dired actions and scripted (rsync/rm) actions."
+    (interactive)
+    (setq my-dired-script-mode (not my-dired-script-mode))
+    (message "Dired script mode: %s"
+             (if my-dired-script-mode "ON (scripted)" "OFF (immediate)"))
+    (force-mode-line-update t))
+
+  (defvar my-dired-script-mode-lighter
+    '(:eval
+      (when (derived-mode-p 'dired-mode)
+        (if my-dired-script-mode
+            (propertize " [SCRIPT]" 'face '(:foreground "orange" :weight bold))
+          (propertize " [LIVE]" 'face '(:foreground "green" :weight bold)))))
+    "Mode-line indicator for `my-dired-script-mode'.")
+
+  (unless (memq my-dired-script-mode-lighter global-mode-string)
+    (setq global-mode-string
+          (append global-mode-string (list my-dired-script-mode-lighter))))
+
+  ;; -----------------------------------------------------------------------
+  ;; Mode-aware copy / move / delete actions (bound to p / P / d / x)
+  ;; -----------------------------------------------------------------------
+  (defun my-dired-action-copy-here ()
+    "Copy stashed files into the current directory.
+Immediate when `my-dired-script-mode' is nil; appends an rsync
+command to the script otherwise."
+    (interactive)
+    (unless (derived-mode-p 'dired-mode)
+      (user-error "Run this from a Dired buffer"))
+    (unless my-dired-stash
+      (user-error "Nothing stashed"))
+    (let ((dest (dired-current-directory)))
+      (if my-dired-script-mode
+          (let* ((n (length my-dired-stash))
+                 (cmd (my-dired--rsync-cmd 'copy my-dired-stash dest)))
+            (my-dired--rsync-append (format "copy %d file(s) -> %s" n dest) cmd)
+            (message "Appended rsync COPY command (%d file(s)) to %s"
+                     n my-dired-rsync-script-file))
+        (my--dired-copy-file-list my-dired-stash dest)
+        (revert-buffer))))
+
+  (defun my-dired-action-move-here ()
+    "Move stashed files into the current directory.
+Immediate when `my-dired-script-mode' is nil; appends an rsync
+command to the script otherwise."
+    (interactive)
+    (unless (derived-mode-p 'dired-mode)
+      (user-error "Run this from a Dired buffer"))
+    (unless my-dired-stash
+      (user-error "Nothing stashed"))
+    (let ((dest (dired-current-directory)))
+      (if my-dired-script-mode
+          (let* ((n (length my-dired-stash))
+                 (cmd (my-dired--rsync-cmd 'move my-dired-stash dest)))
+            (my-dired--rsync-append (format "move %d file(s) -> %s" n dest) cmd)
+            (setq my-dired-stash nil)
+            (message "Appended rsync MOVE command (%d file(s)) to %s; stash cleared"
+                     n my-dired-rsync-script-file))
+        (when (member dest (mapcar #'file-name-directory my-dired-stash))
+          (unless (y-or-n-p "Move into the same directory? (may overwrite)")
+            (user-error "Move cancelled")))
+        (my--dired-move-file-list my-dired-stash dest)
+        (setq my-dired-stash nil)
+        (revert-buffer))))
+  
+  (defun my-dired-action-flag-deletion ()
+    "Flag the file at point for deletion.
+In immediate mode, this is just the standard `dired-flag-file-deletion'.
+In script mode, it additionally appends an rm command for this file
+to the script immediately (so flagging files across multiple Dired
+buffers all gets recorded, regardless of which buffer `x' is
+eventually pressed in)."
+    (interactive)
+    (unless (derived-mode-p 'dired-mode)
+      (user-error "Run this from a Dired buffer"))
+    (if my-dired-script-mode
+        (let ((file (dired-get-filename nil t)))
+          (unless file
+            (user-error "No file at point"))
+          (let ((cmd (format "rm -rf -- %s" (shell-quote-argument file))))
+            (my-dired--rsync-append (format "delete: %s" file) cmd)
+            (message "Appended DELETE command for %s to %s"
+                     (file-name-nondirectory file) my-dired-rsync-script-file))
+          (dired-flag-file-deletion 1))
+      (dired-flag-file-deletion 1)))
+
+  (defun my-dired-action-execute ()
+    "In immediate mode, delete files flagged for deletion (the standard
+Dired `D' mark, set via `d'). In script mode, execute the entire
+accumulated script (which already contains any delete commands
+generated by `d', plus any copy/move commands from `p'/`P')."
+    (interactive)
+    (unless (derived-mode-p 'dired-mode)
+      (user-error "Run this from a Dired buffer"))
+    (if my-dired-script-mode
+        (my-dired-rsync-script-execute)
+      (dired-do-flagged-delete)))
 
   ;; -----------------------------------------------------------------------
   ;; Numbered tabs (0-9)
@@ -401,24 +413,27 @@ compilation buffer."
         (lambda () (interactive) (my-dired-tab-bind key)))
       (defalias (intern (format "my-dired-tab-switch-%d" key))
         (lambda () (interactive) (my-dired-tab-switch key)))))
-  
+
+  ;; -----------------------------------------------------------------------
+  ;; Misc toggles menu
+  ;; -----------------------------------------------------------------------
   (transient-define-prefix my-dired-toggle ()
-    [["Toggle"
-      :if-derived 'dired-mode
-      ("t" "tumbnail"  media-thumbnail-dired-mode)
-      ("d" "detail"    dired-hide-details-mode)
-      ("u" "du"        dired-du-mode)
-      ("g" "git"       dired-k)
-      ]
-     ["Actions"
-      ("q" "Quit" transient-quit-all)]])
+    ["Toggle"
+     :if-derived 'dired-mode
+     ("t" "thumbnail"   media-thumbnail-dired-mode)
+     ("d" "detail"      dired-hide-details-mode)
+     ("u" "du"          dired-du-mode)
+     ("g" "git"         dired-k)
+     ("s" "script mode" my-dired-toggle-script-mode)]
+    ["Actions"
+     ("q" "Quit" transient-quit-all)])
 
   :bind
   ("C-x C-d" . (lambda () (interactive) (dired default-directory)))
   (:map dired-mode-map
         ("<f5>" . revert-buffer)
         ("C"    . dired-do-compress-to)
-	("t"    . my-dired-toggle)
+        ("t"    . my-dired-toggle)
 
         ;; Navigation
         ("h" . dired-up-directory)
@@ -446,13 +461,15 @@ compilation buffer."
         ;; Copy name/path variants menu
         ("c" . my-dired-copy-transient)
 
-        ;; Stash / copy / move
+        ;; Stash / copy / move / delete (mode-aware: immediate vs scripted)
+        ("d" . my-dired-action-flag-deletion)
         ("y" . my-dired-stash-marks)
         ("Y" . my-dired-stash-clear)
-        ("p" . my-dired-paste-copy-here)
-        ("P" . my-dired-paste-move-here)
+        ("p" . my-dired-action-copy-here)
+        ("P" . my-dired-action-move-here)
+        ("x" . my-dired-action-execute)
 
-        ;; Rsync
+        ;; Rsync script management
         ("v" . my-dired-rsync-transient)
 
         ;; Numbered tabs
