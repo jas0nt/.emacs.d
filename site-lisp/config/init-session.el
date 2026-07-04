@@ -14,6 +14,10 @@
 
 (desktop-save-mode 1)
 
+(use-package savehist
+  :init
+  (savehist-mode))
+
 ;; -----------------------------------------------------------------------
 ;; Cursor position persistence (per file)
 ;; -----------------------------------------------------------------------
