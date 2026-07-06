@@ -10,7 +10,8 @@
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
   :config
-  (setq doom-modeline-major-mode-icon nil)
+  (setq doom-modeline-icon t)
+  (setq doom-modeline-major-mode-icon t)
   (setq doom-modeline-height 1)
   (set-face-attribute 'mode-line nil :family "Maple Mono NF" :height 170)
   (set-face-attribute 'mode-line-inactive nil :family "Maple Mono NF" :height 170))
