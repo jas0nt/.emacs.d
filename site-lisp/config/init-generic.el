@@ -81,6 +81,7 @@ FILE-SPECS is a list of (VARIABLE FILENAME) lists."
  '(recentf-save-file            "recentf")
  '(desktop-dirname              "desktop/")
  '(bookmark-default-file        "bookmarks")
+ '(projectile-frecency-file     "projectile-frecency.eld")
  '(savehist-file                "history")
  '(save-place-file              "places")
  '(auto-save-list-file-prefix   "auto-save-list/.saves-")

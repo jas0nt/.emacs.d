@@ -42,11 +42,11 @@
     ("w" "goto-word" avy-goto-word-1)
     ("W" "goto-symbol" avy-goto-symbol-1)
     ]
-   
+
    ["goto-line"
     ("l" "goto-line" avy-goto-line)
     ]
-   
+
    ["edit"
     ("k" "kill-region" avy-kill-region)
     ]
@@ -64,7 +64,7 @@
     ("R" "rg+" deadgrep)
     ("m" "multi-buffer" consult-line-multi)
     ]
-   
+
    ["file"
     ("f" "fd" consult-fd)
     ("z" "fzf" fzf)
@@ -142,6 +142,10 @@
    ])
 
 
+(defun my-prev-buffer ()
+  (interactive)
+  (switch-to-buffer (other-buffer (current-buffer) 1)))
+
 (general-define-key
  "<f5>" 'revert-buffer
  "M-<up>" 'switch-to-prev-buffer
@@ -151,9 +155,7 @@
  "M-o" 'ace-window
  "M-y" 'consult-yank-pop
 
- "C-," '(lambda ()
-	  (interactive)
-	  (switch-to-buffer (other-buffer (current-buffer) 1)))
+ "C-," 'my-prev-buffer
  "C-;" 'consult-buffer
  "C-'" 'avy-goto-char-2
  "C-s" 'consult-line
@@ -162,6 +164,7 @@
 
  "C-c C-/" 'evilnc-comment-or-uncomment-lines
  "C-c C-k" 'kill-current-buffer
+ "C-c T" 'ghostel
  "C-c f" 'my-transient-file
  "C-c j" 'my-transient-jump
  "C-c s" 'my-transient-search

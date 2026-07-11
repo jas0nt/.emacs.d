@@ -63,6 +63,7 @@
    1 nil
    (lambda ()
      (require 'init-idle)
+     (require 'init-term)
      (require 'init-music))))
 
 (provide 'init-all)
