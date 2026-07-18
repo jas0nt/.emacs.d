@@ -164,6 +164,7 @@
 
  "C-c C-/" 'evilnc-comment-or-uncomment-lines
  "C-c C-k" 'kill-current-buffer
+ "C-c v" 'magit
  "C-c T" 'ghostel
  "C-c f" 'my-transient-file
  "C-c j" 'my-transient-jump

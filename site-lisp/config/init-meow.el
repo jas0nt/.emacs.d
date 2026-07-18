@@ -123,7 +123,6 @@
              (kill-current-buffer)
              (when (> (length (window-list)) 1)
 	       (delete-window)))))
- '("v" . magit)
  '("f" . my-transient-file)
  '("j" . my-transient-jump)
  '("s" . my-transient-search)
