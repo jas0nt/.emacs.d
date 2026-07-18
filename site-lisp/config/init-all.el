@@ -64,6 +64,7 @@
    (lambda ()
      (require 'init-idle)
      (require 'init-term)
+     (require 'init-system)
      (require 'init-music))))
 
 (provide 'init-all)
