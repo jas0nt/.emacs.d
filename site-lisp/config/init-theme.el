@@ -7,24 +7,7 @@
   (doom-themes-visual-bell-config)
   (doom-themes-org-config))
 
-(use-package doom-modeline
-  :init (doom-modeline-mode 1)
-  :config
-  (setq doom-modeline-icon t)
-  (setq doom-modeline-major-mode-icon t)
-  (setq doom-modeline-height 1)
-  (set-face-attribute 'mode-line nil :family "Maple Mono NF" :height 170)
-  (set-face-attribute 'mode-line-inactive nil :family "Maple Mono NF" :height 170))
-
-;; (set-cursor-color "#50fa7b")
-;; (defconst jst/modeline-bg (face-attribute 'mode-line :background))
-;; (defun jst/flash-mode-line ()
-;;   (let ((bell-color "#ff5555"))
-;;     (set-face-background 'mode-line bell-color)
-;;     (run-with-timer 0.1 nil #'set-face-background 'mode-line jst/modeline-bg)))
-
-;; (setq visible-bell nil
-;;       ring-bell-function 'jst/flash-mode-line)
+(use-package nerd-icons)
 
 (use-package beacon
   :custom
