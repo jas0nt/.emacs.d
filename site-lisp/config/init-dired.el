@@ -152,9 +152,7 @@ stash instead."
   ;; Rsync script accumulation (used by script mode)
   ;; -----------------------------------------------------------------------
   (defvar my-dired-rsync-script-file
-    (expand-file-name "dired-rsync-commands.sh"
-                      (or (bound-and-true-p my-emacs-cache-dir)
-                          user-emacs-directory))
+    (expand-file-name "dired-rsync-commands.sh" my-emacs-cache-dir)
     "Path to the accumulated rsync/rm commands script file.")
 
   (defun my-dired--ensure-rsync-script ()
@@ -251,7 +249,7 @@ compilation buffer."
   ;; -----------------------------------------------------------------------
   ;; Script mode toggle: same keys (y/p/P/d/x), immediate vs. scripted
   ;; -----------------------------------------------------------------------
-  (defvar my-dired-script-mode nil
+  (defvar my-dired-script-mode t
     "When non-nil, the p/P/x action keys generate shell commands into
 `my-dired-rsync-script-file' instead of executing immediately.
 This is a global toggle shared by all Dired buffers.")
@@ -384,7 +382,7 @@ If the bound directory no longer exists, unbind the tab and report it."
        (t
 	(find-alternate-file target-dir)
 	(message "Switched to tab %d: %s" index (abbreviate-file-name target-dir))
-	(when (bound-and-true-p dired-preview-mode)
+	(when (bound-and-true-p dired-preview-global-mode)
           (dired-preview-trigger t))))))
 
   (defun my-dired-tab-list-show ()
@@ -510,11 +508,9 @@ If the bound directory no longer exists, unbind the tab and report it."
 (use-package media-thumbnail
   :after dired
   :custom
-  (media-thumbnail-max-processes 8)
+  (media-thumbnail-max-processes 4)
   (media-thumbnail-cache-dir
-   (expand-file-name "media-thumbnails/"
-                     (or (bound-and-true-p my-emacs-cache-dir)
-                         user-emacs-directory))))
+   (expand-file-name "media-thumbnails/" my-emacs-cache-dir)))
 
 (use-package ready-player
   :custom
@@ -526,9 +522,11 @@ If the bound directory no longer exists, unbind the tab and report it."
 (use-package dired-preview
   :after dired
   :custom
-  (dired-preview-delay 0.0)
+  (dired-preview-delay 0.3)
   (dired-preview-max-size (* 50 1024 1024))
   :config
+  (dolist (cmd '(revert-buffer my-dired-action-flag-deletion))
+    (add-to-list 'dired-preview-trigger-commands cmd t))
   (defun my-dired-preview-to-the-right ()
     "Display dired-preview window on the right side."
     `((display-buffer-in-side-window)
@@ -554,15 +552,6 @@ If the bound directory no longer exists, unbind the tab and report it."
   (:map dired-mode-map
         ("s" . dired-quick-sort-transient)))
 
-;; Additional syntax highlighting for dired
-(use-package diredfl
-  :after dired
-  :hook
-  ((dired-mode . diredfl-mode)
-   (dired-directory-view-mode . diredfl-mode))
-  :config
-  (set-face-attribute 'diredfl-dir-name nil :bold t))
-
 (use-package dired-k
   :custom
   (dired-k-style 'git))
@@ -572,12 +561,7 @@ If the bound directory no longer exists, unbind the tab and report it."
   :config
   (defun dired-jump-with-zoxide (&optional other-window)
     (interactive "P")
-    (zoxide-open-with nil (lambda (file) (dired-jump other-window file)) t)))
-
-(use-package nerd-icons-dired
-  :after dired
-  :hook
-  (dired-mode . nerd-icons-dired-mode))
+    (zoxide-open-with nil (lambda (file) (find-alternate-file file)) t)))
 
 (use-package image-mode
   :ensure nil
