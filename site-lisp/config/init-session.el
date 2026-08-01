@@ -12,7 +12,7 @@
       desktop-load-locked-desktop t
       desktop-auto-save-timeout 30)
 
-(desktop-save-mode 1)
+(desktop-save-mode -1)
 
 (use-package savehist
   :init

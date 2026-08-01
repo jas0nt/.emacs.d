@@ -516,6 +516,7 @@ If the bound directory no longer exists, unbind the tab and report it."
   :custom
   (ready-player-autoplay nil)
   (ready-player-ask-for-project-sustainability nil)
+  (ready-player-thumbnail-max-pixel-height 1000)
   :config
   (ready-player-mode 1))
 

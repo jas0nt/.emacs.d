@@ -4,7 +4,7 @@
   :custom
   (projectile-known-projects-file (expand-file-name "projectile-bookmarks.eld" my-emacs-cache-dir))
   (project-list-file (expand-file-name "projects" my-emacs-cache-dir))
-  (projectile-project-search-path '("~/" "~/code/")))
+  (projectile-project-search-path '("~/Documents")))
 
 
 (provide 'init-project)
