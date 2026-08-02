@@ -168,12 +168,7 @@
 ;;; Note: x, c, h, m, g are already used in NORMAL state, not reused here
 ;;; ================================================================
 (meow-leader-define-key
- '("q" . (lambda ()
-           (interactive)
-           (progn
-             (kill-current-buffer)
-             (when (> (length (window-list)) 1)
-               (delete-window)))))
+ '("q" . delete-other-windows)
  '(";" . consult-buffer)
  '("," . my-prev-buffer)
  '("f" . my-transient-file)
