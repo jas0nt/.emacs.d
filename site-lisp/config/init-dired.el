@@ -11,6 +11,9 @@
   :config
   (put 'dired-find-alternate-file 'disabled nil)
 
+  ;; Stash / rsync-script / mode-aware copy-move-delete functionality
+  (require 'dired-satchel)
+
   ;; -----------------------------------------------------------------------
   ;; Shared helpers
   ;; -----------------------------------------------------------------------
@@ -101,259 +104,6 @@ Falls back to `default-directory' if point is not on a file line."
      ("d" "Directory"          my-dired-copy-directory)])
 
   ;; -----------------------------------------------------------------------
-  ;; Stash (files queued for copy/move)
-  ;; -----------------------------------------------------------------------
-  (defvar my-dired-stash nil
-    "List of absolute file names stashed from a Dired buffer.")
-
-  (defun my-dired-stash-marks ()
-    "Stash the currently marked files from this Dired buffer.
-If no files are marked, append the file at point to the existing
-stash instead."
-    (interactive)
-    (unless (derived-mode-p 'dired-mode)
-      (user-error "Run this from a Dired buffer"))
-    (let ((files (dired-get-marked-files nil 'marked)))
-      (if files
-          (progn
-            (setq my-dired-stash files)
-            (message "Stashed %d file(s)" (length files)))
-        (let ((f (dired-get-filename nil t)))
-          (unless f
-            (user-error "No file at point"))
-          (if (member f my-dired-stash)
-              (message "Already in stash: %s" (file-name-nondirectory f))
-            (setq my-dired-stash (append my-dired-stash (list f)))
-            (message "Appended %s (stash now has %d file(s))"
-                     (file-name-nondirectory f)
-                     (length my-dired-stash)))))))
-
-  (defun my-dired-stash-clear ()
-    "Clear the file stash."
-    (interactive)
-    (setq my-dired-stash nil)
-    (message "Stash cleared"))
-
-  (defun my--dired-copy-file-list (files dest-dir)
-    "Copy FILES into DEST-DIR using built-in `dired-copy-file'."
-    (dolist (from files)
-      (let ((to (expand-file-name (file-name-nondirectory from) dest-dir)))
-        (dired-copy-file from to 0)))
-    (message "Copied %d file(s) to %s" (length files) dest-dir))
-
-  (defun my--dired-move-file-list (files dest-dir)
-    "Move/rename FILES into DEST-DIR using built-in `dired-rename-file'."
-    (dolist (from files)
-      (let ((to (expand-file-name (file-name-nondirectory from) dest-dir)))
-        (dired-rename-file from to nil)))
-    (message "Moved %d file(s) to %s" (length files) dest-dir))
-
-  ;; -----------------------------------------------------------------------
-  ;; Rsync script accumulation (used by script mode)
-  ;; -----------------------------------------------------------------------
-  (defvar my-dired-rsync-script-file
-    (expand-file-name "dired-rsync-commands.sh" my-emacs-cache-dir)
-    "Path to the accumulated rsync/rm commands script file.")
-
-  (defun my-dired--ensure-rsync-script ()
-    "Create the script file with a shebang if it doesn't exist, and make
-it executable."
-    (unless (file-exists-p my-dired-rsync-script-file)
-      (make-directory (file-name-directory my-dired-rsync-script-file) t)
-      (with-temp-buffer
-        (insert "#!/usr/bin/env bash\n")
-        (insert "set -xeuo pipefail\n\n")
-        (write-region (point-min) (point-max) my-dired-rsync-script-file nil 'silent)))
-    (set-file-modes my-dired-rsync-script-file #o755))
-
-  (defun my-dired--rsync-append (comment cmd)
-    "Append a COMMENT line and a command CMD to the end of the script file."
-    (my-dired--ensure-rsync-script)
-    (with-temp-buffer
-      (insert "# " comment "\n")
-      (insert cmd "\n\n")
-      (write-region (point-min) (point-max) my-dired-rsync-script-file t 'silent)))
-
-  (defun my-dired--rsync-cmd (mode files dest-dir)
-    "Build an rsync command string that copies/moves FILES into DEST-DIR.
-MODE is either `copy' or `move'."
-    (let* ((dest (file-name-as-directory (expand-file-name dest-dir)))
-           (flags (if (eq mode 'move)
-                      "-avh --progress --remove-source-files --ignore-missing-args"
-                    "-avh --progress"))
-           (sources (mapconcat (lambda (f) (shell-quote-argument (expand-file-name f)))
-                               files " ")))
-      (format "rsync %s -- %s %s" flags sources (shell-quote-argument dest))))
-
-  (defun my-dired--rsync-delete-cmd (files)
-    "Build the target portion of an rm command string that deletes FILES."
-    (mapconcat (lambda (f) (shell-quote-argument (expand-file-name f)))
-               files " "))
-
-  (defun my-dired--flagged-for-deletion ()
-    "Return the list of absolute file names currently flagged for
-deletion (marked with `d', dired-del-marker) in this Dired buffer."
-    (let (files)
-      (save-excursion
-        (goto-char (point-min))
-        (while (not (eobp))
-          (let ((absname (dired-get-filename nil t)))
-            (when (and absname
-                       (eq (dired-file-marker absname) dired-del-marker))
-              (push absname files)))
-          (forward-line 1)))
-      (nreverse files)))
-
-  (defun my-dired-rsync-script-open ()
-    "Open the generated rsync/rm script for review/editing."
-    (interactive)
-    (my-dired--ensure-rsync-script)
-    (find-file my-dired-rsync-script-file))
-
-  (defun my-dired-rsync-script-clear ()
-    "Delete the accumulated script file so the next command starts fresh."
-    (interactive)
-    (when (file-exists-p my-dired-rsync-script-file)
-      (delete-file my-dired-rsync-script-file))
-    (message "Cleared rsync script: %s" my-dired-rsync-script-file))
-
-  (defun my-dired-rsync-script-execute ()
-    "Run the accumulated script asynchronously without blocking Emacs.
-Prompts for confirmation first, and shows live progress in a
-compilation buffer."
-    (interactive)
-    (unless (file-exists-p my-dired-rsync-script-file)
-      (user-error "Rsync script does not exist: %s" my-dired-rsync-script-file))
-    (unless (y-or-n-p
-             (format "Run rsync script %s now? "
-                     (abbreviate-file-name my-dired-rsync-script-file)))
-      (user-error "Execution cancelled"))
-    (let* ((default-directory (file-name-directory my-dired-rsync-script-file))
-           (buf-name "*rsync-execute*")
-           (compilation-buffer-name-function (lambda (_mode) buf-name)))
-      (compile (format "bash %s" (shell-quote-argument my-dired-rsync-script-file)))
-      (with-current-buffer buf-name
-        (setq-local compilation-scroll-output t))))
-
-  (transient-define-prefix my-dired-rsync-transient ()
-    "Rsync script management menu."
-    ["Rsync script"
-     :if-derived 'dired-mode
-     ("v" "Open script"    my-dired-rsync-script-open)
-     ("c" "Clear script"   my-dired-rsync-script-clear)
-     ("x" "Execute script" my-dired-rsync-script-execute)
-     ("y" "Clear stash"    my-dired-stash-clear)]
-    ["Actions"
-     ("q" "Quit" transient-quit-all)])
-
-  ;; -----------------------------------------------------------------------
-  ;; Script mode toggle: same keys (y/p/P/d/x), immediate vs. scripted
-  ;; -----------------------------------------------------------------------
-  (defvar my-dired-script-mode t
-    "When non-nil, the p/P/x action keys generate shell commands into
-`my-dired-rsync-script-file' instead of executing immediately.
-This is a global toggle shared by all Dired buffers.")
-
-  (defun my-dired-toggle-script-mode ()
-    "Toggle between immediate Dired actions and scripted (rsync/rm) actions."
-    (interactive)
-    (setq my-dired-script-mode (not my-dired-script-mode))
-    (message "Dired script mode: %s"
-             (if my-dired-script-mode "ON (scripted)" "OFF (immediate)"))
-    (force-mode-line-update t))
-
-  (defvar my-dired-script-mode-lighter
-    '(:eval
-      (when (derived-mode-p 'dired-mode)
-        (if my-dired-script-mode
-            (propertize " [SCRIPT]" 'face '(:foreground "orange" :weight bold))
-          (propertize " [LIVE]" 'face '(:foreground "green" :weight bold)))))
-    "Mode-line indicator for `my-dired-script-mode'.")
-
-  (unless (memq my-dired-script-mode-lighter global-mode-string)
-    (setq global-mode-string
-          (append global-mode-string (list my-dired-script-mode-lighter))))
-
-  ;; -----------------------------------------------------------------------
-  ;; Mode-aware copy / move / delete actions (bound to p / P / d / x)
-  ;; -----------------------------------------------------------------------
-  (defun my-dired-action-copy-here ()
-    "Copy stashed files into the current directory.
-Immediate when `my-dired-script-mode' is nil; appends an rsync
-command to the script otherwise."
-    (interactive)
-    (unless (derived-mode-p 'dired-mode)
-      (user-error "Run this from a Dired buffer"))
-    (unless my-dired-stash
-      (user-error "Nothing stashed"))
-    (let ((dest (dired-current-directory)))
-      (if my-dired-script-mode
-          (let* ((n (length my-dired-stash))
-                 (cmd (my-dired--rsync-cmd 'copy my-dired-stash dest)))
-            (my-dired--rsync-append (format "copy %d file(s) -> %s" n dest) cmd)
-            (message "Appended rsync COPY command (%d file(s)) to %s"
-                     n my-dired-rsync-script-file))
-        (my--dired-copy-file-list my-dired-stash dest)
-        (revert-buffer))))
-
-  (defun my-dired-action-move-here ()
-    "Move stashed files into the current directory.
-Immediate when `my-dired-script-mode' is nil; appends an rsync
-command to the script otherwise."
-    (interactive)
-    (unless (derived-mode-p 'dired-mode)
-      (user-error "Run this from a Dired buffer"))
-    (unless my-dired-stash
-      (user-error "Nothing stashed"))
-    (let ((dest (dired-current-directory)))
-      (if my-dired-script-mode
-          (let* ((n (length my-dired-stash))
-                 (cmd (my-dired--rsync-cmd 'move my-dired-stash dest)))
-            (my-dired--rsync-append (format "move %d file(s) -> %s" n dest) cmd)
-            (setq my-dired-stash nil)
-            (message "Appended rsync MOVE command (%d file(s)) to %s; stash cleared"
-                     n my-dired-rsync-script-file))
-        (when (member dest (mapcar #'file-name-directory my-dired-stash))
-          (unless (y-or-n-p "Move into the same directory? (may overwrite)")
-            (user-error "Move cancelled")))
-        (my--dired-move-file-list my-dired-stash dest)
-        (setq my-dired-stash nil)
-        (revert-buffer))))
-
-  (defun my-dired-action-flag-deletion ()
-    "Flag the file at point for deletion.
-In immediate mode, this is just the standard `dired-flag-file-deletion'.
-In script mode, it additionally appends an rm command for this file
-to the script immediately (so flagging files across multiple Dired
-buffers all gets recorded, regardless of which buffer `x' is
-eventually pressed in)."
-    (interactive)
-    (unless (derived-mode-p 'dired-mode)
-      (user-error "Run this from a Dired buffer"))
-    (if my-dired-script-mode
-        (let ((file (dired-get-filename nil t)))
-          (unless file
-            (user-error "No file at point"))
-          (let ((cmd (format "rm -rf -- %s" (shell-quote-argument file))))
-            (my-dired--rsync-append (format "delete: %s" file) cmd)
-            (message "Appended DELETE command for %s to %s"
-                     (file-name-nondirectory file) my-dired-rsync-script-file))
-          (dired-flag-file-deletion 1))
-      (dired-flag-file-deletion 1)))
-
-  (defun my-dired-action-execute ()
-    "In immediate mode, delete files flagged for deletion (the standard
-Dired `D' mark, set via `d'). In script mode, execute the entire
-accumulated script (which already contains any delete commands
-generated by `d', plus any copy/move commands from `p'/`P')."
-    (interactive)
-    (unless (derived-mode-p 'dired-mode)
-      (user-error "Run this from a Dired buffer"))
-    (if my-dired-script-mode
-        (my-dired-rsync-script-execute)
-      (dired-do-flagged-delete)))
-
-  ;; -----------------------------------------------------------------------
   ;; Numbered tabs (0-9)
   ;; -----------------------------------------------------------------------
   (defvar my-dired-tab-list (make-vector 10 nil)
@@ -434,13 +184,14 @@ If the bound directory no longer exists, unbind the tab and report it."
       ("u" "du"          dired-du-mode)
       ("g" "git"         dired-k)
       ("p" "preview"     dired-preview-global-mode)
-      ("s" "script mode" my-dired-toggle-script-mode)]
+      ("s" "script mode" satchel-toggle-script-mode)]
      ["Thumbnail"
       :if-derived 'dired-mode
       ("j" "Forward 5%"   (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent 5)) :transient t)
       ("k" "Backward 5%"  (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent -5)) :transient t)
       ("J" "Forward 1%"   (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent 1)) :transient t)
-      ("K" "Backward 1%"  (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent -1)) :transient t)]
+      ("K" "Backward 1%"  (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent -1)) :transient t)
+      ("P" "batch generate" my-ready-player-batch-generate-thumbnails)]
      ["Actions"
       ("q" "Quit" transient-quit-all)]
      ])
@@ -480,15 +231,16 @@ If the bound directory no longer exists, unbind the tab and report it."
         ("c" . my-dired-copy-transient)
 
         ;; Stash / copy / move / delete (mode-aware: immediate vs scripted)
-        ("d" . my-dired-action-flag-deletion)
-        ("y" . my-dired-stash-marks)
-        ("Y" . my-dired-stash-clear)
-        ("p" . my-dired-action-copy-here)
-        ("P" . my-dired-action-move-here)
-        ("x" . my-dired-action-execute)
+        ;; — provided by dired-satchel
+        ("d" . satchel-action-flag-deletion)
+        ("y" . satchel-pack)
+        ("Y" . satchel-unpack)
+        ("p" . satchel-action-copy-here)
+        ("P" . satchel-action-move-here)
+        ("x" . satchel-action-execute)
 
-        ;; Rsync script management
-        ("v" . my-dired-rsync-transient)
+        ;; Satchel script management
+        ("v" . satchel-transient)
 
         ;; Numbered tabs
         ("!"   . my-dired-tab-remove-current)
@@ -520,145 +272,13 @@ If the bound directory no longer exists, unbind the tab and report it."
   (media-thumbnail-cache-dir
    (expand-file-name "media-thumbnails/" my-emacs-cache-dir)))
 
-(use-package ready-player
-  :custom
-  (ready-player-autoplay nil)
-  (ready-player-ask-for-project-sustainability nil)
-  (ready-player-thumbnail-max-pixel-height 1000)
-  :config
-  (ready-player-mode 1)
-
-  (defcustom my-ready-player-thumbnail-debounce-delay 0.3
-    "Seconds to wait after the last percent adjustment before actually
-regenerating the thumbnail.  Rapid key presses within this window are
-coalesced into a single `ffmpegthumbnailer' call at the final percent."
-    :type 'number
-    :group 'ready-player)
-
-  (defvar my-ready-player-thumbnail-percent-table (make-hash-table :test 'equal)
-    "Map of media-file -> target thumbnail seek percent (integer 0-95).")
-
-  (defvar my-ready-player-thumbnail-process-table (make-hash-table :test 'equal)
-    "Map of media-file -> currently running regrab process (if any).")
-
-  (defvar my-ready-player-thumbnail-debounce-timer-table (make-hash-table :test 'equal)
-    "Map of media-file -> pending debounce timer for thumbnail regrab.")
-
-  (defvar my-ready-player--regrab-log-buffer nil
-    "Shared, reused log buffer for thumbnail regrabs.")
-
-  (defun my-ready-player--thumbnail-percent-for (media-file)
-    "Get current target seek percent for MEDIA-FILE, defaulting to 10."
-    (or (gethash media-file my-ready-player-thumbnail-percent-table) 10))
-
-  (defun my-ready-player--current-media-file ()
-    "Resolve the media file at point/buffer, from `dired' or `ready-player'."
-    (cond
-     ((derived-mode-p 'ready-player-major-mode) (buffer-file-name))
-     ((derived-mode-p 'dired-mode)
-      (or (dired-get-filename nil t) (user-error "No file at point")))
-     (t (user-error "Not in ready-player or dired"))))
-
-  (defun my-ready-player--regrab-log-buffer ()
-    "Return the shared log buffer, creating it if needed."
-    (unless (buffer-live-p my-ready-player--regrab-log-buffer)
-      (setq my-ready-player--regrab-log-buffer
-            (generate-new-buffer "*ready-player-regrab*")))
-    my-ready-player--regrab-log-buffer)
-
-  (defun my-ready-player--regrab-thumbnail-for-file (media-file percent)
-    "Regenerate ready-player's cached thumbnail for MEDIA-FILE at PERCENT (async).
-PERCENT is an integer 0-99.  Cancels any in-flight regrab for the
-same MEDIA-FILE first."
-    (unless (executable-find "ffmpegthumbnailer")
-      (user-error "ffmpegthumbnailer not found"))
-    ;; Cancel any previous in-flight job for this file — no prompt, just kill it.
-    (when-let ((old-proc (gethash media-file my-ready-player-thumbnail-process-table)))
-      (when (process-live-p old-proc)
-        (delete-process old-proc)))
-    (let* ((thumb-path (ready-player--cached-thumbnail-path media-file))
-           (temp-path (concat thumb-path ".regrab.tmp"))
-           (log-buffer (my-ready-player--regrab-log-buffer))
-           (proc
-            (progn
-              (with-current-buffer log-buffer (erase-buffer))
-              (message "Regenerating thumbnail for %s at %d%%..."
-                       (file-name-nondirectory media-file) percent)
-              (make-process
-               :name "ready-player-regrab-thumbnail"
-               :buffer log-buffer
-               :command (list "ffmpegthumbnailer" "-i" media-file "-s" "0"
-                              "-t" (format "%d%%" percent) "-o" temp-path)
-               :sentinel #'my-ready-player--regrab-sentinel))))
-      (set-process-query-on-exit-flag proc nil)
-      (process-put proc 'my-media-file media-file)
-      (process-put proc 'my-thumb-path thumb-path)
-      (process-put proc 'my-temp-path temp-path)
-      (process-put proc 'my-percent percent)
-      (puthash media-file proc my-ready-player-thumbnail-process-table)
-      proc))
-
-  (defun my-ready-player--regrab-sentinel (process _event)
-    "Sentinel for thumbnail regeneration PROCESS."
-    (when (memq (process-status process) '(exit signal))
-      (let ((media-file (process-get process 'my-media-file))
-            (thumb-path (process-get process 'my-thumb-path))
-            (temp-path (process-get process 'my-temp-path))
-            (percent (process-get process 'my-percent)))
-        ;; Only act if this is still the tracked process for the file
-        ;; (i.e. it wasn't superseded by a newer request).
-        (when (eq (gethash media-file my-ready-player-thumbnail-process-table) process)
-          (remhash media-file my-ready-player-thumbnail-process-table)
-          (if (and (eq (process-exit-status process) 0)
-                   (file-exists-p temp-path))
-              (progn
-                (rename-file temp-path thumb-path t)
-                (image-flush (create-image thumb-path nil nil
-                                           :max-height ready-player-thumbnail-max-pixel-height))
-                (when-let* ((buf (get-file-buffer media-file))
-                            (live (buffer-live-p buf)))
-                  (with-current-buffer buf
-                    (when (derived-mode-p 'ready-player-major-mode)
-                      (setq ready-player--thumbnail thumb-path)
-                      (ready-player--refresh))))
-                (message "Thumbnail regenerated for %s at %d%%"
-                         (file-name-nondirectory media-file) percent))
-            (ignore-errors (delete-file temp-path))
-            (message "Failed to regenerate thumbnail (see %s)"
-                     (buffer-name (my-ready-player--regrab-log-buffer))))))))
-
-  (defun my-ready-player--debounced-regrab (media-file percent)
-    "Timer callback: actually regrab MEDIA-FILE's thumbnail at PERCENT."
-    (remhash media-file my-ready-player-thumbnail-debounce-timer-table)
-    (when (file-exists-p media-file)
-      (my-ready-player--regrab-thumbnail-for-file media-file percent)))
-
-  (defun my-ready-player--adjust-thumbnail-percent (delta)
-    "Bump target percent by DELTA (clamped 0-95).
-Debounces the actual regrab so rapid presses only trigger one
-`ffmpegthumbnailer' call, at the final accumulated percent."
-    (let* ((media-file (my-ready-player--current-media-file))
-           (current (my-ready-player--thumbnail-percent-for media-file))
-           (new-percent (max 0 (min 95 (+ current delta)))))
-      (puthash media-file new-percent my-ready-player-thumbnail-percent-table)
-      (when-let ((old-timer (gethash media-file my-ready-player-thumbnail-debounce-timer-table)))
-        (when (timerp old-timer)
-          (cancel-timer old-timer)))
-      (puthash media-file
-               (run-with-timer
-                my-ready-player-thumbnail-debounce-delay nil
-                #'my-ready-player--debounced-regrab media-file new-percent)
-               my-ready-player-thumbnail-debounce-timer-table)
-      (message "Thumbnail target for %s: %d%%"
-               (file-name-nondirectory media-file) new-percent))))
-
 (use-package dired-preview
   :after dired
   :custom
   (dired-preview-delay 0.3)
   (dired-preview-max-size (* 50 1024 1024))
   :config
-  (dolist (cmd '(revert-buffer my-dired-action-flag-deletion))
+  (dolist (cmd '(revert-buffer satchel-action-flag-deletion))
     (add-to-list 'dired-preview-trigger-commands cmd t))
   (defun my-dired-preview-to-the-right ()
     "Display dired-preview window on the right side."
@@ -696,25 +316,6 @@ Debounces the actual regrab so rapid presses only trigger one
     (interactive "P")
     (zoxide-open-with nil (lambda (file) (find-alternate-file file)) t)))
 
-(use-package image-mode
-  :ensure nil
-  :hook
-  (image-mode . auto-revert-mode)
-  :bind
-  (:map image-mode-map
-        ("=" . image-increase-size)
-        ("-" . image-decrease-size)
-        ("0" . image-transform-reset)
-        ("j" . scroll-up-command)
-        ("k" . scroll-down-command)
-        ("n" . image-next-file)
-        ("p" . image-previous-file)
-        ("r" . image-rotate)
-        ("l" . image-rotate)
-        ("g" . revert-buffer)
-        ("q" . quit-window))
-  :config
-  (setq auto-revert-verbose nil))
 
 (provide 'init-dired)
 ;;; init-dired.el ends here

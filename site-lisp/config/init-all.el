@@ -39,6 +39,7 @@
   (require 'init-completion)
   (require 'init-chinese)
   (require 'init-edit)
+  (require 'init-media)
   (require 'init-dired)
   (require 'init-project)
   (require 'init-vc)
