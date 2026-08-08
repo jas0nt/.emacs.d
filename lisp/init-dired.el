@@ -11,9 +11,6 @@
   :config
   (put 'dired-find-alternate-file 'disabled nil)
 
-  ;; Stash / rsync-script / mode-aware copy-move-delete functionality
-  (require 'dired-satchel)
-
   ;; -----------------------------------------------------------------------
   ;; Shared helpers
   ;; -----------------------------------------------------------------------
@@ -98,7 +95,8 @@ Falls back to `default-directory' if point is not on a file line."
     "Copy file name/path variants menu."
     ["Copy"
      :if-derived 'dired-mode
-     ("c" "Full path"          my-dired-copy-file-path)
+     ("c" "Do Copy"            dired-do-copy)
+     ("F" "Full path"          my-dired-copy-file-path)
      ("f" "File name"          my-dired-copy-file-name)
      ("n" "File name (no ext)" my-dired-copy-file-name-no-ext)
      ("d" "Directory"          my-dired-copy-directory)])
@@ -230,18 +228,6 @@ If the bound directory no longer exists, unbind the tab and report it."
         ;; Copy name/path variants menu
         ("c" . my-dired-copy-transient)
 
-        ;; Stash / copy / move / delete (mode-aware: immediate vs scripted)
-        ;; — provided by dired-satchel
-        ("d" . satchel-action-flag-deletion)
-        ("y" . satchel-pack)
-        ("Y" . satchel-unpack)
-        ("p" . satchel-action-copy-here)
-        ("P" . satchel-action-move-here)
-        ("x" . satchel-action-execute)
-
-        ;; Satchel script management
-        ("v" . satchel-transient)
-
         ;; Numbered tabs
         ("!"   . my-dired-tab-remove-current)
         ("C-1" . my-dired-tab-bind-1)
@@ -264,6 +250,21 @@ If the bound directory no longer exists, unbind the tab and report it."
         ("8"   . my-dired-tab-switch-8)
         ("9"   . my-dired-tab-switch-9)
         ("0"   . my-dired-tab-switch-0)))
+
+(use-package dired-satchel
+  :ensure nil
+  :load-path "site-lisp"
+  :after dired
+  :commands (satchel-toggle-script-mode)
+  :bind
+  (:map dired-mode-map
+        ("d" . satchel-action-flag-deletion)
+        ("y" . satchel-pack)
+        ("Y" . satchel-unpack)
+        ("p" . satchel-action-copy-here)
+        ("P" . satchel-action-move-here)
+        ("x" . satchel-action-execute)
+        ("v" . satchel-transient)))
 
 (use-package media-thumbnail
   :after dired

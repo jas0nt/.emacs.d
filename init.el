@@ -3,38 +3,54 @@
 ;; -----------------------------------------------------------------------
 ;; Load Path Setup
 ;; -----------------------------------------------------------------------
+(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
 
-(defun my-add-subdirs-to-load-path (search-dir)
-  "Recursively add subdirectories of SEARCH-DIR to `load-path'.
-Only directories containing at least one .el, .so, or .dll file are
-added. Common non-Elisp directories (node_modules, .git, etc.) are
-skipped to keep startup fast."
-  (let ((dir (file-name-as-directory search-dir)))
-    (dolist (subdir (directory-files dir))
-      (unless (member subdir '("." ".."
-                               "dist" "node_modules" "__pycache__"
-                               "RCS" "CVS" "rcs" "cvs" ".git" ".github"))
-        (let ((subdir-path (concat dir (file-name-as-directory subdir))))
-          ;; Only process actual directories; skip plain files entirely.
-          (when (file-directory-p subdir-path)
-            (when (seq-some (lambda (f)
-                              (and (file-regular-p (concat subdir-path f))
-                                   (member (file-name-extension f)
-                                           '("el" "so" "dll"))))
-                            (directory-files subdir-path))
-              ;; Append rather than prepend so parent directories take
-              ;; precedence over subdirectories in load order.
-              (add-to-list 'load-path subdir-path t))
-            ;; Recurse regardless of whether this dir was added to load-path,
-            ;; since its children may still qualify.
-            (my-add-subdirs-to-load-path subdir-path)))))))
-
-(my-add-subdirs-to-load-path "~/.emacs.d/site-lisp")
+(let ((site-lisp-dir (expand-file-name "site-lisp" user-emacs-directory)))
+  (when (file-directory-p site-lisp-dir)
+    (add-to-list 'load-path site-lisp-dir)
+    (let ((default-directory site-lisp-dir))
+      (normal-top-level-add-subdirs-to-load-path))))
 
 ;; -----------------------------------------------------------------------
 ;; Bootstrap
 ;; -----------------------------------------------------------------------
+(require 'init-font)
 
-(require 'init-all)
+;; -----------------------------------------------------------------------
+;; Core modules
+;; -----------------------------------------------------------------------
+(require 'init-proxy)
+(require 'init-pkgs)
+(require 'init-theme)
+(require 'init-generic)
+(require 'init-session)
+(require 'init-buffer)
+(require 'init-common)
+(require 'init-keys)
+;; (require 'init-evil)
+(require 'init-meow)
+(require 'init-completion)
+(require 'init-chinese)
+(require 'init-edit)
+(require 'init-media)
+(require 'init-dired)
+(require 'init-project)
+(require 'init-vc)
+(require 'init-dashboard)
+(require 'init-python)
+(require 'init-rust)
+(require 'init-lsp)
+(require 'init-other)
+
+;; -----------------------------------------------------------------------
+;; Deferred modules: loaded after 1 second of idle time
+;; -----------------------------------------------------------------------
+(run-with-idle-timer
+ 1 nil
+ (lambda ()
+   (require 'init-idle)
+   (require 'init-term)
+   (require 'init-system)
+   (require 'init-music)))
 
 ;;; init.el ends here

@@ -1,5 +1,8 @@
 ;;; early-init.el --- Early initialization before frame creation -*- lexical-binding: t -*-
 
+(setq gc-cons-threshold most-positive-fixnum
+      gc-cons-percentage 0.6)
+
 ;; Disable UI chrome before the first frame is created, preventing
 ;; the brief flash of tool-bar/menu-bar/scroll-bar on startup.
 (tool-bar-mode -1)
