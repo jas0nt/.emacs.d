@@ -103,24 +103,25 @@ same MEDIA-FILE first."
             (thumb-path (process-get process 'my-thumb-path))
             (temp-path (process-get process 'my-temp-path))
             (percent (process-get process 'my-percent)))
-        ;; Only act if this is still the tracked process for the file
-        ;; (i.e. it wasn't superseded by a newer request).
-        (when (eq (gethash media-file my-ready-player-thumbnail-process-table) process)
+	(when (eq (gethash media-file my-ready-player-thumbnail-process-table) process)
           (remhash media-file my-ready-player-thumbnail-process-table)
           (if (and (eq (process-exit-status process) 0)
                    (file-exists-p temp-path))
               (progn
-                (rename-file temp-path thumb-path t)
-                (image-flush (create-image thumb-path nil nil
-                                           :max-height ready-player-thumbnail-max-pixel-height))
-                (when-let* ((buf (get-file-buffer media-file))
+		(rename-file temp-path thumb-path t)
+		;; Filter by filename, not by spec — invalidates both
+		;; ready-player's and media-thumbnail's cached pixel
+		;; data for this file, regardless of each package's
+		;; differing :width/:max-height/etc. create-image args.
+		(clear-image-cache thumb-path)
+		(when-let* ((buf (get-file-buffer media-file))
                             (live (buffer-live-p buf)))
                   (with-current-buffer buf
                     (when (derived-mode-p 'ready-player-major-mode)
                       (setq ready-player--thumbnail thumb-path)
                       (ready-player--refresh))))
-                (message "Thumbnail regenerated for %s at %d%%"
-                         (file-name-nondirectory media-file) percent))
+		(message "Thumbnail regenerated for %s at %d%%"
+			 (file-name-nondirectory media-file) percent))
             (ignore-errors (delete-file temp-path))
             (message "Failed to regenerate thumbnail (see %s)"
                      (buffer-name (my-ready-player--regrab-log-buffer))))))))
@@ -254,7 +255,23 @@ are done, report completion."
           (my-ready-player--batch-run-next)
         (when (= my-ready-player--batch-active 0)
           (message "Thumbnail generation complete: %d/%d done"
-                   my-ready-player--batch-done my-ready-player--batch-total))))))
+                   my-ready-player--batch-done my-ready-player--batch-total)))))
+
+  (defcustom my-ready-player-persistent-cache-dir
+    (expand-file-name "ready-player/" my-emacs-cache-dir)
+    "Persistent replacement for `ready-player's default /tmp cache dir."
+    :type 'string
+    :group 'ready-player)
+
+  (defun my-ready-player--cached-item-path-for (media-file suffix)
+    "Like `ready-player--cached-item-path-for' but under a persistent dir
+instead of `temporary-file-directory' (which may not survive reboots)."
+    (make-directory my-ready-player-persistent-cache-dir t)
+    (concat (file-name-as-directory my-ready-player-persistent-cache-dir)
+            (md5 media-file) suffix))
+
+  (advice-add 'ready-player--cached-item-path-for :override
+              #'my-ready-player--cached-item-path-for))
 
 
 (provide 'init-media)

@@ -185,10 +185,12 @@ If the bound directory no longer exists, unbind the tab and report it."
       ("s" "script mode" satchel-toggle-script-mode)]
      ["Thumbnail"
       :if-derived 'dired-mode
-      ("j" "Forward 5%"   (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent 5)) :transient t)
-      ("k" "Backward 5%"  (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent -5)) :transient t)
-      ("J" "Forward 1%"   (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent 1)) :transient t)
-      ("K" "Backward 1%"  (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent -1)) :transient t)
+      ("j" "Next Line"    dired-next-line :transient t)
+      ("k" "Prev Line"    dired-previous-line :transient t)
+      ("l" "Forward 5%"   (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent 5)) :transient t)
+      ("h" "Backward 5%"  (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent -5)) :transient t)
+      ("L" "Forward 1%"   (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent 1)) :transient t)
+      ("H" "Backward 1%"  (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent -1)) :transient t)
       ("P" "batch generate" my-ready-player-batch-generate-thumbnails)]
      ["Actions"
       ("q" "Quit" transient-quit-all)]
@@ -271,7 +273,18 @@ If the bound directory no longer exists, unbind the tab and report it."
   :custom
   (media-thumbnail-max-processes 4)
   (media-thumbnail-cache-dir
-   (expand-file-name "media-thumbnails/" my-emacs-cache-dir)))
+   (expand-file-name "media-thumbnails/" my-emacs-cache-dir))
+  :config
+  (with-eval-after-load 'media-thumbnail
+    (declare-function ready-player--cached-thumbnail-path "ready-player")
+
+    (defun my-media-thumbnail-get-cache-path (file)
+      "Reuse `ready-player's thumbnail cache path/naming, so both
+packages share the exact same cached thumbnail file on disk."
+      ;; (require 'ready-player)
+      (ready-player--cached-thumbnail-path (expand-file-name file)))
+    (advice-add 'media-thumbnail-get-cache-path :override
+		#'my-media-thumbnail-get-cache-path)))
 
 (use-package dired-preview
   :after dired
