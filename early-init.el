@@ -1,31 +1,40 @@
 ;;; early-init.el --- Early initialization before frame creation -*- lexical-binding: t -*-
 
+;; GC: raise threshold during startup, restore after.
 (setq gc-cons-threshold most-positive-fixnum
       gc-cons-percentage 0.6)
 
-;; Disable UI chrome before the first frame is created, preventing
-;; the brief flash of tool-bar/menu-bar/scroll-bar on startup.
-(tool-bar-mode -1)
-(menu-bar-mode -1)
-(scroll-bar-mode -1)
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (setq gc-cons-threshold (* 100 1024 1024) ; 100MB
+                  gc-cons-percentage 0.1)))
+
+;; UI chrome: set frame parameters directly instead of calling
+;; tool-bar-mode/menu-bar-mode/scroll-bar-mode, so the first frame
+;; is created in its final state with no flash and no extra library loads.
+(push '(menu-bar-lines . 0)   default-frame-alist)
+(push '(tool-bar-lines . 0)   default-frame-alist)
+(push '(vertical-scroll-bars) default-frame-alist)
+(push '(fullscreen . maximized) default-frame-alist)
+
+(setq initial-frame-alist default-frame-alist)
+
+;; (push '(alpha-background . 75) default-frame-alist) ; transparency, 0-100
+
 (blink-cursor-mode -1)
 
-;; Start maximized.
-(setq initial-frame-alist '((fullscreen . maximized)))
-
-;; Uncomment to enable background transparency (0-100, lower = more transparent).
-;; (set-frame-parameter nil 'alpha-background 75)
-
-;; Prevent frame resizing when fonts or other settings change during startup.
+;; Skip implied resizing and heavy default major mode.
 (setq frame-inhibit-implied-resize t)
-
-;; Use fundamental-mode as the default major mode to avoid unnecessary
-;; mode initialization on startup.
 (setq initial-major-mode 'fundamental-mode)
 
-;; Prevent package.el from auto-initializing at startup; package management
-(setq package-enable-at-startup nil
-      package--init-file-ensured t)
+;; Skip splash screen and startup echo message.
+(setq inhibit-startup-screen t
+      inhibit-startup-echo-area-message user-login-name)
 
+;; Defer package.el initialization to init.el.
+(setq package-enable-at-startup nil)
+
+;; Silence native-comp async warnings/errors buffer popups.
+(setq native-comp-async-report-warnings-errors 'silent)
 
 ;;; early-init.el ends here
