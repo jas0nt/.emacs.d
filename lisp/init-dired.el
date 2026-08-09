@@ -12,15 +12,6 @@
   (put 'dired-find-alternate-file 'disabled nil)
 
   ;; -----------------------------------------------------------------------
-  ;; Shared helpers
-  ;; -----------------------------------------------------------------------
-  (defun my--dired-file-at-point ()
-    "Return the absolute path of the file at point, ignoring any marks.
-Falls back to `default-directory' if point is not on a file line."
-    (let ((f (dired-get-filename nil t)))
-      (expand-file-name (or f default-directory))))
-
-  ;; -----------------------------------------------------------------------
   ;; Favorites
   ;; -----------------------------------------------------------------------
   (defvar my-dired-favorites
@@ -58,125 +49,14 @@ Falls back to `default-directory' if point is not on a file line."
       (message "Launched Kitty in: %s" current-dir)))
 
   ;; -----------------------------------------------------------------------
-  ;; Copy name / path variants (transient menu, bound to "c")
-  ;; -----------------------------------------------------------------------
-  (defun my-dired-copy-file-path ()
-    "Copy the full absolute path of the file at point."
-    (interactive)
-    (let ((file (my--dired-file-at-point)))
-      (kill-new file)
-      (message "Copied path: %s" file)))
-
-  (defun my-dired-copy-file-name ()
-    "Copy the name (with extension) of the file at point."
-    (interactive)
-    (let* ((file (my--dired-file-at-point))
-           (name (file-name-nondirectory file)))
-      (kill-new name)
-      (message "Copied name: %s" name)))
-
-  (defun my-dired-copy-file-name-no-ext ()
-    "Copy the name (without extension) of the file at point."
-    (interactive)
-    (let* ((file (my--dired-file-at-point))
-           (name (file-name-base file)))
-      (kill-new name)
-      (message "Copied name (no ext): %s" name)))
-
-  (defun my-dired-copy-directory ()
-    "Copy the directory (parent path) of the file at point."
-    (interactive)
-    (let* ((file (my--dired-file-at-point))
-           (dir (file-name-directory file)))
-      (kill-new dir)
-      (message "Copied directory: %s" dir)))
-
-  (transient-define-prefix my-dired-copy-transient ()
-    "Copy file name/path variants menu."
-    ["Copy"
-     :if-derived 'dired-mode
-     ("c" "Do Copy"            dired-do-copy)
-     ("F" "Full path"          my-dired-copy-file-path)
-     ("f" "File name"          my-dired-copy-file-name)
-     ("n" "File name (no ext)" my-dired-copy-file-name-no-ext)
-     ("d" "Directory"          my-dired-copy-directory)])
-
-  ;; -----------------------------------------------------------------------
-  ;; Numbered tabs (0-9)
-  ;; -----------------------------------------------------------------------
-  (defvar my-dired-tab-list (make-vector 10 nil)
-    "Vector to store tab paths, indexed from 0-9.")
-  (add-to-list 'savehist-additional-variables 'my-dired-tab-list)
-
-  (defun my-dired-tab-bind (index)
-    "Bind current directory to the given INDEX (1-10)."
-    (let* ((actual-index (if (= index 0) 9 (1- index)))
-           (current-dir default-directory))
-      (aset my-dired-tab-list actual-index current-dir)
-      (message "Tab %d bound to: %s" index (abbreviate-file-name current-dir))))
-
-  (defun my-dired-tab-switch (index)
-    "Switch to tab at INDEX (1-10).
-If the bound directory no longer exists, unbind the tab and report it."
-    (let* ((actual-index (if (= index 0) 9 (1- index)))
-           (target-dir (aref my-dired-tab-list actual-index)))
-      (cond
-       ((null target-dir)
-	(message "Tab %d is not bound to any path" index))
-       ((not (file-directory-p target-dir))
-	(aset my-dired-tab-list actual-index nil)
-	(message "Tab %d unbound: directory no longer exists: %s"
-		 index (abbreviate-file-name target-dir)))
-       (t
-	(find-alternate-file target-dir)
-	(message "Switched to tab %d: %s" index (abbreviate-file-name target-dir))
-	(when (bound-and-true-p dired-preview-global-mode)
-          (dired-preview-trigger t))))))
-
-  (defun my-dired-tab-list-show ()
-    "Display all current tab bindings."
-    (interactive)
-    (let ((buf (get-buffer-create "*Dired Tab Bindings*")))
-      (with-current-buffer buf
-        (erase-buffer)
-        (insert "Dired Tab Bindings:\n\n")
-        (dotimes (i 10)
-          (let ((display-num (if (= i 9) 0 (1+ i)))
-                (path (aref my-dired-tab-list i)))
-            (insert (format "%d. %s\n"
-                            display-num
-                            (if path (abbreviate-file-name path) "(not bound)"))))))
-      (display-buffer buf)))
-
-  (defun my-dired-tab-remove-current ()
-    "Unbind current directory from tab list."
-    (interactive)
-    (let ((current-dir default-directory)
-          (unbound nil))
-      (dotimes (i 10)
-        (when (equal (aref my-dired-tab-list i) current-dir)
-          (aset my-dired-tab-list i nil)
-          (setq unbound t)
-          (message "Tab %d unbound." (if (= i 9) 0 (1+ i)))))
-      (unless unbound
-        (message "Current directory not found in tab bindings"))))
-
-  ;; Generate the interactive bind/switch functions for keys 0-9.
-  (dotimes (i 10)
-    (let ((key (if (= i 9) 0 (1+ i))))
-      (defalias (intern (format "my-dired-tab-bind-%d" key))
-        (lambda () (interactive) (my-dired-tab-bind key)))
-      (defalias (intern (format "my-dired-tab-switch-%d" key))
-        (lambda () (interactive) (my-dired-tab-switch key)))))
-
-  ;; -----------------------------------------------------------------------
   ;; Misc toggles menu
   ;; -----------------------------------------------------------------------
   (transient-define-prefix my-dired-toggle-transient ()
     [
      ["Toggle"
       :if-derived 'dired-mode
-      ("T" "tab list"    my-dired-tab-list-show)
+      ;; ("T" "Tab list"    dired-shortcuts-tab-list-show)
+      ("R" "Tab rm"      dired-shortcuts-tab-remove-current)
       ("t" "thumbnail"   media-thumbnail-dired-mode)
       ("d" "detail"      dired-hide-details-mode)
       ("u" "du"          dired-du-mode)
@@ -225,33 +105,39 @@ If the bound directory no longer exists, unbind the tab and report it."
         ("A" . dired-create-directory)
 
         ;; Edit mode
-        ("r" . wdired-change-to-wdired-mode)
+        ("r" . wdired-change-to-wdired-mode)))
 
-        ;; Copy name/path variants menu
-        ("c" . my-dired-copy-transient)
-
+(use-package dired-shortcuts
+  :ensure nil
+  :load-path "site-lisp"
+  :after dired
+  :init
+  (add-to-list 'savehist-additional-variables 'dired-shortcuts-tab-list)
+  :bind
+  (:map dired-mode-map
+        ;; Copy transient
+        ("c" . dired-shortcuts-copy-transient)
         ;; Numbered tabs
-        ("!"   . my-dired-tab-remove-current)
-        ("C-1" . my-dired-tab-bind-1)
-        ("C-2" . my-dired-tab-bind-2)
-        ("C-3" . my-dired-tab-bind-3)
-        ("C-4" . my-dired-tab-bind-4)
-        ("C-5" . my-dired-tab-bind-5)
-        ("C-6" . my-dired-tab-bind-6)
-        ("C-7" . my-dired-tab-bind-7)
-        ("C-8" . my-dired-tab-bind-8)
-        ("C-9" . my-dired-tab-bind-9)
-        ("C-0" . my-dired-tab-bind-0)
-        ("1"   . my-dired-tab-switch-1)
-        ("2"   . my-dired-tab-switch-2)
-        ("3"   . my-dired-tab-switch-3)
-        ("4"   . my-dired-tab-switch-4)
-        ("5"   . my-dired-tab-switch-5)
-        ("6"   . my-dired-tab-switch-6)
-        ("7"   . my-dired-tab-switch-7)
-        ("8"   . my-dired-tab-switch-8)
-        ("9"   . my-dired-tab-switch-9)
-        ("0"   . my-dired-tab-switch-0)))
+        ("C-1" . dired-shortcuts-tab-bind-1)
+        ("C-2" . dired-shortcuts-tab-bind-2)
+        ("C-3" . dired-shortcuts-tab-bind-3)
+        ("C-4" . dired-shortcuts-tab-bind-4)
+        ("C-5" . dired-shortcuts-tab-bind-5)
+        ("C-6" . dired-shortcuts-tab-bind-6)
+        ("C-7" . dired-shortcuts-tab-bind-7)
+        ("C-8" . dired-shortcuts-tab-bind-8)
+        ("C-9" . dired-shortcuts-tab-bind-9)
+        ("C-0" . dired-shortcuts-tab-bind-0)
+        ("1"   . dired-shortcuts-tab-switch-1)
+        ("2"   . dired-shortcuts-tab-switch-2)
+        ("3"   . dired-shortcuts-tab-switch-3)
+        ("4"   . dired-shortcuts-tab-switch-4)
+        ("5"   . dired-shortcuts-tab-switch-5)
+        ("6"   . dired-shortcuts-tab-switch-6)
+        ("7"   . dired-shortcuts-tab-switch-7)
+        ("8"   . dired-shortcuts-tab-switch-8)
+        ("9"   . dired-shortcuts-tab-switch-9)
+        ("0"   . dired-shortcuts-tab-switch-0)))
 
 (use-package dired-satchel
   :ensure nil
