@@ -88,6 +88,8 @@
         ("j" . dired-next-line)
         ("k" . dired-previous-line)
         ("l" . dired-find-file)
+        ("]" . scroll-up-command)
+        ("[" . scroll-down-command)
         ("n" . my-dired-goto-favorite)
         ("'" . bookmark-jump)
         ("z" . dired-jump-with-zoxide)
