@@ -1,8 +1,5 @@
 ;;; dired-satchel.el --- Stash files in Dired, then copy/move/delete them, live or scripted -*- lexical-binding: t -*-
 
-;; Author: you
-;; Keywords: files, convenience, dired
-
 ;;; Commentary:
 
 ;; `dired-satchel' lets you "pack" (stash) files from one or more Dired
@@ -21,6 +18,10 @@
 ;; mark that is redrawn automatically whenever a Dired buffer is
 ;; (re)read — including after `find-alternate-file', which many
 ;; tab/bookmark setups use to switch directories in place.
+;;
+;; Use `satchel-script-progress' to check how many commands/files are
+;; still queued in the script, or to jump straight to the live output
+;; of a script that is currently running.
 ;;
 ;; Suggested keybindings (see accompanying init-dired.el snippet):
 ;;
@@ -283,9 +284,16 @@ deletion (marked with `d', dired-del-marker) in this Dired buffer."
   "Files whose persistent marks should be cleared once the in-flight
 script run finishes successfully.")
 
+(defvar satchel--script-running nil
+  "Non-nil while the satchel script's compilation process is alive.
+Kept in sync by `satchel-script-execute' and
+`satchel--script-finish-cleanup', and refreshed on demand by
+`satchel-script-progress'.")
+
 (defun satchel--script-finish-cleanup (_buf msg)
   "Compilation-finish handler that clears pending marks once the
 satchel script has finished running."
+  (setq satchel--script-running nil)
   (when (and satchel--script-pending-cleanup (string-match-p "^finished" msg))
     (dolist (f satchel--script-pending-cleanup)
       (satchel--forget-mark f)
@@ -310,10 +318,52 @@ for every file queued into the script (copy, move, or delete)."
          (compilation-buffer-name-function (lambda (_mode) buf-name)))
     (setq satchel--script-pending-cleanup satchel-script-pending-files)
     (setq satchel-script-pending-files nil)
+    (setq satchel--script-running t)
     (add-hook 'compilation-finish-functions #'satchel--script-finish-cleanup)
     (compile (format "bash %s" (shell-quote-argument satchel-script-file)))
     (with-current-buffer buf-name
       (setq-local compilation-scroll-output t))))
+
+;; ---------------------------------------------------------------------
+;; Progress inspection
+;; ---------------------------------------------------------------------
+
+(defun satchel--script-count-queued-commands ()
+  "Count how many commands (copy/move/delete blocks) are queued in
+`satchel-script-file', based on the `# ' comment line each block starts with."
+  (if (file-exists-p satchel-script-file)
+      (with-temp-buffer
+        (insert-file-contents satchel-script-file)
+        (how-many "^# " (point-min) (point-max)))
+    0))
+
+(defun satchel-script-progress ()
+  "Show progress of the satchel script.
+
+Reports how many commands are queued in the script and how many files
+are still pending (queued but not yet run). If the script's
+compilation process is currently alive, jumps straight to the live
+output in the `*satchel-execute*' buffer instead of just printing a
+summary, since that's where the real progress (e.g. rsync's
+--progress output) is visible."
+  (interactive)
+  (let* ((queued (satchel--script-count-queued-commands))
+         (pending (length satchel-script-pending-files))
+         (buf (get-buffer "*satchel-execute*"))
+         (proc (and buf (get-buffer-process buf)))
+         (running (and proc (process-live-p proc))))
+    (setq satchel--script-running (and running t))
+    (cond
+     (running
+      (message "Satchel script is running: %d command(s) queued, %d file(s) pending — jumping to live output"
+               queued pending)
+      (pop-to-buffer buf)
+      (goto-char (point-max)))
+     ((file-exists-p satchel-script-file)
+      (message "Satchel script is not running: %d command(s) queued, %d file(s) pending (script: %s)"
+               queued pending (abbreviate-file-name satchel-script-file)))
+     (t
+      (message "No satchel script yet — nothing queued")))))
 
 ;; ---------------------------------------------------------------------
 ;; Script mode toggle: same keys (y/p/P/d/x), immediate vs. scripted
@@ -443,10 +493,11 @@ any delete commands, plus any copy/move commands)."
   "Satchel (stash/rsync script) management menu."
   ["Satchel script"
    :if-derived 'dired-mode
-   ("v" "Open script"    satchel-script-open)
-   ("c" "Clear script"   satchel-script-clear)
-   ("x" "Execute script" satchel-script-execute)
-   ("y" "Empty satchel"  satchel-unpack)]
+   ("v" "Script progress" satchel-script-progress)
+   ("s" "Open script"     satchel-script-open)
+   ("c" "Clear script"    satchel-script-clear)
+   ("x" "Execute script"  satchel-script-execute)
+   ("y" "Empty satchel"   satchel-unpack)]
   ["Actions"
    ("q" "Quit" transient-quit-all)])
 
