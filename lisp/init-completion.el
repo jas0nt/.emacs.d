@@ -4,11 +4,13 @@
 ;; In-Buffer Completion (Corfu)
 ;; -----------------------------------------------------------------------
 (use-package corfu
-  :disabled t
   :init
   (global-corfu-mode)
+  (corfu-popupinfo-mode)
   :custom
   (corfu-auto t)                    ; Enable auto completion
+  (corfu-auto-delay 0.1)
+  (corfu-auto-prefix 1)
   (corfu-cycle t)                   ; Enable cycling for `corfu-next/previous'
   (corfu-preselect 'prompt)         ; Always preselect the prompt
   (corfu-quit-no-match 'separator)  ; Quit if no match (easier to type new things)
