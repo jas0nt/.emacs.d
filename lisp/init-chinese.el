@@ -2,14 +2,14 @@
 (use-package fanyi)
 
 (use-package pyim
-   :init
-   (pyim-default-scheme 'xiaohe-shuangpin)
-   :config
-   ;; 让 vertico 通过 orderless 支持拼音搜索候选项功能
-   (defun my-orderless-regexp (orig_func component)
-     (let ((result (funcall orig_func component)))
-	(pyim-cregexp-build result)))
-   (advice-add 'orderless-regexp :around #'my-orderless-regexp))
+  :init
+  (pyim-default-scheme 'xiaohe-shuangpin)
+  :config
+  ;; 让 vertico 通过 orderless 支持拼音搜索候选项功能
+  (defun my-orderless-regexp (orig_func component)
+    (let ((result (funcall orig_func component)))
+      (pyim-cregexp-build result)))
+  (advice-add 'orderless-regexp :around #'my-orderless-regexp))
 
 
 (use-package rime
@@ -25,8 +25,7 @@
 
   (setq rime-share-data-dir "~/.local/share/fcitx5/rime")
 
-  (setq default-input-method "rime"
-	rime-show-candidate 'posframe))
+  (setq default-input-method "rime" rime-show-candidate 'posframe))
 
 
 (provide 'init-chinese)
