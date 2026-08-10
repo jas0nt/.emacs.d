@@ -41,6 +41,7 @@
 (require 'dired)
 (require 'transient)
 (require 'cl-lib)
+(require 'notifications)
 
 (defgroup dired-satchel nil
   "Stash Dired files and copy/move/delete them, live or scripted."
@@ -62,6 +63,12 @@
 (defcustom satchel-marker-char ?S
   "Marker character used to visually flag files packed into the satchel."
   :type 'character
+  :group 'dired-satchel)
+
+(defcustom satchel-notify-on-finish t
+  "When non-nil, show a desktop notification via `notifications-notify'
+\(D-Bus\) once the satchel script finishes running (success or failure)."
+  :type 'boolean
   :group 'dired-satchel)
 
 (defvar satchel-stash nil
@@ -290,14 +297,33 @@ Kept in sync by `satchel-script-execute' and
 `satchel--script-finish-cleanup', and refreshed on demand by
 `satchel-script-progress'.")
 
+(defun satchel--notify (success msg)
+  "Show a desktop notification that the satchel script has finished,
+via `notifications-notify' (D-Bus). SUCCESS is non-nil if it finished
+cleanly; MSG is the raw compilation-finish status string, used for
+the failure detail."
+  (when satchel-notify-on-finish
+    (let* ((title "Dired Satchel")
+           (body (if success
+                     (format "Script finished successfully: %s"
+                             (abbreviate-file-name satchel-script-file))
+                   (format "Script FAILED (%s): %s"
+                           (string-trim msg)
+                           (abbreviate-file-name satchel-script-file)))))
+      (notifications-notify :title title :body body
+                             :urgency (if success 'normal 'critical)))))
+
 (defun satchel--script-finish-cleanup (_buf msg)
   "Compilation-finish handler that clears pending marks once the
-satchel script has finished running."
+satchel script has finished running, and shows a desktop notification
+reporting whether it succeeded or failed."
   (setq satchel--script-running nil)
-  (when (and satchel--script-pending-cleanup (string-match-p "^finished" msg))
-    (dolist (f satchel--script-pending-cleanup)
-      (satchel--forget-mark f)
-      (satchel--mark-in-all-buffers f ?\s)))
+  (let ((success (string-match-p "^finished" msg)))
+    (when (and satchel--script-pending-cleanup success)
+      (dolist (f satchel--script-pending-cleanup)
+        (satchel--forget-mark f)
+        (satchel--mark-in-all-buffers f ?\s)))
+    (satchel--notify success msg))
   (setq satchel--script-pending-cleanup nil)
   (remove-hook 'compilation-finish-functions #'satchel--script-finish-cleanup))
 
