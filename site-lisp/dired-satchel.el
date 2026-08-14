@@ -301,7 +301,10 @@ Kept in sync by `satchel-script-execute' and
   "Show a desktop notification that the satchel script has finished,
 via `notifications-notify' (D-Bus). SUCCESS is non-nil if it finished
 cleanly; MSG is the raw compilation-finish status string, used for
-the failure detail."
+the failure detail. The notification stays on screen until the user
+dismisses it manually (`:timeout 0' per the Desktop Notifications
+spec — most daemons, e.g. dunst/mako, honor this as \"never expire\";
+a few ignore it and fall back to their own default timeout)."
   (when satchel-notify-on-finish
     (let* ((title "Dired Satchel")
            (body (if success
@@ -311,7 +314,8 @@ the failure detail."
                            (string-trim msg)
                            (abbreviate-file-name satchel-script-file)))))
       (notifications-notify :title title :body body
-                             :urgency (if success 'normal 'critical)))))
+                             :urgency (if success 'normal 'critical)
+                             :timeout 0))))
 
 (defun satchel--script-finish-cleanup (_buf msg)
   "Compilation-finish handler that clears pending marks once the
