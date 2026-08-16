@@ -113,6 +113,7 @@
   :ensure nil
   :load-path "site-lisp"
   :after dired
+  :commands (dired-shortcuts-tab-remove-current)
   :init
   (add-to-list 'savehist-additional-variables 'dired-shortcuts-tab-list)
   :bind
