@@ -319,14 +319,20 @@ a few ignore it and fall back to their own default timeout)."
 
 (defun satchel--script-finish-cleanup (_buf msg)
   "Compilation-finish handler that clears pending marks once the
-satchel script has finished running, and shows a desktop notification
-reporting whether it succeeded or failed."
+satchel script has finished running, shows a desktop notification
+reporting whether it succeeded or failed, and — on success — deletes
+the script file itself so the next queued action starts a fresh
+script instead of appending to old, already-run commands. The script
+is left in place on failure so it can be inspected/retried."
   (setq satchel--script-running nil)
   (let ((success (string-match-p "^finished" msg)))
-    (when (and satchel--script-pending-cleanup success)
-      (dolist (f satchel--script-pending-cleanup)
-        (satchel--forget-mark f)
-        (satchel--mark-in-all-buffers f ?\s)))
+    (when success
+      (when satchel--script-pending-cleanup
+        (dolist (f satchel--script-pending-cleanup)
+          (satchel--forget-mark f)
+          (satchel--mark-in-all-buffers f ?\s)))
+      (when (file-exists-p satchel-script-file)
+        (delete-file satchel-script-file)))
     (satchel--notify success msg))
   (setq satchel--script-pending-cleanup nil)
   (remove-hook 'compilation-finish-functions #'satchel--script-finish-cleanup))
