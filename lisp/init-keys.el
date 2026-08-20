@@ -16,14 +16,13 @@
     ("f" "project file" consult-projectile-find-file)
     ("F" "project file" consult-projectile-find-file-other-window)
     ("d" "project dir" consult-projectile-find-dir)
-    ("D" "dired" dired)
     ("p" "project" consult-projectile-switch-project)
     ("r" "recentf" consult-recent-file)
     ("b" "bookmark" bookmark-jump)
     ("a" "find-file-at-point" find-file-at-point)
+    ("c" "clipboard" cxc/find-file-in-clipboard)
     ]
    ["actions"
-    ("s" "save-buffer" save-buffer)
     ("S" "save-some-buffers" save-some-buffers)
     ("q" "quit" transient-quit-all)
     ]
@@ -163,7 +162,7 @@
  "C-x b" 'consult-buffer
 
  "C-c C-/" 'evilnc-comment-or-uncomment-lines
- "C-c C-k" 'kill-current-buffer
+ "C-c C-k" 'cxc/kill-current-buffer
  "C-c v" 'magit
  "C-c T" 'ghostel
  "C-c f" 'my-transient-file

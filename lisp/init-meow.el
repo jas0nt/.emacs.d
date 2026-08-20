@@ -55,8 +55,7 @@
      '("B" . meow-back-symbol)
      '("f" . meow-find)
      '("t" . meow-till)
-     '("Q" . meow-goto-line)
-     '("V" . meow-goto-line)
+     '("V" . avy-goto-line)
 
      ;; ---------- Selection expand ----------
      '("H" . meow-left-expand)

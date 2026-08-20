@@ -1,29 +1,29 @@
-;;;###autoload
-(defun jst/find-file-in-clipboard ()
-  "open file in clipboard"
-  (interactive)
-  (when (file-exists-p (current-kill 0))
-    (find-file (current-kill 0))))
+;;; -*- lexical-binding: t; -*-
 
 ;;;###autoload
-(defun jst/toggle-ui-transparency ()
-  "Toggle transparency using the modern Emacs 29+ alpha-background."
+(defun cxc/find-file-in-clipboard ()
+  "Open the file whose path is stored in the clipboard."
+  (interactive)
+  (let ((file (string-trim (current-kill 0))))
+    (if (file-exists-p file)
+        (find-file file)
+      (message "Not a valid file: %s" file))))
+
+;;;###autoload
+(defun cxc/toggle-ui-transparency ()
+  "Toggle frame transparency using Emacs 29+ `alpha-background'."
   (interactive)
   (let ((alpha (frame-parameter nil 'alpha-background)))
     (set-frame-parameter
      nil 'alpha-background
-     (if (or (not alpha) (= alpha 100))
-         75    ; Turn on transparency
-       100)))) ; Turn off (100% opaque)
+     (if (and alpha (/= alpha 100)) 100 75))))
 
 ;;;###autoload
-(defun jst/kill-current-buffer ()
-  "kill current buffer but keep the last window"
+(defun cxc/kill-current-buffer ()
+  "Kill the current buffer, then close its window unless it is the last one."
   (interactive)
-  (progn
-    (kill-current-buffer)
-    (when (> (length (window-list)) 1)
-      (delete-window))))
-
+  (kill-current-buffer)
+  (when (> (length (window-list)) 1)
+    (delete-window)))
 
 (provide 'init-common)
