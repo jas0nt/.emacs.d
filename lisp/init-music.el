@@ -70,7 +70,7 @@
 ;; -----------------------------------------------------------------------
 ;; Transient Music Controller
 ;; -----------------------------------------------------------------------
-(transient-define-prefix my-transient-music ()
+(transient-define-prefix cxc/transient-music ()
   "Music Controller (EMMS)."
   [["Playback"
     ("<SPC>" "Play/Pause"      emms-pause)

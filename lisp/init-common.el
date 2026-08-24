@@ -26,4 +26,9 @@
   (when (> (length (window-list)) 1)
     (delete-window)))
 
+;;;###autoload
+(defun cxc/prev-buffer ()
+  (interactive)
+  (switch-to-buffer (other-buffer (current-buffer) 1)))
+
 (provide 'init-common)

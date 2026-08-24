@@ -25,7 +25,7 @@
   :bind
   (("C-`" . ghostel)
    :map ghostel-semi-char-mode-map
-   ("C-`" . my-prev-buffer)
+   ("C-`" . cxc/prev-buffer)
    ("C-s" . consult-line)
    ("C-k" . my-ghostel-send-C-k-and-kill)))
 

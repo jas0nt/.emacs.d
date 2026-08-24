@@ -9,7 +9,7 @@
   (which-key-enable-god-mode-support))
 
 
-(transient-define-prefix my-transient-file ()
+(transient-define-prefix cxc/transient-file ()
   "transient-file"
   [
    ["find-file"
@@ -29,7 +29,7 @@
    ]
   )
 
-(transient-define-prefix my-transient-jump ()
+(transient-define-prefix cxc/transient-jump ()
   [
    ["goto-char"
     ("j" "goto-char-timer" avy-goto-char-timer)
@@ -55,7 +55,7 @@
     ]
    ])
 
-(transient-define-prefix my-transient-search ()
+(transient-define-prefix cxc/transient-search ()
   [
    ["content"
     ("i" "imenu" consult-imenu)
@@ -86,19 +86,19 @@
 
 (winner-mode 1)
 
-(defun my-split-window-vertical ()
+(defun cxc/split-window-vertical ()
   "Split window right and move point to the new window."
   (interactive)
   (split-window-right)
   (windmove-right))
 
-(defun my-split-window-horizontal ()
+(defun cxc/split-window-horizontal ()
   "Split window below and move point to the new window."
   (interactive)
   (split-window-below)
   (windmove-down))
 
-(transient-define-prefix my-transient-window ()
+(transient-define-prefix cxc/transient-window ()
   [
    ["nav"
     ("h" "←" windmove-left :transient t)
@@ -117,8 +117,8 @@
     ]
 
    ["split"
-    ("/" "vertical" my-split-window-vertical)
-    ("?" "horizontal" my-split-window-horizontal)
+    ("/" "vertical" cxc/split-window-vertical)
+    ("?" "horizontal" cxc/split-window-horizontal)
     ]
 
    ["resize"
@@ -141,10 +141,6 @@
    ])
 
 
-(defun my-prev-buffer ()
-  (interactive)
-  (switch-to-buffer (other-buffer (current-buffer) 1)))
-
 (general-define-key
  "<f5>" 'revert-buffer
  "M-<up>" 'switch-to-prev-buffer
@@ -154,7 +150,7 @@
  "M-o" 'ace-window
  "M-y" 'consult-yank-pop
 
- "C-," 'my-prev-buffer
+ "C-," 'cxc/prev-buffer
  "C-;" 'consult-buffer
  "C-'" 'avy-goto-char-2
  "C-s" 'consult-line
@@ -165,11 +161,11 @@
  "C-c C-k" 'cxc/kill-current-buffer
  "C-c v" 'magit
  "C-c T" 'ghostel
- "C-c f" 'my-transient-file
- "C-c j" 'my-transient-jump
- "C-c s" 'my-transient-search
- "C-c w" 'my-transient-window
- "C-c p" 'my-transient-music)
+ "C-c f" 'cxc/transient-file
+ "C-c j" 'cxc/transient-jump
+ "C-c s" 'cxc/transient-search
+ "C-c w" 'cxc/transient-window
+ "C-c p" 'cxc/transient-music)
 
 
 (provide 'init-keys)

@@ -169,11 +169,11 @@
 (meow-leader-define-key
  '("q" . delete-other-windows)
  '(";" . consult-buffer)
- '("," . my-prev-buffer)
- '("f" . my-transient-file)
- '("j" . my-transient-jump)
- '("s" . my-transient-search)
- '("w" . my-transient-window)
- '("p" . my-transient-music))
+ '("," . cxc/prev-buffer)
+ '("f" . cxc/transient-file)
+ '("j" . cxc/transient-jump)
+ '("s" . cxc/transient-search)
+ '("w" . cxc/transient-window)
+ '("p" . cxc/transient-music))
 
 (provide 'init-meow)
