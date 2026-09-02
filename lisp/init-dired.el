@@ -4,6 +4,7 @@
   :ensure nil ; Built-in package
   :custom
   (dired-kill-when-opening-new-dired-buffer t)
+  (dired-movement-style 'bounded-files)
   (dired-dwim-target t)
   (dired-listing-switches
    "-l --almost-all --human-readable --group-directories-first --no-group")
