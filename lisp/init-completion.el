@@ -55,7 +55,6 @@
                  (window-parameters (mode-line-format . none)))))
 
 (use-package embark-consult
-  :ensure t
   :after (embark consult)
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
@@ -79,7 +78,10 @@
 ;; -----------------------------------------------------------------------
 ;; Consult & Search
 ;; -----------------------------------------------------------------------
-(use-package consult)
+(use-package consult
+  :init
+  (advice-add #'register-preview :override #'consult-register-window))
+
 (use-package consult-projectile)
 (use-package posframe)
 
