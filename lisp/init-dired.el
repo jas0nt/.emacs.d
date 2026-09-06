@@ -189,9 +189,10 @@ packages share the exact same cached thumbnail file on disk."
     `((display-buffer-in-side-window)
       (side . right)
       (slot . 0)
-      (window-width . 0.4)
+      (window-width . 0.45)
       (preserve-size . (t . nil))))
-  (setq dired-preview-display-action-alist #'my-dired-preview-to-the-right))
+  (setq dired-preview-display-action-alist #'my-dired-preview-to-the-right)
+  (dired-preview-global-mode 1))
 
 (use-package dired-du
   :after dired
