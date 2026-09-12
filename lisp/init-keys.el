@@ -149,6 +149,8 @@
  "M-<right>" 'other-window
  "M-o" 'ace-window
  "M-y" 'consult-yank-pop
+ "M-z" 'zap-to-char
+ "M-Z" 'zap-up-to-char
 
  "C-," 'cxc/prev-buffer
  "C-;" 'consult-buffer
