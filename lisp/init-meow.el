@@ -56,6 +56,8 @@
      '("f" . meow-find)
      '("t" . meow-till)
      '("V" . avy-goto-line)
+     '("M" . forward-sexp)
+     '("N" . backward-sexp)
 
      ;; ---------- Selection expand ----------
      '("H" . meow-left-expand)
