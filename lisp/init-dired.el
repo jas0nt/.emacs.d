@@ -56,7 +56,6 @@
     [
      ["Toggle"
       :if-derived 'dired-mode
-      ;; ("T" "Tab list"    dired-shortcuts-tab-list-show)
       ("R" "Tab rm"      dired-shortcuts-tab-remove-current)
       ("t" "thumbnail"   media-thumbnail-dired-mode)
       ("d" "detail"      dired-hide-details-mode)
@@ -80,6 +79,7 @@
   :bind
   ("C-x C-d" . (lambda () (interactive) (dired default-directory)))
   (:map dired-mode-map
+        ("q"    . cxc/kill-current-buffer)
         ("<f5>" . revert-buffer)
         ("C"    . dired-do-compress-to)
         ("t"    . my-dired-toggle-transient)
@@ -100,7 +100,7 @@
         ;; Open
         ("<RET>"      . my-dired-do-open-current-only)
         ("C-<return>" . dired-do-open)
-        ("T"          . my-dired-open-kitty-here)
+        ("`"          . my-dired-open-kitty-here)
         ("O"          . dired-do-shell-command)
 
         ;; Create

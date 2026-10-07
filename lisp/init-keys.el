@@ -161,7 +161,6 @@
 
  "C-c C-/" 'evilnc-comment-or-uncomment-lines
  "C-c C-k" 'cxc/kill-current-buffer
- "C-c e" 'dired-toggle
  "C-c v" 'magit
  "C-c T" 'ghostel
  "C-c f" 'cxc/transient-file

@@ -38,7 +38,7 @@
 (require 'init-vc)
 (require 'init-dashboard)
 (require 'init-python)
-(require 'init-rust)
+(require 'init-lang)
 (require 'init-lsp)
 (require 'init-other)
 
