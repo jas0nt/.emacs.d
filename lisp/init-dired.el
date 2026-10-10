@@ -13,41 +13,13 @@
   (put 'dired-find-alternate-file 'disabled nil)
 
   ;; -----------------------------------------------------------------------
-  ;; Favorites
-  ;; -----------------------------------------------------------------------
-  (defvar my-dired-favorites
-    '(("Home"      . "~/")
-      ("Downloads" . "~/Downloads/")
-      ("X"         . "/run/media")
-      ("Trash"     . "~/.local/share/Trash/files/"))
-    "Alist of (NAME . DIRECTORY) favorite locations.")
-
-  (defun my-dired-goto-favorite (&optional other-window)
-    "Jump to a favorite directory in Dired."
-    (interactive "P")
-    (let* ((names (mapcar #'car my-dired-favorites))
-           (choice (completing-read "Favorite: " names nil t))
-           (dir (expand-file-name (cdr (assoc choice my-dired-favorites)))))
-      (if other-window
-          (dired-other-window dir)
-        (dired dir))))
-
-  ;; -----------------------------------------------------------------------
-  ;; Open file / external terminal
+  ;; Open file
   ;; -----------------------------------------------------------------------
   (defun my-dired-do-open-current-only ()
     "Open the file at point using an external app, ignoring any marked files."
     (interactive)
     (let ((dired-marker-char ?\0))
       (dired-do-open)))
-
-  (defun my-dired-open-kitty-here ()
-    "Open a Kitty terminal in the current directory without blocking Emacs."
-    (interactive)
-    (let ((current-dir (dired-current-directory)))
-      ;; `start-process' avoids the annoying *Async Shell Command* buffer.
-      (start-process "kitty" nil "kitty" "-d" current-dir)
-      (message "Launched Kitty in: %s" current-dir)))
 
   ;; -----------------------------------------------------------------------
   ;; Misc toggles menu
@@ -56,8 +28,9 @@
     [
      ["Toggle"
       :if-derived 'dired-mode
-      ("R" "Tab rm"      dired-shortcuts-tab-remove-current)
-      ("t" "thumbnail"   media-thumbnail-dired-mode)
+      ("t" "Tab new"     dired-tabs-new)
+      ("c" "Tab close"   dired-tabs-close)
+      ("T" "thumbnail"   media-thumbnail-dired-mode)
       ("d" "detail"      dired-hide-details-mode)
       ("u" "du"          dired-du-mode)
       ("g" "git"         dired-k)
@@ -100,7 +73,7 @@
         ;; Open
         ("<RET>"      . my-dired-do-open-current-only)
         ("C-<return>" . dired-do-open)
-        ("`"          . my-dired-open-kitty-here)
+        ("`"          . dired-shortcuts-open-terminal)
         ("O"          . dired-do-shell-command)
 
         ;; Create
@@ -114,34 +87,24 @@
   :ensure nil
   :load-path "site-lisp"
   :after dired
-  :commands (dired-shortcuts-tab-remove-current)
-  :init
-  (add-to-list 'savehist-additional-variables 'dired-shortcuts-tab-list)
   :bind
   (:map dired-mode-map
-        ;; Copy transient
-        ("c" . dired-shortcuts-copy-transient)
-        ;; Numbered tabs
-        ("C-1" . dired-shortcuts-tab-bind-1)
-        ("C-2" . dired-shortcuts-tab-bind-2)
-        ("C-3" . dired-shortcuts-tab-bind-3)
-        ("C-4" . dired-shortcuts-tab-bind-4)
-        ("C-5" . dired-shortcuts-tab-bind-5)
-        ("C-6" . dired-shortcuts-tab-bind-6)
-        ("C-7" . dired-shortcuts-tab-bind-7)
-        ("C-8" . dired-shortcuts-tab-bind-8)
-        ("C-9" . dired-shortcuts-tab-bind-9)
-        ("C-0" . dired-shortcuts-tab-bind-0)
-        ("1"   . dired-shortcuts-tab-switch-1)
-        ("2"   . dired-shortcuts-tab-switch-2)
-        ("3"   . dired-shortcuts-tab-switch-3)
-        ("4"   . dired-shortcuts-tab-switch-4)
-        ("5"   . dired-shortcuts-tab-switch-5)
-        ("6"   . dired-shortcuts-tab-switch-6)
-        ("7"   . dired-shortcuts-tab-switch-7)
-        ("8"   . dired-shortcuts-tab-switch-8)
-        ("9"   . dired-shortcuts-tab-switch-9)
-        ("0"   . dired-shortcuts-tab-switch-0)))
+	("c" . dired-shortcuts-copy-transient)
+	("n" . dired-shortcuts-goto-transient)
+	("o" . dired-shortcuts-open-transient)))
+
+(use-package dired-tabs
+  :ensure nil
+  :load-path "site-lisp"
+  :after dired
+  :commands (dired-tabs-new)
+  :bind
+  (:map dired-mode-map
+	("1" . dired-tabs-goto) ("2" . dired-tabs-goto) ("3" . dired-tabs-goto)
+	("4" . dired-tabs-goto) ("5" . dired-tabs-goto) ("6" . dired-tabs-goto)
+	("7" . dired-tabs-goto) ("8" . dired-tabs-goto) ("9" . dired-tabs-goto)
+	("H" . dired-tabs-prev) ("L" . dired-tabs-next)
+	("{" . dired-tabs-move-left) ("}" . dired-tabs-move-right)))
 
 (use-package dired-satchel
   :ensure nil
@@ -182,7 +145,7 @@ packages share the exact same cached thumbnail file on disk."
   (dired-preview-delay 0.3)
   (dired-preview-max-size (* 50 1024 1024))
   :config
-  (dolist (cmd '(revert-buffer satchel-action-flag-deletion))
+  (dolist (cmd '(revert-buffer satchel-action-flag-deletion dired-tabs-goto))
     (add-to-list 'dired-preview-trigger-commands cmd t))
   (defun my-dired-preview-to-the-right ()
     "Display dired-preview window on the right side."
