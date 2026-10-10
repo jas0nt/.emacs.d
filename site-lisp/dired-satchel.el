@@ -4,57 +4,48 @@
 
 ;; `dired-satchel' lets you "pack" (stash) files from one or more Dired
 ;; buffers into a single satchel, then "deliver" them elsewhere with a
-;; copy or move, or flag files for deletion — either immediately, or
+;; copy or move, or flag files for deletion -- either immediately, or
 ;; accumulated into a shell script (rsync for copy/move, rm for delete)
 ;; that you review and run later.
 ;;
 ;; Two modes, same keys:
 ;; - LIVE mode:   actions run immediately via built-in Dired primitives.
 ;; - SCRIPT mode: actions queue an operation (copy/move/delete) into
-;;                `satchel--script-ops', a purely in-memory list that
-;;                is the single source of truth for the script.
+;;                `satchel--script-ops', a purely in-memory list.
 ;;
-;; IMPORTANT — disk writes are manual: packing, copying, moving,
-;; deleting, and unmarking only ever touch `satchel--script-ops' in
-;; memory. Nothing is written to `satchel-script-file' until you do
-;; one of the three things that write it out:
-;;   - `satchel-script-write' (bound to "w" in `satchel-transient')
-;;     just writes, without opening anything.
-;;   - `satchel-script-open' writes, then opens the file for review.
-;;   - `satchel-script-execute' writes, then runs it.
-;; All three regenerate the file from scratch from the current queue,
-;; so whichever one you use, what ends up on disk always matches
-;; `satchel--script-ops' at that moment — never a stale snapshot.
-;; This trades a small amount of crash-safety (an in-memory queue you
-;; never wrote out via one of the above is gone if Emacs dies) for
-;; zero disk I/O on the hot path of packing/marking/unmarking files,
-;; which matters once the queue gets large.
+;; Script file lifecycle (deliberately simple):
 ;;
-;; Because the script file is always *derived in full* from
-;; `satchel--script-ops' rather than being append-only text, unmarking
-;; a queued file (the standard `u'/`U' Dired keys) actually removes
-;; its command from the queue — for a copy/move op this shrinks the
-;; rsync command's file list (or drops the whole op if it becomes
-;; empty); for a delete op it drops the op outright. The next write
-;; (manual or at execute time) reflects that removal.
+;; - The queue lives in memory only.  Packing, copying, moving,
+;;   deleting and unmarking never touch the disk.
+;; - `satchel-script-file' is written ONLY by `satchel-script-execute',
+;;   right before it runs the script.
+;; - Therefore, if the script file exists on disk, it is a LEFTOVER
+;;   from an interrupted or failed run (reboot, crash, rsync error).
+;;   It is never overwritten.
+;; - A leftover script is removed in exactly two ways:
+;;     1. it runs to completion successfully (automatic cleanup), or
+;;     2. you call `satchel-script-clear' manually.
+;; - `satchel-script-execute' with an empty queue runs the leftover
+;;   script as-is.  With a non-empty queue and a leftover script on
+;;   disk it refuses: run the leftover first (empty the queue), or
+;;   clear it.
+;; - The generated script is idempotent (rsync skips finished files,
+;;   `--partial' resumes big files, rm -f ignores missing files), so
+;;   re-running a leftover script is safe.
 ;;
-;; CAVEAT: since the script file is just a rendering of
-;; `satchel--script-ops', any commands you hand-add via
-;; `satchel-script-open' will be silently discarded the next time
-;; `satchel-script-write' or `satchel-script-execute' runs. Use
-;; `satchel-script-open' for reviewing, not permanent hand-written
-;; additions.
+;; Unmarking a queued file (the standard `u'/`U' Dired keys) removes
+;; its command from the in-memory queue: a copy/move op loses the file
+;; from its rsync source list (or is dropped if it becomes empty); a
+;; delete op is dropped outright.
 ;;
 ;; Files that are packed or flagged for deletion get a persistent visual
 ;; mark that is redrawn automatically whenever a Dired buffer is
-;; (re)read — including after `find-alternate-file', which many
-;; tab/bookmark setups use to switch directories in place.
+;; (re)read -- including after `find-alternate-file'.
 ;;
-;; Use `satchel-script-progress' to check how many operations/files are
-;; still queued, or to jump straight to the live output of a script
-;; that is currently running.
+;; Use `satchel-script-progress' to see how many operations/files are
+;; queued, or to jump to the live output of a running script.
 ;;
-;; Suggested keybindings (see accompanying init-dired.el snippet):
+;; Suggested keybindings:
 ;;
 ;;   (:map dired-mode-map
 ;;         ("y" . satchel-pack)
@@ -73,6 +64,7 @@
 (require 'transient)
 (require 'cl-lib)
 (require 'notifications)
+(require 'compile)
 
 (defgroup dired-satchel nil
   "Stash Dired files and copy/move/delete them, live or scripted."
@@ -84,10 +76,10 @@
 
 (defcustom satchel-script-file
   (expand-file-name "dired-satchel-commands.sh"
-                     (if (boundp 'my-emacs-cache-dir)
-                         my-emacs-cache-dir
-                       user-emacs-directory))
-  "Path to the accumulated rsync/rm commands script file."
+                    (if (boundp 'my-emacs-cache-dir)
+                        my-emacs-cache-dir
+                      user-emacs-directory))
+  "Path to the generated rsync/rm script file."
   :type 'file
   :group 'dired-satchel)
 
@@ -104,16 +96,15 @@
 
 (defcustom satchel-notify-persistent-threshold 60
   "Script runtime, in seconds, at or above which the finish
-notification is shown persistently (stays until manually dismissed).
-Runs shorter than this get a normal, auto-expiring notification
-instead (see `satchel-notify-short-timeout')."
+notification is persistent (stays until dismissed).  Shorter runs get
+a normal, auto-expiring notification (see `satchel-notify-short-timeout')."
   :type 'number
   :group 'dired-satchel)
 
 (defcustom satchel-notify-short-timeout 3000
   "Timeout, in milliseconds, for the finish notification when the
-script ran for less than `satchel-notify-persistent-threshold'
-seconds. Passed straight to `notifications-notify's :timeout."
+script ran for less than `satchel-notify-persistent-threshold' seconds.
+Passed straight to `notifications-notify' as :timeout."
   :type 'integer
   :group 'dired-satchel)
 
@@ -121,7 +112,7 @@ seconds. Passed straight to `notifications-notify's :timeout."
   "List of absolute file names currently packed into the satchel.")
 
 (defvar satchel-script-mode t
-  "When non-nil, satchel actions generate shell commands into
+  "When non-nil, satchel actions queue shell commands for
 `satchel-script-file' instead of executing immediately.
 This is a global toggle shared by all Dired buffers.")
 
@@ -132,12 +123,14 @@ This is a global toggle shared by all Dired buffers.")
 (defvar satchel-persistent-marks (make-hash-table :test 'equal)
   "Map of absolute file name -> dired marker char.
 Used to redraw pack/delete marks after a Dired buffer is recreated,
-e.g. via `find-alternate-file' when switching numbered tabs.")
+e.g. via `find-alternate-file' when switching tabs.")
 
 (defun satchel--record-mark (file char)
+  "Remember CHAR as the persistent mark of FILE."
   (puthash (expand-file-name file) char satchel-persistent-marks))
 
 (defun satchel--forget-mark (file)
+  "Forget the persistent mark of FILE."
   (remhash (expand-file-name file) satchel-persistent-marks))
 
 (defun satchel--visually-mark-file (file char)
@@ -164,8 +157,8 @@ e.g. via `find-alternate-file' when switching numbered tabs.")
       (satchel--visually-mark-file file char))))
 
 (defun satchel-restore-persistent-marks ()
-  "Redraw any marks recorded in `satchel-persistent-marks' for the
-files in the current Dired buffer. Meant for `dired-after-readin-hook'."
+  "Redraw marks recorded in `satchel-persistent-marks' for the files
+in the current Dired buffer.  Meant for `dired-after-readin-hook'."
   (when (derived-mode-p 'dired-mode)
     (save-excursion
       (goto-char (point-min))
@@ -182,37 +175,43 @@ files in the current Dired buffer. Meant for `dired-after-readin-hook'."
 (add-hook 'dired-after-readin-hook #'satchel-restore-persistent-marks)
 
 ;; ---------------------------------------------------------------------
-;; Script operation queue (purely in-memory; single source of truth)
+;; Script operation queue (purely in-memory)
 ;; ---------------------------------------------------------------------
 
 (cl-defstruct (satchel-op (:constructor satchel-op-create))
   "One not-yet-run entry in the satchel script.
-TYPE is `copy', `move', or `delete'. FILES is the list of absolute
-file names involved (a single element for `delete'). DEST is the
+TYPE is `copy', `move', or `delete'.  FILES is the list of absolute
+file names involved (a single element for `delete').  DEST is the
 destination directory for `copy'/`move', nil for `delete'."
   id type files dest)
 
 (defvar satchel--script-ops nil
-  "List of `satchel-op' structs describing every operation currently
-queued, in memory only. Nothing here is written to
-`satchel-script-file' automatically — see `satchel-script-write' and
-`satchel-script-execute', the only two functions that touch disk.
-This list is the single source of truth for the script's eventual
-contents: when it does get written, the file is fully regenerated
-from this list, never hand-appended to. That's what makes it possible
-to remove a single already-queued file (e.g. via the standard Dired
-`u'/`U' unmark keys) and have its command actually disappear, rather
-than merely clearing a visual flag while the command still runs.")
+  "List of `satchel-op' structs describing every queued operation.
+In memory only.  The script file is rendered from this list by
+`satchel-script-execute' (and previewed by `satchel-script-open'),
+never hand-appended to.")
 
 (defvar satchel--op-id-counter 0
   "Monotonic counter used to give each `satchel-op' a unique id.")
 
+(defvar satchel--script-pending-cleanup nil
+  "Files whose persistent marks should be cleared once the in-flight
+script run finishes successfully.")
+
+(defvar satchel--script-running nil
+  "Non-nil while the satchel script's compilation process is alive.")
+
+(defvar satchel--script-start-time nil
+  "Time (as returned by `current-time') at which the current script run
+was launched.  Used to decide whether the finish notification is
+persistent or short-lived.  Nil when no script is running.")
+
 (defun satchel--script-pending-files ()
-  "Flat, de-duplicated list of every file referenced by any operation
-in `satchel--script-ops'."
+  "Flat, de-duplicated list of every file referenced by any queued op."
   (delete-dups (apply #'append (mapcar #'satchel-op-files satchel--script-ops))))
 
 (defun satchel--op-comment (op)
+  "Return a one-line comment describing OP, for the generated script."
   (pcase (satchel-op-type op)
     ('copy (format "copy %d file(s) -> %s"
                    (length (satchel-op-files op)) (satchel-op-dest op)))
@@ -221,73 +220,52 @@ in `satchel--script-ops'."
     ('delete (format "delete: %s" (car (satchel-op-files op))))))
 
 (defun satchel--op-command (op)
+  "Return the shell command for OP."
   (pcase (satchel-op-type op)
     ('copy (satchel--rsync-cmd 'copy (satchel-op-files op) (satchel-op-dest op)))
     ('move (satchel--rsync-cmd 'move (satchel-op-files op) (satchel-op-dest op)))
-    ('delete (format "rm -rf -- %s" (shell-quote-argument (car (satchel-op-files op)))))))
+    ('delete (format "rm -rf -- %s"
+                     (shell-quote-argument (car (satchel-op-files op)))))))
 
-(defun satchel--script-rewrite ()
-  "Write `satchel-script-file' to disk from scratch, based on the
-current `satchel--script-ops'. If there are no queued operations, any
-existing file is deleted instead of being left around empty/stale.
+(defun satchel--render-script ()
+  "Return the full script text rendered from `satchel--script-ops'."
+  (with-temp-buffer
+    (insert "#!/usr/bin/env bash\n"
+            "set -xeuo pipefail\n\n")
+    (dolist (op satchel--script-ops)
+      (insert "# " (satchel--op-comment op) "\n"
+              (satchel--op-command op) "\n\n"))
+    (buffer-string)))
 
-This is the ONLY function that writes the script to disk; it is
-called exclusively by `satchel-script-write' and
-`satchel-script-execute'. Packing, copying, moving, deleting, and
-unmarking never call this directly — they only mutate
-`satchel--script-ops' in memory."
-  (if (null satchel--script-ops)
-      (when (file-exists-p satchel-script-file)
-        (delete-file satchel-script-file))
-    (make-directory (file-name-directory satchel-script-file) t)
-    (with-temp-buffer
-      (insert "#!/usr/bin/env bash\n")
-      (insert "set -xeuo pipefail\n\n")
-      (dolist (op satchel--script-ops)
-        (insert "# " (satchel--op-comment op) "\n")
-        (insert (satchel--op-command op) "\n\n"))
-      (write-region (point-min) (point-max) satchel-script-file nil 'silent))
-    (set-file-modes satchel-script-file #o755)))
-
-(defun satchel-script-write ()
-  "Write the current in-memory operation queue out to
-`satchel-script-file', overwriting whatever was there before. This is
-the only way (besides `satchel-script-execute') to get the queue onto
-disk — pack/copy/move/delete/unmark are all purely in-memory until
-you call this."
-  (interactive)
-  (satchel--script-rewrite)
-  (if satchel--script-ops
-      (message "Wrote %d queued operation(s) (%d file(s)) to %s"
-               (length satchel--script-ops)
-               (length (satchel--script-pending-files))
-               satchel-script-file)
-    (message "Queue is empty — no script file written (removed stale one, if any)")))
+(defun satchel--script-write-file ()
+  "Write the queue to `satchel-script-file'.
+Signals an error if the file already exists: an existing script is
+always a leftover and must be run or cleared first, never overwritten.
+This is the only function that writes the script to disk."
+  (when (file-exists-p satchel-script-file)
+    (user-error "Leftover script exists at %s: run it with `x' (empty the queue first) or delete it with `satchel-script-clear'"
+                (abbreviate-file-name satchel-script-file)))
+  (make-directory (file-name-directory satchel-script-file) t)
+  (with-temp-file satchel-script-file
+    (insert (satchel--render-script)))
+  (set-file-modes satchel-script-file #o755))
 
 (defun satchel--script-queue-op (type files &optional dest)
-  "Append a new TYPE ('copy/'move/'delete) operation on FILES (into
-DEST, nil for delete) to `satchel--script-ops'. Purely in-memory; does
-NOT write to disk. Call `satchel-script-write' (or press \"w\" in
-`satchel-transient') when you want the file to reflect this."
+  "Append a new TYPE (`copy', `move' or `delete') operation on FILES
+\(into DEST, nil for delete) to `satchel--script-ops'.  In-memory only."
   (cl-incf satchel--op-id-counter)
   (setq satchel--script-ops
         (append satchel--script-ops
                 (list (satchel-op-create :id satchel--op-id-counter
-                                          :type type
-                                          :files (mapcar #'expand-file-name files)
-                                          :dest dest)))))
+                                         :type type
+                                         :files (mapcar #'expand-file-name files)
+                                         :dest dest)))))
 
 (defun satchel--script-unqueue-file (file)
   "Remove FILE from every queued operation in `satchel--script-ops'.
-Purely in-memory; does NOT write to disk. A copy/move operation loses
-just this file from its source list (and is dropped entirely if that
-empties it); a delete operation (always single-file) is dropped
-outright. Returns non-nil if anything was actually removed.
-
-This is what makes unmarking a file (`u'/`U') actually cancel its
-queued command instead of just clearing the visual flag while the
-stale command keeps running — the next `satchel-script-write' or
-`satchel-script-execute' will reflect the removal."
+In-memory only.  A copy/move op loses just this file (and is dropped
+entirely if that empties it); a delete op is dropped outright.
+Return non-nil if anything was removed."
   (let ((file (expand-file-name file))
         (changed nil)
         new-ops)
@@ -302,15 +280,15 @@ stale command keeps running — the next `satchel-script-write' or
     (setq satchel--script-ops (nreverse new-ops))
     changed))
 
-;; Keep the operation queue and persistent-mark bookkeeping in sync
-;; with the built-in u/U unmark keys. Neither of these touches disk.
+;; Keep the queue and persistent-mark bookkeeping in sync with the
+;; built-in u/U unmark keys.  Neither of these touches disk.
 (advice-add 'dired-unmark :before
             (lambda (&rest _)
               (when-let ((f (dired-get-filename nil t)))
                 (satchel--forget-mark f)
                 (setq satchel-stash (delete f satchel-stash))
                 (when (satchel--script-unqueue-file f)
-                  (message "Removed queued command for %s (not yet written to disk)"
+                  (message "Removed queued command for %s"
                            (file-name-nondirectory f))))))
 
 (advice-add 'dired-unmark-all-marks :before
@@ -332,7 +310,7 @@ stale command keeps running — the next `satchel-script-write' or
 (defun satchel-pack ()
   "Pack the currently marked files from this Dired buffer into the satchel.
 If no files are marked, append the file at point to the existing
-satchel instead. Packed files are visually flagged with
+satchel instead.  Packed files are visually flagged with
 `satchel-marker-char', and the flag survives tab switches."
   (interactive)
   (unless (derived-mode-p 'dired-mode)
@@ -359,10 +337,10 @@ satchel instead. Packed files are visually flagged with
 
 (defun satchel-unpack ()
   "Empty the satchel and clear its persistent marks.
-Note: this only empties the *pack* (the files selected for the next
-copy/move), not any operations already queued in `satchel--script-ops'
-— use `dired-unmark' on a queued file, or `satchel-script-clear' to
-drop everything queued, for that."
+This only empties the pack (the files selected for the next
+copy/move), not operations already queued in `satchel--script-ops'.
+Use `dired-unmark' on a queued file, or `satchel-script-clear' to
+drop everything queued."
   (interactive)
   (dolist (f satchel-stash)
     (satchel--forget-mark f)
@@ -371,7 +349,7 @@ drop everything queued, for that."
   (message "Satchel emptied"))
 
 ;; ---------------------------------------------------------------------
-;; Immediate copy / move helpers
+;; Immediate copy / move helpers (LIVE mode)
 ;; ---------------------------------------------------------------------
 
 (defun satchel--copy-file-list (files dest-dir)
@@ -389,23 +367,24 @@ drop everything queued, for that."
   (message "Moved %d file(s) to %s" (length files) dest-dir))
 
 ;; ---------------------------------------------------------------------
-;; Rsync command building (used only when (re)generating the script)
+;; Rsync command building (used when rendering the script)
 ;; ---------------------------------------------------------------------
 
 (defun satchel--rsync-cmd (mode files dest-dir)
   "Build an rsync command string that copies/moves FILES into DEST-DIR.
-MODE is either `copy' or `move'."
+MODE is either `copy' or `move'.  `--partial' lets interrupted large
+files resume when the script is re-run."
   (let* ((dest (file-name-as-directory (expand-file-name dest-dir)))
          (flags (if (eq mode 'move)
-                    "-avh --progress --remove-source-files --ignore-missing-args"
-                  "-avh --progress"))
+                    "-avh --progress --partial --remove-source-files --ignore-missing-args"
+                  "-avh --progress --partial"))
          (sources (mapconcat (lambda (f) (shell-quote-argument (expand-file-name f)))
                              files " ")))
     (format "rsync %s -- %s %s" flags sources (shell-quote-argument dest))))
 
 (defun satchel--flagged-for-deletion ()
-  "Return the list of absolute file names currently flagged for
-deletion (marked with `d', dired-del-marker) in this Dired buffer."
+  "Return the absolute file names flagged for deletion (dired-del-marker)
+in this Dired buffer."
   (let (files)
     (save-excursion
       (goto-char (point-min))
@@ -417,22 +396,37 @@ deletion (marked with `d', dired-del-marker) in this Dired buffer."
         (forward-line 1)))
     (nreverse files)))
 
+;; ---------------------------------------------------------------------
+;; Script commands: preview, clear, execute
+;; ---------------------------------------------------------------------
+
 (defun satchel-script-open ()
-  "Regenerate the script file from the current queue and open it for
-review/editing. Like `satchel-script-execute', this always writes
-`satchel--script-ops' to disk first, so what you see is guaranteed to
-match the current queue — not a stale snapshot from before some
-pack/copy/move/delete/unmark you did since the last write."
+  "Preview the script.
+With a non-empty queue, show the script rendered from the queue in a
+read-only buffer (nothing is written to disk).  With an empty queue,
+open the leftover script on disk, if there is one."
   (interactive)
-  (satchel--script-rewrite)
-  (unless (file-exists-p satchel-script-file)
-    (user-error "Satchel queue is empty — nothing to open"))
-  (find-file satchel-script-file))
+  (cond
+   (satchel--script-ops
+    (with-current-buffer (get-buffer-create "*satchel-preview*")
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert (satchel--render-script)))
+      (sh-mode)
+      (goto-char (point-min))
+      (view-mode 1)
+      (pop-to-buffer (current-buffer))))
+   ((file-exists-p satchel-script-file)
+    (find-file satchel-script-file))
+   (t
+    (user-error "Satchel queue is empty and there is no leftover script"))))
 
 (defun satchel-script-clear ()
-  "Drop every queued operation (in memory) and delete the script file
-on disk, if one exists."
+  "Drop every queued operation (in memory) and delete the script file.
+This is the manual way to get rid of a leftover script."
   (interactive)
+  (when satchel--script-running
+    (user-error "A satchel script is running; wait for it to finish"))
   (dolist (f (satchel--script-pending-files))
     (satchel--forget-mark f)
     (satchel--mark-in-all-buffers f ?\s))
@@ -441,37 +435,16 @@ on disk, if one exists."
     (delete-file satchel-script-file))
   (message "Cleared satchel queue and script file: %s" satchel-script-file))
 
-(defvar satchel--script-pending-cleanup nil
-  "Files whose persistent marks should be cleared once the in-flight
-script run finishes successfully.")
-
-(defvar satchel--script-running nil
-  "Non-nil while the satchel script's compilation process is alive.
-Kept in sync by `satchel-script-execute' and
-`satchel--script-finish-cleanup', and refreshed on demand by
-`satchel-script-progress'.")
-
-(defvar satchel--script-start-time nil
-  "Time (as returned by `current-time') at which the currently running
-satchel script was launched by `satchel-script-execute'. Used by
-`satchel--script-finish-cleanup' to decide whether the finish
-notification should be persistent or short-lived. Nil when no script
-is running.")
-
 (defun satchel--notify (success msg duration)
-  "Show a desktop notification that the satchel script has finished,
-via `notifications-notify' (D-Bus). SUCCESS is non-nil if it finished
-cleanly; MSG is the raw compilation-finish status string, used for
-the failure detail; DURATION is the run's wall-clock length in
-seconds.
+  "Show a desktop notification that the satchel script has finished.
+SUCCESS is non-nil if it finished cleanly; MSG is the raw
+compilation-finish status string (used for failure detail); DURATION
+is the run's wall-clock length in seconds.
 
 Runs of at least `satchel-notify-persistent-threshold' seconds get a
 persistent notification (`:timeout 0' per the Desktop Notifications
-spec — most daemons, e.g. dunst/mako, honor this as \"never expire\";
-a few ignore it and fall back to their own default), since those are
-the ones you're likely to have wandered off from. Shorter runs get an
-auto-expiring notification instead (`satchel-notify-short-timeout'),
-so quick jobs don't leave a banner you have to go dismiss."
+spec; most daemons honor this as \"never expire\").  Shorter runs get
+an auto-expiring one (`satchel-notify-short-timeout')."
   (when satchel-notify-on-finish
     (let* ((title "Dired Satchel")
            (persistent (>= duration satchel-notify-persistent-threshold))
@@ -484,36 +457,32 @@ so quick jobs don't leave a banner you have to go dismiss."
                            (string-trim msg)
                            (abbreviate-file-name satchel-script-file)))))
       (notifications-notify :title title :body body
-                             :urgency (if success 'normal 'critical)
-                             :timeout (if persistent 0 satchel-notify-short-timeout)))))
+                            :urgency (if success 'normal 'critical)
+                            :timeout (if persistent 0 satchel-notify-short-timeout)))))
 
 (defun satchel--format-duration (seconds)
-  "Format SECONDS as e.g. \"2m 14s\" or \"37s\" for notification bodies."
+  "Format SECONDS as e.g. \"2m 14s\" or \"37s\"."
   (let ((secs (round seconds)))
     (if (>= secs 60)
         (format "%dm %ds" (/ secs 60) (% secs 60))
       (format "%ds" secs))))
 
 (defun satchel--script-finish-cleanup (_buf msg)
-  "Compilation-finish handler that clears pending marks once the
-satchel script has finished running, shows a desktop notification
-reporting whether it succeeded or failed (persistent or short-lived
-depending on how long the run took — see `satchel--notify'), and —
-on success — deletes the script file itself so the next queued action
-starts fresh instead of leaving old, already-run commands lying
-around on disk. The script is left in place on failure so it can be
-inspected/retried."
+  "Compilation-finish handler for the satchel script.
+On success: clear pending marks and delete the script file.  On
+failure: keep the script on disk (it is protected from overwriting and
+can be re-run with `satchel-script-execute').  Always show a desktop
+notification and reset the running state."
   (setq satchel--script-running nil)
   (let ((success (string-match-p "^finished" msg))
         (duration (if satchel--script-start-time
                       (float-time (time-subtract (current-time)
-                                                  satchel--script-start-time))
+                                                 satchel--script-start-time))
                     0)))
     (when success
-      (when satchel--script-pending-cleanup
-        (dolist (f satchel--script-pending-cleanup)
-          (satchel--forget-mark f)
-          (satchel--mark-in-all-buffers f ?\s)))
+      (dolist (f satchel--script-pending-cleanup)
+        (satchel--forget-mark f)
+        (satchel--mark-in-all-buffers f ?\s))
       (when (file-exists-p satchel-script-file)
         (delete-file satchel-script-file)))
     (satchel--notify success msg duration))
@@ -522,28 +491,42 @@ inspected/retried."
   (remove-hook 'compilation-finish-functions #'satchel--script-finish-cleanup))
 
 (defun satchel-script-execute ()
-  "Run the current queue asynchronously without blocking Emacs.
-Regenerates `satchel-script-file' from `satchel--script-ops' right
-before running (so it always executes the latest queue, whether or
-not you called `satchel-script-write' yourself), prompts for
-confirmation, and shows live progress in a compilation buffer. On
-successful completion, clears persistent marks for every file that
-was queued, and empties `satchel--script-ops'."
+  "Run the satchel script asynchronously, with live output.
+With a non-empty queue: write the script to disk, then run it.  This
+refuses if a leftover script already exists on disk.
+With an empty queue: run the leftover script on disk as-is (e.g. after
+a reboot or a failed run).
+
+Asks for confirmation before anything is written or run.  On success,
+clears the persistent marks of the queued files and deletes the script
+file.  On failure the script stays on disk for a retry."
   (interactive)
-  (unless satchel--script-ops
-    (user-error "Satchel queue is empty — nothing to execute"))
-  (satchel--script-rewrite)
-  (unless (y-or-n-p
-           (format "Run satchel script %s now? "
-                   (abbreviate-file-name satchel-script-file)))
-    (user-error "Execution cancelled"))
+  (when satchel--script-running
+    (user-error "A satchel script is already running"))
+  (let ((leftover (file-exists-p satchel-script-file)))
+    (unless (or satchel--script-ops leftover)
+      (user-error "Satchel queue is empty and there is no leftover script"))
+    (when (and satchel--script-ops leftover)
+      (user-error "Leftover script exists at %s: empty the queue and run it with `x', or delete it with `satchel-script-clear'"
+                  (abbreviate-file-name satchel-script-file)))
+    (unless (y-or-n-p
+             (format (if leftover
+                         "Run LEFTOVER satchel script %s now? "
+                       "Run satchel script %s now? ")
+                     (abbreviate-file-name satchel-script-file)))
+      (user-error "Execution cancelled"))
+    ;; Write only after confirmation, so cancelling never leaves a
+    ;; stray script on disk.
+    (when satchel--script-ops
+      (satchel--script-write-file)))
   (let* ((default-directory (file-name-directory satchel-script-file))
          (buf-name "*satchel-execute*")
          (compilation-buffer-name-function (lambda (_mode) buf-name)))
-    (setq satchel--script-pending-cleanup (satchel--script-pending-files))
-    (setq satchel--script-ops nil)
-    (setq satchel--script-running t)
-    (setq satchel--script-start-time (current-time))
+    ;; Marks to clear on success (nil when resuming a leftover script).
+    (setq satchel--script-pending-cleanup (satchel--script-pending-files)
+          satchel--script-ops nil
+          satchel--script-running t
+          satchel--script-start-time (current-time))
     (add-hook 'compilation-finish-functions #'satchel--script-finish-cleanup)
     (compile (format "bash %s" (shell-quote-argument satchel-script-file)))
     (with-current-buffer buf-name
@@ -555,14 +538,10 @@ was queued, and empties `satchel--script-ops'."
 
 (defun satchel-script-progress ()
   "Show progress of the satchel queue/script.
-
-Reports how many operations are queued in `satchel--script-ops' (in
-memory — this is authoritative regardless of what's on disk) and how
-many distinct files that covers. If the script's compilation process
-is currently alive, jumps straight to the live output in the
-`*satchel-execute*' buffer instead of just printing a summary, since
-that's where the real progress (e.g. rsync's --progress output) is
-visible."
+Report how many operations and distinct files are queued in memory.
+If the script is currently running, jump to the live output in the
+`*satchel-execute*' buffer instead, since that is where the real
+progress (e.g. rsync's --progress output) is visible."
   (interactive)
   (let* ((queued (length satchel--script-ops))
          (pending (length (satchel--script-pending-files)))
@@ -572,13 +551,16 @@ visible."
     (setq satchel--script-running (and running t))
     (cond
      (running
-      (message "Satchel script is running: %d operation(s) queued, %d file(s) pending — jumping to live output"
+      (message "Satchel script is running: %d operation(s) queued, %d file(s) pending -- jumping to live output"
                queued pending)
       (pop-to-buffer buf)
       (goto-char (point-max)))
      ((> queued 0)
-      (message "%d operation(s) queued in memory, %d file(s) pending (not yet written — \"w\" to write, \"x\" to run)"
+      (message "%d operation(s) queued, %d file(s) pending (\"x\" to run)"
                queued pending))
+     ((file-exists-p satchel-script-file)
+      (message "Queue is empty, but a leftover script exists at %s (\"x\" to run it, \"c\" to delete it)"
+               (abbreviate-file-name satchel-script-file)))
      (t
       (message "Satchel queue is empty")))))
 
@@ -612,10 +594,9 @@ visible."
 
 (defun satchel-action-copy-here ()
   "Copy packed files into the current directory.
-Immediate when `satchel-script-mode' is nil; queues a copy operation
-into `satchel--script-ops' otherwise (purely in memory — no disk
-write), keeping each file's persistent mark until the script actually
-runs."
+Immediate when `satchel-script-mode' is nil; otherwise queues a copy
+operation in memory.  In script mode each file keeps its persistent
+mark until the script actually runs."
   (interactive)
   (unless (derived-mode-p 'dired-mode)
     (user-error "Run this from a Dired buffer"))
@@ -625,18 +606,16 @@ runs."
     (if satchel-script-mode
         (let ((n (length satchel-stash)))
           (satchel--script-queue-op 'copy satchel-stash dest)
-          (message "Queued rsync COPY operation (%d file(s)) to %s (not yet written to disk)"
-                   n dest))
+          (message "Queued rsync COPY operation (%d file(s)) to %s" n dest))
       (satchel--copy-file-list satchel-stash dest)
       (revert-buffer))))
 
 (defun satchel-action-move-here ()
   "Move packed files into the current directory.
-Immediate when `satchel-script-mode' is nil; queues a move operation
-into `satchel--script-ops' otherwise (purely in memory). In script
-mode, the satchel is emptied so you don't re-queue the same files, but
-each file's persistent mark is kept (as a \"queued\" indicator) until
-the script actually runs."
+Immediate when `satchel-script-mode' is nil; otherwise queues a move
+operation in memory.  In script mode the satchel is emptied so you
+don't re-queue the same files, but each file keeps its persistent mark
+\(as a \"queued\" indicator) until the script actually runs."
   (interactive)
   (unless (derived-mode-p 'dired-mode)
     (user-error "Run this from a Dired buffer"))
@@ -647,10 +626,10 @@ the script actually runs."
         (let ((n (length satchel-stash)))
           (satchel--script-queue-op 'move satchel-stash dest)
           (setq satchel-stash nil)
-          (message "Queued rsync MOVE operation (%d file(s)) to %s (not yet written to disk); satchel emptied"
+          (message "Queued rsync MOVE operation (%d file(s)) to %s; satchel emptied"
                    n dest))
       (when (member dest (mapcar #'file-name-directory satchel-stash))
-        (unless (y-or-n-p "Move into the same directory? (may overwrite)")
+        (unless (y-or-n-p "Move into the same directory? (may overwrite) ")
           (user-error "Move cancelled")))
       (satchel--move-file-list satchel-stash dest)
       (dolist (f satchel-stash)
@@ -661,14 +640,13 @@ the script actually runs."
 
 (defun satchel-action-flag-deletion ()
   "Flag the file at point for deletion.
-In immediate mode, this is just the standard `dired-flag-file-deletion'.
-In script mode, it additionally queues a delete operation for this
-file into `satchel--script-ops' immediately (purely in memory, so
-flagging files across multiple Dired buffers all gets recorded,
-regardless of which buffer `satchel-action-execute' is eventually run
-from). Either way, the flag is recorded so it survives tab switches,
-and in script mode it is only cleared once the script actually runs
-(or the file is unmarked)."
+In immediate mode this is just the standard `dired-flag-file-deletion'.
+In script mode it also queues a delete operation for the file right
+away (in memory), so flagging files across several Dired buffers is
+all recorded, regardless of which buffer `satchel-action-execute' is
+eventually run from.  Either way the flag is recorded so it survives
+tab switches; in script mode it is cleared only once the script runs
+\(or the file is unmarked)."
   (interactive)
   (unless (derived-mode-p 'dired-mode)
     (user-error "Run this from a Dired buffer"))
@@ -677,17 +655,15 @@ and in script mode it is only cleared once the script actually runs
       (user-error "No file at point"))
     (when satchel-script-mode
       (satchel--script-queue-op 'delete (list file))
-      (message "Queued DELETE operation for %s (not yet written to disk)"
+      (message "Queued DELETE operation for %s"
                (file-name-nondirectory file)))
     (satchel--record-mark file dired-del-marker)
     (dired-flag-file-deletion 1)))
 
 (defun satchel-action-execute ()
-  "In immediate mode, delete files flagged for deletion (the standard
-Dired `D' mark, set via `satchel-action-flag-deletion'). In script
-mode, execute the entire accumulated queue (which already contains
-any delete operations, plus any copy/move operations) via
-`satchel-script-execute', which writes the script to disk first."
+  "In immediate mode, delete files flagged for deletion.
+In script mode, run the queued operations (or the leftover script when
+the queue is empty) via `satchel-script-execute'."
   (interactive)
   (unless (derived-mode-p 'dired-mode)
     (user-error "Run this from a Dired buffer"))
@@ -705,12 +681,11 @@ any delete operations, plus any copy/move operations) via
   "Satchel (stash/rsync script) management menu."
   ["Satchel script"
    :if-derived 'dired-mode
-   ("v" "Script progress" satchel-script-progress)
-   ("w" "Write script (queue -> disk)" satchel-script-write)
-   ("s" "Open script"     satchel-script-open)
-   ("c" "Clear script"    satchel-script-clear)
-   ("x" "Execute script"  satchel-script-execute)
-   ("y" "Empty satchel"   satchel-unpack)]
+   ("v" "Progress"                          satchel-script-progress)
+   ("s" "Preview / open script"             satchel-script-open)
+   ("x" "Execute script (or leftover)"      satchel-script-execute)
+   ("c" "Clear queue and script file"       satchel-script-clear)
+   ("y" "Empty satchel"                     satchel-unpack)]
   ["Actions"
    ("q" "Quit" transient-quit-all)])
 
