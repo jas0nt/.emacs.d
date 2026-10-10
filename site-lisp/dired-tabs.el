@@ -367,10 +367,15 @@ are hidden behind \"‹N\" / \"N›\" markers."
           (list (propertize (format " %d› " hidden-right) 'face 'dired-tabs-overflow))))
        " "))))
 
+(defvar-local dired-tabs--no-header nil
+  "Non-nil in Dired buffers that must never show the tab bar.
+Set for `dired-preview' buffers, see `dired-tabs--hide-in-previews'.")
+
 (defun dired-tabs--apply-header ()
   "Show or hide the tab bar in the current Dired buffer.
 Only touches `header-line-format' when it is unset or already ours."
   (when (and dired-tabs-show-header-line
+             (not dired-tabs--no-header)
              (derived-mode-p 'dired-mode)
              (or (null header-line-format)
                  (equal header-line-format dired-tabs--header-spec)))
@@ -394,6 +399,28 @@ enough: the first such buffer would get no header line."
   (dired-tabs--apply-header))
 
 (add-hook 'dired-mode-hook #'dired-tabs--setup-buffer)
+
+;; `dired-preview' shows a previewed directory in a side window using a
+;; Dired buffer of its own.  That buffer is created by `dired-noselect'
+;; (so it gets our header line) and is only renamed and displayed
+;; afterwards.  `dired-preview-hook' runs once it is displayed, so we
+;; strip the tab bar from the preview buffers there.
+(defvar dired-preview--buffers)
+(defvar dired-preview-hook)
+
+(defun dired-tabs--hide-in-previews ()
+  "Remove the tab bar from every `dired-preview' buffer."
+  (dolist (buf (bound-and-true-p dired-preview--buffers))
+    (when (and (buffer-live-p buf)
+               (provided-mode-derived-p
+                (buffer-local-value 'major-mode buf) 'dired-mode))
+      (with-current-buffer buf
+        (setq dired-tabs--no-header t)
+        (when (equal header-line-format dired-tabs--header-spec)
+          (setq-local header-line-format nil))))))
+
+(with-eval-after-load 'dired-preview
+  (add-hook 'dired-preview-hook #'dired-tabs--hide-in-previews))
 
 ;; ---------------------------------------------------------------------
 ;; Switching and creating
