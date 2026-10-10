@@ -52,7 +52,7 @@
   :bind
   ("C-x C-d" . (lambda () (interactive) (dired default-directory)))
   (:map dired-mode-map
-        ("q"    . cxc/kill-current-buffer)
+        ("q"    . dired-tabs-toggle)
         ("<f5>" . revert-buffer)
         ("C"    . dired-do-compress-to)
         ("t"    . my-dired-toggle-transient)
@@ -96,14 +96,15 @@
 (use-package dired-tabs
   :ensure nil
   :load-path "site-lisp"
-  :after dired
-  :commands (dired-tabs-new)
+  :demand t
+  :custom
+  (dired-tabs-save-file (expand-file-name "dired-tabs" my-emacs-cache-dir))
   :bind
   (:map dired-mode-map
 	("1" . dired-tabs-goto) ("2" . dired-tabs-goto) ("3" . dired-tabs-goto)
 	("4" . dired-tabs-goto) ("5" . dired-tabs-goto) ("6" . dired-tabs-goto)
 	("7" . dired-tabs-goto) ("8" . dired-tabs-goto) ("9" . dired-tabs-goto)
-	("H" . dired-tabs-prev) ("L" . dired-tabs-next)
+	("0" . dired-tabs-goto) ("H" . dired-tabs-prev) ("L" . dired-tabs-next)
 	("{" . dired-tabs-move-left) ("}" . dired-tabs-move-right)))
 
 (use-package dired-satchel
@@ -145,7 +146,11 @@ packages share the exact same cached thumbnail file on disk."
   (dired-preview-delay 0.3)
   (dired-preview-max-size (* 50 1024 1024))
   :config
-  (dolist (cmd '(revert-buffer satchel-action-flag-deletion dired-tabs-goto))
+  (dolist (cmd '(revert-buffer
+		 satchel-action-flag-deletion
+		 dired-tabs-goto
+		 dired-tabs-prev
+		 dired-tabs-next))
     (add-to-list 'dired-preview-trigger-commands cmd t))
   (defun my-dired-preview-to-the-right ()
     "Display dired-preview window on the right side."
