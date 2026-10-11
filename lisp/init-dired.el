@@ -8,6 +8,7 @@
   (dired-dwim-target t)
   (dired-listing-switches
    "-l --almost-all --human-readable --group-directories-first --no-group")
+  (dired-free-space nil)
   :hook (dired-mode . hl-line-mode)
   :config
   (put 'dired-find-alternate-file 'disabled nil)
@@ -160,7 +161,7 @@ packages share the exact same cached thumbnail file on disk."
       (window-width . 0.45)
       (preserve-size . (t . nil))))
   (setq dired-preview-display-action-alist #'my-dired-preview-to-the-right)
-  (dired-preview-global-mode 1))
+  (dired-preview-global-mode -1))
 
 (use-package dired-du
   :after dired
@@ -176,7 +177,7 @@ packages share the exact same cached thumbnail file on disk."
   (dired-quick-sort)
   :bind
   (:map dired-mode-map
-        ("s" . dired-quick-sort-transient)))
+        ("," . dired-quick-sort-transient)))
 
 (use-package dired-k
   :custom
