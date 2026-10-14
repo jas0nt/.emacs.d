@@ -87,21 +87,29 @@
         evil-ex-interactive-search-highlight 'selected
         ;; No minibuffer message on every state change.
         evil-echo-state nil)
-  (setq evil-insert-state-cursor '(hollow "yellow")
-        evil-normal-state-cursor '(box "#50fa7b")
-        evil-motion-state-cursor '(box "#bd93f9"))
   :config
-  (evil-mode 1))
+  (defun cxc/apply-macro-to-lines (reg)
+    "Run the macro in register REG on every line of the selection."
+    (interactive (list (read-char "Macro register: ")))
+    (when (evil-visual-state-p)
+      (evil-exit-visual-state))   ; this sets the '< and '> marks
+    (evil-ex-execute (format "'<,'>normal @%c" reg)))
 
-;; (use-package evil-snipe
-;;   :after evil
-;;   :defer 0.5
-;;   :init
-;;   (setq evil-snipe-enable-highlight nil
-;;         evil-snipe-enable-incremental-highlight nil)
-;;   :config
-;;   (evil-snipe-mode +1)
-;;   (evil-snipe-override-mode +1))
+  (evil-mode 1)
+
+  (defun cxc/evil-update-cursors (&rest _)
+    "Set Evil cursor colors from the current doom theme's palette."
+    (when (fboundp 'doom-color)
+      (let ((insert (ignore-errors (doom-color 'yellow)))
+            (normal (ignore-errors (doom-color 'green)))
+            (motion (ignore-errors (doom-color 'violet))))
+	(setq evil-insert-state-cursor `(hollow ,(or insert "yellow"))
+              evil-normal-state-cursor `(box ,(or normal "green"))
+              evil-motion-state-cursor `(box ,(or motion "purple")))
+	(when (fboundp 'evil-refresh-cursor)
+          (evil-refresh-cursor)))))
+
+  (advice-add 'load-theme :after #'cxc/evil-update-cursors))
 
 (use-package evil-surround
   :after evil
@@ -134,6 +142,10 @@
   :config
   (setq evil-keypad-activation-states '(normal visual motion emacs))
   (evil-keypad-global-mode 1))
+
+(general-define-key
+ :states 'visual
+ "@" #'cxc/apply-macro-to-lines)
 
 (general-define-key
  :states '(normal visual)

@@ -10,6 +10,10 @@
 (setq-default mode-line-format
 	      '("%e"
 		mode-line-front-space
+		;; Evil state tag, e.g. <N> <M> <E>
+		(:eval (when (bound-and-true-p evil-local-mode)
+			 evil-mode-line-tag))
+		" "
 		;; Modified / read-only / unmodified indicator
 		mode-line-modified
 		"  "
