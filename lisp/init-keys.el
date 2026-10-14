@@ -143,6 +143,42 @@
    ])
 
 
+(transient-define-prefix cxc/transient-toggle ()
+  "transient-toggle"
+  [
+   ["display"
+    ("n" (lambda () (cxc/toggle-desc "line numbers" 'display-line-numbers-mode))
+     display-line-numbers-mode :transient t)
+    ("N" (lambda () (cxc/toggle-desc-p "relative numbers" (eq display-line-numbers 'relative)))
+     cxc/toggle-relative-line-numbers :transient t)
+    ("v" (lambda () (cxc/toggle-desc "visual-line" 'visual-line-mode))
+     visual-line-mode :transient t)
+    ("t" (lambda () (cxc/toggle-desc "truncate-lines" 'truncate-lines))
+     toggle-truncate-lines :transient t)
+    ("h" (lambda () (cxc/toggle-desc "hl-line" 'hl-line-mode))
+     hl-line-mode :transient t)
+    ("w" (lambda () (cxc/toggle-desc "whitespace" 'whitespace-mode))
+     whitespace-mode :transient t)
+    ("c" (lambda () (cxc/toggle-desc "fill-column" 'display-fill-column-indicator-mode))
+     display-fill-column-indicator-mode :transient t)
+    ]
+
+   ["edit"
+    ("o" (lambda () (cxc/toggle-desc "hideshow" 'hs-minor-mode))
+     hs-minor-mode :transient t)
+    ]
+
+   ["frame"
+    ("T" (lambda () (cxc/toggle-desc-p "transparency" (cxc/transparent-p)))
+     cxc/toggle-transparency :transient t)
+    ]
+
+   ["actions"
+    ("q" "quit" transient-quit-all)
+    ]
+   ])
+
+
 (general-define-key
  "<f5>" 'revert-buffer
  "M-o" 'ace-window
@@ -161,6 +197,7 @@
  "C-c q" 'cxc/kill-current-buffer
  "C-c w" 'delete-other-windows
  "C-c e" 'dired-tabs-toggle
+ "C-c t" 'cxc/transient-toggle
  "C-c v" 'magit
  "C-c f" 'cxc/transient-file
  "C-c j" 'cxc/transient-jump

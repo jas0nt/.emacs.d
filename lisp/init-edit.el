@@ -69,5 +69,10 @@
       ("-" "contract" er/contract-region)
       ("q" "quit"     transient-quit-one)]]))
 
+(use-package hideshow
+  :hook (prog-mode . hs-minor-mode)
+  :bind (:map hs-minor-mode-map
+         ("C-c TAB" . hs-toggle-hiding)))
+
 
 (provide 'init-edit)
