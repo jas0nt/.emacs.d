@@ -220,10 +220,23 @@ persistent or short-lived.  Nil when no script is running.")
     ('delete (format "delete: %s" (car (satchel-op-files op))))))
 
 (defun satchel--op-command (op)
-  "Return the shell command for OP."
+  "Return the shell command for OP.
+Moves within one filesystem use `mv' (a plain rename, instant at any
+size).  Files on a different filesystem from the destination still use
+rsync, which gives progress output and resumable transfers."
   (pcase (satchel-op-type op)
     ('copy (satchel--rsync-cmd 'copy (satchel-op-files op) (satchel-op-dest op)))
-    ('move (satchel--rsync-cmd 'move (satchel-op-files op) (satchel-op-dest op)))
+    ('move
+     (let* ((files (satchel-op-files op))
+            (dest  (satchel-op-dest op))
+            (fast  (cl-remove-if-not
+                    (lambda (f) (satchel--same-filesystem-p f dest)) files))
+            (slow  (cl-remove-if
+                    (lambda (f) (satchel--same-filesystem-p f dest)) files))
+            (cmds  (delq nil
+                         (list (and fast (satchel--mv-cmd fast dest))
+                               (and slow (satchel--rsync-cmd 'move slow dest))))))
+       (mapconcat #'identity cmds "\n")))
     ('delete (format "rm -rf -- %s"
                      (shell-quote-argument (car (satchel-op-files op)))))))
 
@@ -381,6 +394,29 @@ files resume when the script is re-run."
          (sources (mapconcat (lambda (f) (shell-quote-argument (expand-file-name f)))
                              files " ")))
     (format "rsync %s -- %s %s" flags sources (shell-quote-argument dest))))
+
+(defun satchel--same-filesystem-p (file dest-dir)
+  "Return non-nil if FILE and DEST-DIR are on the same filesystem.
+Returns nil when either one does not exist, so callers fall back to
+the rsync path (which has `--ignore-missing-args')."
+  (let ((a (file-attribute-device-number
+            (file-attributes (expand-file-name file))))
+        (b (file-attribute-device-number
+            (file-attributes (expand-file-name dest-dir)))))
+    (and a b (equal a b))))
+
+(defun satchel--mv-cmd (files dest-dir)
+  "Build idempotent `mv' commands, one line per file in FILES.
+Each line skips sources that no longer exist, so re-running a
+leftover script after a partial run is safe under `set -e'."
+  (let ((dest (shell-quote-argument
+               (file-name-as-directory (expand-file-name dest-dir)))))
+    (mapconcat
+     (lambda (f)
+       (let ((q (shell-quote-argument (expand-file-name f))))
+         (format "if [ -e %s ] || [ -L %s ]; then mv -- %s %s; fi"
+                 q q q dest)))
+     files "\n")))
 
 (defun satchel--flagged-for-deletion ()
   "Return the absolute file names flagged for deletion (dired-del-marker)
