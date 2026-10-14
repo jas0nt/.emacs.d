@@ -169,7 +169,6 @@
 ;;; Note: x, c, h, m, g are already used in NORMAL state, not reused here
 ;;; ================================================================
 (meow-leader-define-key
- '("q" . delete-other-windows)
  '(";" . consult-buffer)
  '("," . cxc/prev-buffer)
  '("f" . cxc/transient-file)

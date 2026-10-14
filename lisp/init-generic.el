@@ -9,10 +9,12 @@
 
 (setq use-dialog-box nil
       inhibit-startup-screen t
-      initial-scratch-message nil) ; nil is cleaner than "" for some session managers
+      initial-scratch-message nil ; nil is cleaner than "" for some session managers
+      fast-but-imprecise-scrolling t)
 
 ;; Editor behavior.
 (global-subword-mode 1) ; Treat CamelCase as multiple words
+(global-so-long-mode 1) ; Switch off expensive features in files with very long lines
 (setq-default comment-style 'indent
               cursor-type 'box)
 (setq mouse-yank-at-point t

@@ -53,10 +53,11 @@
   :bind
   ("C-x C-d" . (lambda () (interactive) (dired default-directory)))
   (:map dired-mode-map
-        ("q"    . dired-tabs-toggle)
-        ("<f5>" . revert-buffer)
-        ("C"    . dired-do-compress-to)
-        ("t"    . my-dired-toggle-transient)
+        ("<SPC>" . evil-keypad-start)
+        ("q"     . dired-tabs-toggle)
+        ("<f5>"  . revert-buffer)
+        ("C"     . dired-do-compress-to)
+        ("t"     . my-dired-toggle-transient)
 
         ;; Navigation
         ("h" . dired-up-directory)
@@ -65,7 +66,6 @@
         ("l" . dired-find-file)
         ("]" . scroll-up-command)
         ("[" . scroll-down-command)
-        ("n" . my-dired-goto-favorite)
         ("'" . bookmark-jump)
         ("z" . dired-jump-with-zoxide)
         ("/" . consult-line)
@@ -87,6 +87,7 @@
 (use-package dired-shortcuts
   :ensure nil
   :load-path "site-lisp"
+  :demand t
   :after dired
   :bind
   (:map dired-mode-map
@@ -161,7 +162,7 @@ packages share the exact same cached thumbnail file on disk."
       (window-width . 0.45)
       (preserve-size . (t . nil))))
   (setq dired-preview-display-action-alist #'my-dired-preview-to-the-right)
-  (dired-preview-global-mode -1))
+  (dired-preview-global-mode 1))
 
 (use-package dired-du
   :after dired

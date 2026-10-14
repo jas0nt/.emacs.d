@@ -1,12 +1,15 @@
-(use-package transient)
+(use-package transient
+  :custom
+  (transient-show-menu -0.4))
+
 (use-package general)
 
 (use-package which-key
+  :custom
+  (which-key-idle-delay 0.5)
+  (which-key-idle-secondary-delay 0.05)
   :config
-  (setq which-key-idle-delay 0.5)
-  (setq which-key-idle-secondary-delay 0.05)
-  (which-key-mode)
-  (which-key-enable-god-mode-support))
+  (which-key-mode))
 
 
 (transient-define-prefix cxc/transient-file ()
@@ -67,7 +70,6 @@
    ["file"
     ("f" "fd" consult-fd)
     ("z" "fzf" fzf)
-    ("b" "bookmark" consult-bookmark)
     ("L" "locate" consult-locate)
     ]
 
@@ -131,7 +133,7 @@
 
    ["actions"
     ("d" "del" delete-window :transient t)
-    ("D" "del other" ace-delete-window)
+    ("D" "ace del" ace-delete-window)
     ("m" "maximum" delete-other-windows)
     (";" "switch" consult-buffer)
     ("u" "undo layout" winner-undo :transient t)
@@ -143,10 +145,6 @@
 
 (general-define-key
  "<f5>" 'revert-buffer
- "M-<up>" 'switch-to-prev-buffer
- "M-<down>" 'switch-to-next-buffer
- "M-<left>" '(lambda () (interactive) (other-window -1))
- "M-<right>" 'other-window
  "M-o" 'ace-window
  "M-y" 'consult-yank-pop
  "M-z" 'zap-to-char
@@ -157,17 +155,17 @@
  "C-'" 'avy-goto-char-2
  "C-s" 'consult-line
  "C-=" 'er/expand-region
- "C-x b" 'consult-buffer
 
  "C-c C-/" 'evilnc-comment-or-uncomment-lines
- "C-c C-k" 'cxc/kill-current-buffer
+ "C-c SPC" 'execute-extended-command
+ "C-c q" 'cxc/kill-current-buffer
+ "C-c w" 'delete-other-windows
  "C-c e" 'dired-tabs-toggle
  "C-c v" 'magit
- "C-c T" 'ghostel
  "C-c f" 'cxc/transient-file
  "C-c j" 'cxc/transient-jump
  "C-c s" 'cxc/transient-search
- "C-c w" 'cxc/transient-window
+ "C-c W" 'cxc/transient-window
  "C-c p" 'cxc/transient-music)
 
 
