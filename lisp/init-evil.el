@@ -2,8 +2,12 @@
 
 (require 'cl-lib)
 
+(defvar evil-local-mode)
+(declare-function evil-change-state "evil-core")
+(declare-function evil-refresh-cursor "evil-core")
+
 ;; ---------------------------------------------------------------
-;; Mode -> state table, with an O(1) cache
+;; Mode -> state table (cached)
 ;; ---------------------------------------------------------------
 
 (defvar my/evil-mode-states
@@ -40,7 +44,6 @@
 
 ;; Evil asks this predicate from every entry point (mode hooks,
 ;; `set-window-buffer', ...), so one rule covers all of them.
-;; Advising a not-yet-defined function is fine, so this can live at top level.
 (define-advice evil-disabled-buffer-p (:around (orig &optional buffer) my/modes)
   (let ((buf (get-buffer (or buffer (current-buffer)))))
     (or (and buf
@@ -49,6 +52,7 @@
         (funcall orig buffer))))
 
 (defun my/evil-smart-state ()
+  "Switch to the Evil state configured for the current major mode."
   (when (and evil-local-mode (not (minibufferp)))
     (let ((state (my/evil-state-for-mode major-mode)))
       (unless (eq state 'none)
@@ -67,6 +71,29 @@
                 (evil-local-mode -1))))
 
 ;; ---------------------------------------------------------------
+;; State colors (shared by the cursor and the mode line)
+;; ---------------------------------------------------------------
+
+(defun cxc/evil-state-color (state)
+  "Return the doom palette color for Evil STATE."
+  (or (and (fboundp 'doom-color)
+           (ignore-errors
+             (doom-color (pcase state
+                           ('insert 'yellow)
+                           ('normal 'green)
+                           ('motion 'violet)
+                           (_       'cyan)))))
+      (face-foreground 'default nil t)))
+
+(defun cxc/evil-update-cursors (&rest _)
+  "Set Evil cursor colors from the current theme."
+  (setq evil-insert-state-cursor `(hollow ,(cxc/evil-state-color 'insert))
+        evil-normal-state-cursor `(box    ,(cxc/evil-state-color 'normal))
+        evil-motion-state-cursor `(box    ,(cxc/evil-state-color 'motion)))
+  (when (fboundp 'evil-refresh-cursor)
+    (evil-refresh-cursor)))
+
+;; ---------------------------------------------------------------
 ;; Packages
 ;; ---------------------------------------------------------------
 
@@ -78,38 +105,38 @@
         evil-disable-insert-state-bindings t
         evil-want-C-i-jump nil
         evil-want-C-u-scroll t
-        ;; Native undo (Emacs 28+): no extra package, no overhead.
-        ;; Must be set before Evil loads.
+        ;; Native undo (Emacs 28+). Must be set before Evil loads.
         evil-undo-system 'undo-redo
-        ;; Don't highlight every match of a search in the window; with
-        ;; pinyin expansion that regexp is the most expensive thing here.
+        ;; Highlighting every match is expensive with pinyin expansion.
         evil-ex-search-highlight-all nil
         evil-ex-interactive-search-highlight 'selected
-        ;; No minibuffer message on every state change.
         evil-echo-state nil)
   :config
+  (evil-mode 1)
+
   (defun cxc/apply-macro-to-lines (reg)
     "Run the macro in register REG on every line of the selection."
     (interactive (list (read-char "Macro register: ")))
     (when (evil-visual-state-p)
-      (evil-exit-visual-state))   ; this sets the '< and '> marks
+      (evil-exit-visual-state))         ; sets the '< and '> marks
     (evil-ex-execute (format "'<,'>normal @%c" reg)))
 
-  (evil-mode 1)
+  (with-eval-after-load 'evil
+    ;; Swap [ <-> {  and  ] <-> }
+    (dolist (state '(normal visual motion))
+      (let ((map (symbol-value (intern (format "evil-%s-state-map" state)))))
+	;; Save the original bindings first so they aren't overwritten during the swap
+	(let ((lb  (lookup-key map "["))
+              (rb  (lookup-key map "]"))
+              (lbr (lookup-key map "{"))
+              (rbr (lookup-key map "}")))
+          (define-key map "[" lbr)
+          (define-key map "]" rbr)
+          (define-key map "{" lb)
+          (define-key map "}" rb)))))
 
-  (defun cxc/evil-update-cursors (&rest _)
-    "Set Evil cursor colors from the current doom theme's palette."
-    (when (fboundp 'doom-color)
-      (let ((insert (ignore-errors (doom-color 'yellow)))
-            (normal (ignore-errors (doom-color 'green)))
-            (motion (ignore-errors (doom-color 'violet))))
-	(setq evil-insert-state-cursor `(hollow ,(or insert "yellow"))
-              evil-normal-state-cursor `(box ,(or normal "green"))
-              evil-motion-state-cursor `(box ,(or motion "purple")))
-	(when (fboundp 'evil-refresh-cursor)
-          (evil-refresh-cursor)))))
-
-  (advice-add 'load-theme :after #'cxc/evil-update-cursors))
+  (advice-add 'load-theme :after #'cxc/evil-update-cursors)
+  (cxc/evil-update-cursors))            ; theme already loaded at this point
 
 (use-package evil-surround
   :after evil
@@ -121,8 +148,8 @@
   :after evil
   :defer 0.5
   :init
-  (setq-default evil-pinyin-scheme 'simplified-xiaohe-all)
-  (setq-default evil-pinyin-with-search-rule 'always)
+  (setq-default evil-pinyin-scheme 'simplified-xiaohe-all
+                evil-pinyin-with-search-rule 'always)
   :config
   (evil-select-search-module 'evil-search-module 'evil-search)
   (global-evil-pinyin-mode))
@@ -149,9 +176,8 @@
 
 (general-define-key
  :states '(normal visual)
- "=" 'er/expand-region
- "s" 'cxc/transient-er-mark
- "g=" 'cxc/er-mark
- "g." 'evil-repeat)
+ "g." #'evil-repeat
+ "s" #'my/er-expand)
+
 
 (provide 'init-evil)
