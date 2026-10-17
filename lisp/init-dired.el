@@ -64,11 +64,12 @@
         ("j" . dired-next-line)
         ("k" . dired-previous-line)
         ("l" . dired-find-file)
-        ("]" . scroll-up-command)
-        ("[" . scroll-down-command)
+        ("]" . pixel-scroll-interpolate-down)
+        ("[" . pixel-scroll-interpolate-up)
         ("'" . bookmark-jump)
         ("z" . dired-jump-with-zoxide)
         ("/" . consult-line)
+        ("G" . avy-goto-line)
         ("f" . consult-fd)
 
         ;; Open
@@ -118,10 +119,9 @@
   (:map dired-mode-map
         ("d" . satchel-action-flag-deletion)
         ("y" . satchel-pack)
+	("x" . satchel-cut)
         ("Y" . satchel-unpack)
-        ("p" . satchel-action-copy-here)
-        ("P" . satchel-action-move-here)
-        ("x" . satchel-action-execute)
+	("p" . satchel-action-paste)
         ("v" . satchel-transient)))
 
 (use-package media-thumbnail
