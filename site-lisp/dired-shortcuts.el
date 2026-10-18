@@ -11,7 +11,9 @@
 ;;
 ;; 2. `dired-shortcuts-goto-transient': jump to frequently used
 ;;    directories, like Yazi's `g' menu.  The list is the customizable
-;;    `dired-shortcuts-goto-locations'.
+;;    `dired-shortcuts-goto-locations'.  When
+;;    `dired-kill-when-opening-new-dired-buffer' is set, jumping replaces
+;;    the current Dired buffer instead of piling up a new one.
 ;;
 ;; 3. `dired-shortcuts-open-transient': open the file(s) at point with the
 ;;    default application, open a terminal here, or open the current
@@ -24,6 +26,7 @@
 (require 'transient)
 (require 'dired)
 (require 'project)
+(require 'seq)
 (require 'subr-x)
 
 (defgroup dired-shortcuts nil
@@ -75,7 +78,7 @@ Shell-quoted paths are always joined with a single space instead."
 
 (defun dired-shortcuts--project-relative (file)
   "Return FILE relative to its project root, or to `default-directory'."
-  (let ((root (if-let ((pr (project-current)))
+  (let ((root (if-let* ((pr (project-current)))
                   (expand-file-name (project-root pr))
                 default-directory)))
     (file-relative-name file root)))
@@ -140,13 +143,24 @@ Shell-quoted paths are always joined with a single space instead."
 ;;; 2. Go to a frequently used directory
 ;;; -----------------------------------------------------------------------
 
+(defun dired-shortcuts--removable-media-dir ()
+  "Return the directory under which removable drives are mounted.
+udisks mounts them at /run/media/USER (/media/USER on older Debian-like
+systems); fall back to the parent directory if neither exists."
+  (let ((user (user-login-name)))
+    (or (seq-find #'file-directory-p
+                  (list (format "/run/media/%s" user)
+                        (format "/media/%s" user)))
+        (seq-find #'file-directory-p '("/run/media" "/media"))
+        "/run/media")))
+
 (defcustom dired-shortcuts-goto-locations
-  '(("h" "Home"      "~")
+  `(("h" "Home"      "~")
     ("d" "Downloads" "~/Downloads")
     ("D" "Documents" "~/Documents")
     ("c" "Config"    "~/.config")
-    ("x" "drives"    "/run/media")
-    ("t" "Trash"     "~/.local/share/Trash")
+    ("x" "drives"    ,(dired-shortcuts--removable-media-dir))
+    ("t" "Trash"     "~/.local/share/Trash/files")
     ("e" "/etc"      "/etc")
     ("/" "Root"      "/"))
   "Directories offered by `dired-shortcuts-goto-transient'.
@@ -158,11 +172,17 @@ rebuilt every time it opens, so changes take effect immediately."
   :group 'dired-shortcuts)
 
 (defun dired-shortcuts-goto (dir)
-  "Visit DIR in Dired."
+  "Visit DIR in Dired.
+From a Dired buffer with `dired-kill-when-opening-new-dired-buffer'
+set, the current buffer is replaced (like RET and `^' do) instead of
+leaving one more Dired buffer behind."
   (let ((target (expand-file-name dir)))
     (unless (file-directory-p target)
       (user-error "Directory does not exist: %s" (abbreviate-file-name target)))
-    (dired target)
+    (if (and (derived-mode-p 'dired-mode)
+             (bound-and-true-p dired-kill-when-opening-new-dired-buffer))
+        (find-alternate-file target)
+      (dired target))
     (when (and (bound-and-true-p dired-preview-global-mode)
                (fboundp 'dired-preview-trigger))
       (dired-preview-trigger t))
@@ -191,7 +211,7 @@ rebuilt every time it opens, so changes take effect immediately."
    :setup-children dired-shortcuts--goto-children])
 
 ;;; -----------------------------------------------------------------------
-;;; 4. Open externally
+;;; 3. Open externally
 ;;; -----------------------------------------------------------------------
 
 (defcustom dired-shortcuts-open-command
@@ -200,13 +220,15 @@ rebuilt every time it opens, so changes take effect immediately."
   :type 'string
   :group 'dired-shortcuts)
 
-(defcustom dired-shortcuts-terminal-command
-  (cond ((eq system-type 'darwin) "open -a Terminal")
-        (t (or (getenv "TERMINAL") "x-terminal-emulator")))
+(defcustom dired-shortcuts-terminal-command nil
   "Command used to open a terminal in the current directory.
 The terminal is started with the Dired directory as its working
-directory, and the command may carry its own arguments."
-  :type 'string
+directory, and the command may carry its own arguments.  If nil, the
+command is detected each time it is needed: `open -a Terminal' on macOS,
+else $TERMINAL, else the first installed of a list of common terminals.
+\(Detection happens at use time, because an Emacs started from a desktop
+launcher often has no $TERMINAL at load time.)"
+  :type '(choice (const :tag "Auto-detect" nil) string)
   :group 'dired-shortcuts)
 
 (defcustom dired-shortcuts-file-manager-command
@@ -219,6 +241,17 @@ directory, and the command may carry its own arguments."
   "Ask for confirmation when opening more than this many files at once."
   :type 'integer
   :group 'dired-shortcuts)
+
+(defun dired-shortcuts--terminal-command ()
+  "Return the terminal command to use, detecting it if necessary."
+  (or dired-shortcuts-terminal-command
+      (and (eq system-type 'darwin) "open -a Terminal")
+      (let ((env (getenv "TERMINAL")))
+        (and env (not (string-empty-p env)) env))
+      (seq-find #'executable-find
+                '("x-terminal-emulator" "kitty" "alacritty" "foot" "wezterm"
+                  "gnome-terminal" "konsole" "xfce4-terminal" "xterm"))
+      (user-error "No terminal found; set `dired-shortcuts-terminal-command'")))
 
 (defun dired-shortcuts-open-external ()
   "Open the marked files (or the file at point) with the default application."
@@ -236,7 +269,7 @@ directory, and the command may carry its own arguments."
   "Open a terminal in the current Dired directory."
   (interactive)
   (let ((default-directory (dired-current-directory)))
-    (dired-shortcuts--spawn dired-shortcuts-terminal-command)
+    (dired-shortcuts--spawn (dired-shortcuts--terminal-command))
     (message "Terminal started in %s" (abbreviate-file-name default-directory))))
 
 (defun dired-shortcuts-open-file-manager ()

@@ -1,7 +1,123 @@
 ;;; init-dired.el --- Dired configuration -*- lexical-binding: t -*-
 
+;;; Commentary:
+
+;; Helper functions, the transient menu and the zoxide/preview/thumbnail
+;; glue live at top level (before the `use-package' forms), so they are
+;; byte-compilable and `my-*' names exist before any key refers to them.
+;;
+;; `dired-tabs' and `dired-shortcuts' stay `:demand t' on purpose:
+;; dired-tabs advises `dired' and must be active before the first call,
+;; and dired-shortcuts commands are bound from the `dired' block below.
+;; If startup time matters, measure with `use-package-compute-statistics'
+;; before changing that.
+
+;;; Code:
+
+(require 'transient)
+
+(defvar my-emacs-cache-dir)
+
+;; Defined in the user's own ready-player glue config.
+;; (declare-function my-ready-player--adjust-thumbnail-percent "...")
+;; (declare-function my-ready-player-batch-generate-thumbnails "...")
+(declare-function ready-player--cached-thumbnail-path "ready-player")
+(declare-function zoxide-open-with "zoxide")
+
+;; -----------------------------------------------------------------------
+;; Small commands
+;; -----------------------------------------------------------------------
+
+(defun my-dired-here ()
+  "Open Dired in `default-directory'."
+  (interactive)
+  (dired default-directory))
+
+(defun my-dired-do-open-current-only ()
+  "Open the file at point using an external app, ignoring any marked files.
+`dired-do-open' needs Emacs 29+.  A NUL marker char matches no line, so
+`dired-get-marked-files' falls back to the file at point."
+  (interactive)
+  (let ((dired-marker-char ?\0))
+    (dired-do-open)))
+
+(defun my-dired-jump-with-zoxide ()
+  "Jump to a zoxide directory, replacing the current Dired buffer."
+  (interactive)
+  (require 'zoxide)
+  (zoxide-open-with nil (lambda (file) (find-alternate-file file)) t))
+
+;; Named commands for the thumbnail group of the menu below (easier to
+;; debug than anonymous lambdas).
+(defun my-dired-thumbnail-forward-5 ()
+  (interactive) (my-ready-player--adjust-thumbnail-percent 5))
+(defun my-dired-thumbnail-backward-5 ()
+  (interactive) (my-ready-player--adjust-thumbnail-percent -5))
+(defun my-dired-thumbnail-forward-1 ()
+  (interactive) (my-ready-player--adjust-thumbnail-percent 1))
+(defun my-dired-thumbnail-backward-1 ()
+  (interactive) (my-ready-player--adjust-thumbnail-percent -1))
+
+;; -----------------------------------------------------------------------
+;; Misc toggles menu
+;; -----------------------------------------------------------------------
+
+(transient-define-prefix my-dired-toggle-transient ()
+  [
+   ["Toggle"
+    :if-derived 'dired-mode
+    ("t" "Tab new"     dired-tabs-new)
+    ("c" "Tab close"   dired-tabs-close)
+    ("T" "thumbnail"   media-thumbnail-dired-mode)
+    ("d" "detail"      dired-hide-details-mode)
+    ("u" "du"          dired-du-mode)
+    ("g" "git"         dired-k)
+    ("p" "preview"     dired-preview-global-mode)
+    ("s" "script mode" satchel-toggle-script-mode)]
+   ["Thumbnail"
+    :if-derived 'dired-mode
+    ("j" "Next Line"      dired-next-line :transient t)
+    ("k" "Prev Line"      dired-previous-line :transient t)
+    ("l" "Forward 5%"     my-dired-thumbnail-forward-5 :transient t)
+    ("h" "Backward 5%"    my-dired-thumbnail-backward-5 :transient t)
+    ("L" "Forward 1%"     my-dired-thumbnail-forward-1 :transient t)
+    ("H" "Backward 1%"    my-dired-thumbnail-backward-1 :transient t)
+    ("P" "batch generate" my-ready-player-batch-generate-thumbnails)]
+   ["Actions"
+    ("q" "Quit" transient-quit-all)]
+   ])
+
+;; -----------------------------------------------------------------------
+;; Glue for media-thumbnail / dired-preview
+;; -----------------------------------------------------------------------
+
+(defun my-media-thumbnail-get-cache-path (file)
+  "Reuse `ready-player's thumbnail cache path/naming, so both
+packages share the exact same cached thumbnail file on disk."
+  ;; Load ready-player lazily: its private function is only needed when a
+  ;; thumbnail path is actually requested.
+  (unless (fboundp 'ready-player--cached-thumbnail-path)
+    (require 'ready-player))
+  (ready-player--cached-thumbnail-path (expand-file-name file)))
+
+(defun my-dired-preview-to-the-right ()
+  "Display dired-preview window on the right side."
+  `((display-buffer-in-side-window)
+    (side . right)
+    (slot . 0)
+    (window-width . 0.45)
+    (preserve-size . (t . nil))))
+
+;; -----------------------------------------------------------------------
+;; Packages
+;; -----------------------------------------------------------------------
+
 (use-package dired
   :ensure nil ; Built-in package
+  :init
+  ;; `--group-directories-first' needs GNU ls; macOS ships BSD ls.
+  (when (and (eq system-type 'darwin) (executable-find "gls"))
+    (setq insert-directory-program (executable-find "gls")))
   :custom
   (dired-kill-when-opening-new-dired-buffer t)
   (dired-movement-style 'bounded-files)
@@ -9,49 +125,16 @@
   (dired-listing-switches
    "-l --almost-all --human-readable --group-directories-first --no-group")
   (dired-free-space nil)
+  ;; Sensible defaults.
+  (dired-auto-revert-buffer #'dired-directory-changed-p)
+  (dired-recursive-copies 'always)
+  (dired-recursive-deletes 'top)
+  (dired-create-destination-dirs 'ask)
+  ;; Also makes dired-satchel's script use a trash command, so SCRIPT and
+  (delete-by-moving-to-trash nil)
   :hook (dired-mode . hl-line-mode)
-  :config
-  (put 'dired-find-alternate-file 'disabled nil)
-
-  ;; -----------------------------------------------------------------------
-  ;; Open file
-  ;; -----------------------------------------------------------------------
-  (defun my-dired-do-open-current-only ()
-    "Open the file at point using an external app, ignoring any marked files."
-    (interactive)
-    (let ((dired-marker-char ?\0))
-      (dired-do-open)))
-
-  ;; -----------------------------------------------------------------------
-  ;; Misc toggles menu
-  ;; -----------------------------------------------------------------------
-  (transient-define-prefix my-dired-toggle-transient ()
-    [
-     ["Toggle"
-      :if-derived 'dired-mode
-      ("t" "Tab new"     dired-tabs-new)
-      ("c" "Tab close"   dired-tabs-close)
-      ("T" "thumbnail"   media-thumbnail-dired-mode)
-      ("d" "detail"      dired-hide-details-mode)
-      ("u" "du"          dired-du-mode)
-      ("g" "git"         dired-k)
-      ("p" "preview"     dired-preview-global-mode)
-      ("s" "script mode" satchel-toggle-script-mode)]
-     ["Thumbnail"
-      :if-derived 'dired-mode
-      ("j" "Next Line"    dired-next-line :transient t)
-      ("k" "Prev Line"    dired-previous-line :transient t)
-      ("l" "Forward 5%"   (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent 5)) :transient t)
-      ("h" "Backward 5%"  (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent -5)) :transient t)
-      ("L" "Forward 1%"   (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent 1)) :transient t)
-      ("H" "Backward 1%"  (lambda () (interactive) (my-ready-player--adjust-thumbnail-percent -1)) :transient t)
-      ("P" "batch generate" my-ready-player-batch-generate-thumbnails)]
-     ["Actions"
-      ("q" "Quit" transient-quit-all)]
-     ])
-
   :bind
-  ("C-x C-d" . (lambda () (interactive) (dired default-directory)))
+  ("C-x C-d" . my-dired-here)
   (:map dired-mode-map
         ("<SPC>" . evil-keypad-start)
         ("q"     . dired-tabs-toggle)
@@ -67,7 +150,7 @@
         ("]" . pixel-scroll-interpolate-down)
         ("[" . pixel-scroll-interpolate-up)
         ("'" . bookmark-jump)
-        ("z" . dired-jump-with-zoxide)
+        ("z" . my-dired-jump-with-zoxide)
         ("/" . consult-line)
         ("G" . avy-goto-line)
         ("f" . consult-fd)
@@ -92,9 +175,9 @@
   :after dired
   :bind
   (:map dired-mode-map
-	("c" . dired-shortcuts-copy-transient)
-	("n" . dired-shortcuts-goto-transient)
-	("o" . dired-shortcuts-open-transient)))
+        ("c" . dired-shortcuts-copy-transient)
+        ("n" . dired-shortcuts-goto-transient)
+        ("o" . dired-shortcuts-open-transient)))
 
 (use-package dired-tabs
   :ensure nil
@@ -102,13 +185,15 @@
   :demand t
   :custom
   (dired-tabs-save-file (expand-file-name "dired-tabs" my-emacs-cache-dir))
+  ;; Replace the old Dired buffer on tab switch, like RET/`^' do.
+  (dired-tabs-kill-old-buffer t)
   :bind
   (:map dired-mode-map
-	("1" . dired-tabs-goto) ("2" . dired-tabs-goto) ("3" . dired-tabs-goto)
-	("4" . dired-tabs-goto) ("5" . dired-tabs-goto) ("6" . dired-tabs-goto)
-	("7" . dired-tabs-goto) ("8" . dired-tabs-goto) ("9" . dired-tabs-goto)
-	("0" . dired-tabs-goto) ("H" . dired-tabs-prev) ("L" . dired-tabs-next)
-	("{" . dired-tabs-move-left) ("}" . dired-tabs-move-right)))
+        ("1" . dired-tabs-goto) ("2" . dired-tabs-goto) ("3" . dired-tabs-goto)
+        ("4" . dired-tabs-goto) ("5" . dired-tabs-goto) ("6" . dired-tabs-goto)
+        ("7" . dired-tabs-goto) ("8" . dired-tabs-goto) ("9" . dired-tabs-goto)
+        ("0" . dired-tabs-goto) ("H" . dired-tabs-prev) ("L" . dired-tabs-next)
+        ("{" . dired-tabs-move-left) ("}" . dired-tabs-move-right)))
 
 (use-package dired-satchel
   :ensure nil
@@ -119,9 +204,9 @@
   (:map dired-mode-map
         ("d" . satchel-action-flag-deletion)
         ("y" . satchel-pack)
-	("x" . satchel-cut)
+        ("x" . satchel-cut)
         ("Y" . satchel-unpack)
-	("p" . satchel-action-paste)
+        ("p" . satchel-action-paste)
         ("v" . satchel-transient)))
 
 (use-package media-thumbnail
@@ -131,66 +216,49 @@
   (media-thumbnail-cache-dir
    (expand-file-name "media-thumbnails/" my-emacs-cache-dir))
   :config
-  (with-eval-after-load 'media-thumbnail
-    (declare-function ready-player--cached-thumbnail-path "ready-player")
-
-    (defun my-media-thumbnail-get-cache-path (file)
-      "Reuse `ready-player's thumbnail cache path/naming, so both
-packages share the exact same cached thumbnail file on disk."
-      ;; (require 'ready-player)
-      (ready-player--cached-thumbnail-path (expand-file-name file)))
-    (advice-add 'media-thumbnail-get-cache-path :override
-		#'my-media-thumbnail-get-cache-path)))
+  ;; `:config' already runs after the package is loaded.
+  (advice-add 'media-thumbnail-get-cache-path :override
+              #'my-media-thumbnail-get-cache-path))
 
 (use-package dired-preview
   :after dired
   :custom
   (dired-preview-delay 0.3)
   (dired-preview-max-size (* 50 1024 1024))
+  (dired-preview-display-action-alist #'my-dired-preview-to-the-right)
   :config
   (dolist (cmd '(revert-buffer
-		 satchel-action-flag-deletion
-		 dired-tabs-goto
-		 dired-tabs-prev
-		 dired-tabs-next))
+                 satchel-action-flag-deletion
+                 dired-tabs-goto
+                 dired-tabs-prev
+                 dired-tabs-next))
     (add-to-list 'dired-preview-trigger-commands cmd t))
-  (defun my-dired-preview-to-the-right ()
-    "Display dired-preview window on the right side."
-    `((display-buffer-in-side-window)
-      (side . right)
-      (slot . 0)
-      (window-width . 0.45)
-      (preserve-size . (t . nil))))
-  (setq dired-preview-display-action-alist #'my-dired-preview-to-the-right)
   (dired-preview-global-mode 1))
 
 (use-package dired-du
   :after dired
+  :commands dired-du-mode
   :custom
-  (dired-du-size-format t)
-  :hook
-  (dired-mode . (lambda () (when (bound-and-true-p dired-du-mode)
-                             (dired-du-mode -1)))))
+  (dired-du-size-format t))
 
 (use-package dired-quick-sort
   :after dired
   :config
-  (dired-quick-sort)
+  ;; The package's setup function installs its hooks; plain
+  ;; `dired-quick-sort' is the sorting command itself.
+  (dired-quick-sort-setup)
   :bind
   (:map dired-mode-map
         ("," . dired-quick-sort-transient)))
 
 (use-package dired-k
+  :commands dired-k
   :custom
   (dired-k-style 'git))
 
 (use-package zoxide
-  :after dired
-  :config
-  (defun dired-jump-with-zoxide (&optional other-window)
-    (interactive "P")
-    (zoxide-open-with nil (lambda (file) (find-alternate-file file)) t)))
-
+  :defer t
+  :commands zoxide-open-with)
 
 (provide 'init-dired)
 ;;; init-dired.el ends here

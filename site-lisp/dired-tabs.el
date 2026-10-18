@@ -20,10 +20,17 @@
 ;; when you left it.  Tab numbers are identities: you can have tabs 1, 3
 ;; and 7 and nothing else, and the tab bar shows them in number order.
 ;; There is a single window; switching tabs visits the target directory
-;; with `dired' (existing Dired buffers are reused, and they are never
-;; killed, so regular Dired marks survive a tab switch).  Because a tab
-;; only remembers a directory, it does not matter how you navigate inside
-;; it (`^', RET, `find-alternate-file', ...).
+;; with `dired' (existing Dired buffers are reused).  Because a tab only
+;; remembers a directory, it does not matter how you navigate inside it
+;; (`^', RET, `find-alternate-file', ...).
+;;
+;; Buffer lifetime is controlled by `dired-tabs-kill-old-buffer'.  When
+;; nil, the Dired buffer you leave is kept alive (so regular Dired marks
+;; survive a tab switch, at the price of one buffer per visited
+;; directory piling up).  When non-nil -- the default follows
+;; `dired-kill-when-opening-new-dired-buffer' -- the old Dired buffer is
+;; killed after a tab switch, like RET/`^' already do; `dired-satchel'
+;; redraws its own marks whenever a buffer is recreated.
 ;;
 ;; Navigating inside Dired (RET on a directory, `^', or calling `dired'
 ;; while already in a Dired buffer) makes the current tab follow you, like
@@ -45,11 +52,13 @@
 ;; The tab bar is shown in the header line of Dired buffers while there
 ;; are two or more tabs, and hidden again when only one tab is left.
 ;;
-;; Persistence: when Emacs exits, the tabs (number, directory, cursor
-;; file, and which tab was current) are written to `dired-tabs-save-file'.
-;; The file is read lazily, the first time a tab command runs or `dired'
-;; is called, so there is no load-order issue and no dependency on
-;; `savehist'.  Set `dired-tabs-save-file' to nil to disable.
+;; Persistence: the tabs (number, directory, cursor file, and which tab
+;; was current) are written to `dired-tabs-save-file' when Emacs exits,
+;; and also a few seconds after the last structural change while Emacs is
+;; idle, so a crash loses little.  The file is read lazily, the first time
+;; a tab command runs or `dired' is called, so there is no load-order
+;; issue and no dependency on `savehist'.  Set `dired-tabs-save-file' to
+;; nil to disable.
 ;;
 ;; Works with `dired-satchel': packed/flagged marks are redrawn by its
 ;; `dired-after-readin-hook' whenever a Dired buffer gets (re)created.
@@ -79,6 +88,7 @@
 (require 'dired)
 (require 'cl-lib)
 (require 'seq)
+(require 'subr-x)
 
 (defgroup dired-tabs nil
   "Yazi-style numbered tabs for Dired."
@@ -104,10 +114,27 @@ Navigating from within Dired always makes the current tab follow."
   :group 'dired-tabs)
 
 (defcustom dired-tabs-save-file (locate-user-emacs-file "dired-tabs")
-  "File in which the tabs are saved when Emacs exits.
-The file is read lazily, the first time a tab command runs or `dired'
-is called.  If nil, tabs are not persisted."
+  "File in which the tabs are saved.
+It is written when Emacs exits and shortly after structural changes
+\(see `dired-tabs-save-delay').  The file is read lazily, the first time
+a tab command runs or `dired' is called.  If nil, tabs are not
+persisted."
   :type '(choice (const :tag "Do not persist" nil) file)
+  :group 'dired-tabs)
+
+(defcustom dired-tabs-save-delay 5
+  "Seconds of idle time after a structural change before saving the tabs."
+  :type 'number
+  :group 'dired-tabs)
+
+(defcustom dired-tabs-kill-old-buffer
+  (bound-and-true-p dired-kill-when-opening-new-dired-buffer)
+  "When non-nil, kill the old Dired buffer after switching tabs.
+This avoids one lingering buffer per visited directory.  A buffer that
+is still visible in another window is never killed.  Regular Dired
+marks (`*') in a killed buffer are lost; `dired-satchel' marks are
+redrawn automatically."
+  :type 'boolean
   :group 'dired-tabs)
 
 (defcustom dired-tabs-label-width 14
@@ -189,9 +216,11 @@ Tabs saved by a previous session are loaded first."
 
 (defun dired-tabs--save ()
   "Remember the directory and cursor file of the current tab.
-Does nothing when the current buffer is not a Dired buffer."
+Does nothing when the current buffer is not a Dired buffer, or when the
+current tab number has no tab (which must never signal: this runs from
+`post-command-hook')."
   (when (derived-mode-p 'dired-mode)
-    (let ((tab (dired-tabs--find dired-tabs--current)))
+    (when-let* ((tab (dired-tabs--find dired-tabs--current)))
       (setf (dired-tabs-tab-dir tab) (expand-file-name default-directory)
             (dired-tabs-tab-file tab) (dired-get-filename nil t)))))
 
@@ -199,8 +228,14 @@ Does nothing when the current buffer is not a Dired buffer."
 ;; Persistence
 ;; ---------------------------------------------------------------------
 
+;; Make sure the `let' in `dired-tabs--restore' binds it dynamically.
+(defvar read-eval)
+
 (defvar dired-tabs--restored nil
   "Non-nil once we have tried to read `dired-tabs-save-file' this session.")
+
+(defvar dired-tabs--write-timer nil
+  "Pending idle timer that will save the tabs, or nil.")
 
 (defun dired-tabs--write ()
   "Write the tabs to `dired-tabs-save-file'.
@@ -210,9 +245,7 @@ tabs does not overwrite the saved state."
     (condition-case err
         (progn
           ;; Make sure the current tab is up to date if we are in Dired.
-          (when (and (derived-mode-p 'dired-mode)
-                     (dired-tabs--find dired-tabs--current))
-            (dired-tabs--save))
+          (dired-tabs--save)
           (with-temp-file dired-tabs-save-file
             (let ((print-length nil) (print-level nil))
               (prin1 (list :version 1
@@ -226,6 +259,20 @@ tabs does not overwrite the saved state."
       (error (message "dired-tabs: cannot save tabs: %s"
                       (error-message-string err))))))
 
+(defun dired-tabs--write-now ()
+  "Timer function: clear the timer slot, then save."
+  (setq dired-tabs--write-timer nil)
+  (dired-tabs--write))
+
+(defun dired-tabs--schedule-write ()
+  "Save the tabs after `dired-tabs-save-delay' idle seconds (debounced)."
+  (when dired-tabs-save-file
+    (when (timerp dired-tabs--write-timer)
+      (cancel-timer dired-tabs--write-timer))
+    (setq dired-tabs--write-timer
+          (run-with-idle-timer dired-tabs-save-delay nil
+                               #'dired-tabs--write-now))))
+
 (defun dired-tabs--restore ()
   "Load the tabs saved by a previous session, once.
 Tabs whose directory has disappeared are dropped.  Nothing is displayed;
@@ -238,7 +285,9 @@ the next tab command or outside `dired' call picks the tabs up."
       (condition-case err
           (let* ((data (with-temp-buffer
                          (insert-file-contents dired-tabs-save-file)
-                         (read (current-buffer))))
+                         ;; Never evaluate anything found in the file.
+                         (let ((read-eval nil))
+                           (read (current-buffer)))))
                  (tabs (and (eq (plist-get data :version) 1)
                             (cl-loop for (num dir file) in (plist-get data :tabs)
                                      when (and (natnump num) (stringp dir)
@@ -378,11 +427,12 @@ Only touches `header-line-format' when it is unset or already ours."
                 (and (cdr dired-tabs--list) dired-tabs--header-spec))))
 
 (defun dired-tabs--refresh ()
-  "Update the tab bar in every Dired buffer."
+  "Update the tab bar in every Dired buffer and schedule a save."
   (dolist (buf (buffer-list))
     (with-current-buffer buf
       (dired-tabs--apply-header)))
-  (force-mode-line-update t))
+  (force-mode-line-update t)
+  (dired-tabs--schedule-write))
 
 (defun dired-tabs--setup-buffer ()
   "Load saved tabs if needed, then show the tab bar in this Dired buffer.
@@ -399,14 +449,29 @@ enough: the first such buffer would get no header line."
 ;; Switching and creating
 ;; ---------------------------------------------------------------------
 
+(defun dired-tabs--maybe-kill (old)
+  "Kill the Dired buffer OLD we just left, if `dired-tabs-kill-old-buffer'.
+Never kills a buffer that is still shown in some window, nor the
+buffer we are in now, nor a non-Dired buffer."
+  (when (and dired-tabs-kill-old-buffer
+             (buffer-live-p old)
+             (not (eq old (current-buffer)))
+             (derived-mode-p 'dired-mode)
+             (provided-mode-derived-p
+              (buffer-local-value 'major-mode old) 'dired-mode)
+             (not (get-buffer-window old t)))
+    (kill-buffer old)))
+
 (defun dired-tabs--visit (tab)
   "Show TAB's directory in the selected window and restore its cursor."
-  (let ((dir (dired-tabs-tab-dir tab)))
+  (let ((dir (dired-tabs-tab-dir tab))
+        (old (current-buffer)))
     (unless (file-directory-p dir)
       (user-error "Directory no longer exists: %s" dir))
     (let ((dired-tabs--busy t))
       (dired dir))
-    (when-let ((file (dired-tabs-tab-file tab)))
+    (dired-tabs--maybe-kill old)
+    (when-let* ((file (dired-tabs-tab-file tab)))
       (dired-goto-file file))
     (dired-tabs--refresh)))
 
@@ -497,11 +562,20 @@ Tabs saved by a previous session are loaded first."
 (defun dired-tabs--track ()
   "Keep the current tab's saved directory and cursor file up to date.
 This way the tab is correct even if you leave Dired without switching
-tabs, e.g. by opening a file."
+tabs, e.g. by opening a file.  A change of directory also schedules a
+save.  Errors are demoted to messages: an error in `post-command-hook'
+would make Emacs drop the hook and tracking would silently stop."
   (when (and dired-tabs--list
              (derived-mode-p 'dired-mode)
              (eq (current-buffer) (window-buffer)))
-    (dired-tabs--save)))
+    (with-demoted-errors "dired-tabs: %S"
+      (let* ((tab (dired-tabs--find dired-tabs--current))
+             (moved (and tab
+                         (not (equal (dired-tabs-tab-dir tab)
+                                     (expand-file-name default-directory))))))
+        (dired-tabs--save)
+        (when moved
+          (dired-tabs--schedule-write))))))
 
 (add-hook 'post-command-hook #'dired-tabs--track)
 
@@ -610,8 +684,8 @@ Internal buffers (names starting with a space) are skipped."
   "Leave Dired without touching any tab, or come back to the current tab.
 In a Dired buffer, switch this window to the most recent NON-Dired
 buffer, skipping any Dired buffers you navigated through: every tab
-keeps its directory and cursor, and the Dired buffers stay alive.
-\(A window opened just for Dired, with no history, is closed instead.)
+keeps its directory and cursor.  (A window opened just for Dired, with
+no history, is closed instead.)
 In any other buffer, return to the current tab's Dired; if the file you
 are visiting lives in that directory, the cursor lands on it.
 With a prefix argument (JUMP), or when no tab exists yet, call
