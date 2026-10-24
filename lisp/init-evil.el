@@ -144,6 +144,11 @@
   :config
   (global-evil-surround-mode 1))
 
+(use-package evil-matchit
+  :after evil
+  :config
+  (global-evil-matchit-mode 1))
+
 (use-package evil-pinyin
   :after evil
   :defer 0.5
