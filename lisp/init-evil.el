@@ -2,7 +2,6 @@
 
 (require 'cl-lib)
 
-(defvar evil-local-mode)
 (declare-function evil-change-state "evil-core")
 (declare-function evil-refresh-cursor "evil-core")
 
@@ -53,7 +52,7 @@
 
 (defun my/evil-smart-state ()
   "Switch to the Evil state configured for the current major mode."
-  (when (and evil-local-mode (not (minibufferp)))
+  (when (and (bound-and-true-p evil-local-mode) (not (minibufferp)))
     (let ((state (my/evil-state-for-mode major-mode)))
       (unless (eq state 'none)
         (evil-change-state state)))))

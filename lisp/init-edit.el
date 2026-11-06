@@ -30,8 +30,7 @@
 
 (use-package expand-region
   :init
-  (setq expand-region-fast-keys-enabled t
-        expand-region-reset-fast-key "0")
+  (setq expand-region-fast-keys-enabled t)
   :config
   (defun my/er-expand ()
     "Expand region, then keep expanding with `m' and contracting with `n'."
