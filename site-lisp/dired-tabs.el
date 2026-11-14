@@ -10,7 +10,7 @@
 ;;            is the external tab, see below.
 ;;   t        new tab at the current directory, numbered with the next free
 ;;            number after the current tab (else the smallest free number)
-;;   [ / ]    previous / next existing tab, in number order (wraps around)
+;;   H / L    previous / next existing tab, in number order (wraps around)
 ;;   { / }    swap the current tab's number with its left / right neighbour
 ;;   C-c C-c  close the current tab (the last tab cannot be closed)
 ;;   (toggle) `dired-tabs-toggle': leave Dired (tabs stay intact), or come
@@ -19,18 +19,19 @@
 ;; Model: a tab is a number, a directory, and the file the cursor was on
 ;; when you left it.  Tab numbers are identities: you can have tabs 1, 3
 ;; and 7 and nothing else, and the tab bar shows them in number order.
-;; There is a single window; switching tabs visits the target directory
-;; with `dired' (existing Dired buffers are reused).  Because a tab only
-;; remembers a directory, it does not matter how you navigate inside it
-;; (`^', RET, `find-alternate-file', ...).
+;; There is a single window; switching tabs visits the target directory.
+;; If a live Dired buffer for it already exists it is simply switched to,
+;; with no disk access at all; otherwise `dired' is called.  Because a tab
+;; only remembers a directory, it does not matter how you navigate inside
+;; it (`^', RET, `find-alternate-file', ...).
 ;;
 ;; Buffer lifetime is controlled by `dired-tabs-kill-old-buffer'.  When
-;; nil, the Dired buffer you leave is kept alive (so regular Dired marks
-;; survive a tab switch, at the price of one buffer per visited
-;; directory piling up).  When non-nil -- the default follows
-;; `dired-kill-when-opening-new-dired-buffer' -- the old Dired buffer is
-;; killed after a tab switch, like RET/`^' already do; `dired-satchel'
-;; redraws its own marks whenever a buffer is recreated.
+;; nil, the Dired buffer you leave is always kept alive.  When non-nil --
+;; the default follows `dired-kill-when-opening-new-dired-buffer' -- the
+;; old Dired buffer is killed after a tab switch, EXCEPT when some tab
+;; still shows its directory: those buffers stay alive so that switching
+;; back to a tab is instant (important on slow external drives) and
+;; regular Dired marks survive.  Only buffers no tab refers to are killed.
 ;;
 ;; Navigating inside Dired (RET on a directory, `^', or calling `dired'
 ;; while already in a Dired buffer) makes the current tab follow you, like
@@ -50,18 +51,31 @@
 ;; intercepted.
 ;;
 ;; The tab bar is shown in the header line of Dired buffers while there
-;; are two or more tabs, and hidden again when only one tab is left.
+;; are two or more tabs, and hidden again when only one tab is left.  The
+;; rendered bar is cached and only recomputed when the tabs, the window
+;; width or the current directory change.
 ;;
 ;; Persistence: the tabs (number, directory, cursor file, and which tab
 ;; was current) are written to `dired-tabs-save-file' when Emacs exits,
 ;; and also a few seconds after the last structural change while Emacs is
 ;; idle, so a crash loses little.  The file is read lazily, the first time
 ;; a tab command runs or `dired' is called, so there is no load-order
-;; issue and no dependency on `savehist'.  Set `dired-tabs-save-file' to
-;; nil to disable.
+;; issue and no dependency on `savehist'.  Restoring does NOT touch the
+;; disk for the saved directories (important when external drives are
+;; asleep or unmounted); a missing directory is reported when you switch
+;; to that tab.  Set `dired-tabs-save-file' to nil to disable.
 ;;
 ;; Works with `dired-satchel': packed/flagged marks are redrawn by its
 ;; `dired-after-readin-hook' whenever a Dired buffer gets (re)created.
+;;
+;; Performance tips for slow / external drives (outside this package):
+;;
+;;   (setq dired-free-space nil)          ; Emacs 29+: no `df' per listing
+;;   (setq dired-auto-revert-buffer nil)  ; no `stat' when revisiting
+;;
+;; Also consider turning off `global-auto-revert-non-file-buffers' for
+;; Dired (it polls directories and wakes sleeping drives), and be wary of
+;; packages that process every file after readin (icons, git info, ...).
 ;;
 ;; Suggested keybindings (these shadow some Dired defaults: `t' normally
 ;; toggles marks, and the digits are normally prefix arguments, which
@@ -73,8 +87,8 @@
 ;;         ("1" . dired-tabs-goto) ("2" . dired-tabs-goto) ("3" . dired-tabs-goto)
 ;;         ("4" . dired-tabs-goto) ("5" . dired-tabs-goto) ("6" . dired-tabs-goto)
 ;;         ("7" . dired-tabs-goto) ("8" . dired-tabs-goto) ("9" . dired-tabs-goto)
-;;         ("[" . dired-tabs-prev)
-;;         ("]" . dired-tabs-next)
+;;         ("H" . dired-tabs-prev)
+;;         ("L" . dired-tabs-next)
 ;;         ("{" . dired-tabs-move-left)
 ;;         ("}" . dired-tabs-move-right)
 ;;         ("C-c C-c" . dired-tabs-close)
@@ -130,10 +144,11 @@ persisted."
 (defcustom dired-tabs-kill-old-buffer
   (bound-and-true-p dired-kill-when-opening-new-dired-buffer)
   "When non-nil, kill the old Dired buffer after switching tabs.
-This avoids one lingering buffer per visited directory.  A buffer that
-is still visible in another window is never killed.  Regular Dired
-marks (`*') in a killed buffer are lost; `dired-satchel' marks are
-redrawn automatically."
+This avoids lingering buffers for directories you merely passed through.
+A buffer is never killed if it is still visible in another window, or if
+some tab still shows its directory (so going back to that tab is
+instant).  Regular Dired marks (`*') in a killed buffer are lost;
+`dired-satchel' marks are redrawn automatically."
   :type 'boolean
   :group 'dired-tabs)
 
@@ -147,6 +162,15 @@ Longer directory names are truncated with an ellipsis."
   "Maximum width, in columns, of the current tab's label.
 The current tab is shortened last when the bar has to be squeezed."
   :type 'integer
+  :group 'dired-tabs)
+
+(defcustom dired-tabs-disambiguate t
+  "When non-nil, tell apart tabs whose directories share a name.
+Such tabs get parent components prepended, e.g. \"DiskA/Photos\" and
+\"DiskB/Photos\", only as many as needed.  Truncation (see
+`dired-tabs-label-width') cuts the end of a label, so the distinguishing
+parent part stays visible."
+  :type 'boolean
   :group 'dired-tabs)
 
 (defcustom dired-tabs-min-label-width 4
@@ -191,6 +215,16 @@ current tab are hidden and summarized as \"‹N\" (left) and \"N›\" (right)."
 Keeps `dired-tabs--dired-advice' from treating our own tab switches as
 \"entering Dired from elsewhere\".")
 
+(defvar dired-tabs--version 0
+  "Bumped whenever the tabs change structurally (invalidates the bar cache).")
+
+(defvar dired-tabs--bar-cache nil
+  "(VERSION WIDTH DIR . STRING) of the last rendered tab bar, or nil.")
+
+(defvar dired-tabs--last-seen nil
+  "(BUFFER DIR . POINT) at the last tracked command, or nil.
+Lets `dired-tabs--track' return immediately when nothing has moved.")
+
 (defun dired-tabs--sort ()
   "Keep `dired-tabs--list' sorted by tab number."
   (setq dired-tabs--list
@@ -212,7 +246,8 @@ Tabs saved by a previous session are loaded first."
   (unless dired-tabs--list
     (setq dired-tabs--list
           (list (dired-tabs--make :num 1 :dir (expand-file-name default-directory)))
-          dired-tabs--current 1)))
+          dired-tabs--current 1)
+    (cl-incf dired-tabs--version)))
 
 (defun dired-tabs--save ()
   "Remember the directory and cursor file of the current tab.
@@ -275,7 +310,9 @@ tabs does not overwrite the saved state."
 
 (defun dired-tabs--restore ()
   "Load the tabs saved by a previous session, once.
-Tabs whose directory has disappeared are dropped.  Nothing is displayed;
+Saved directories are NOT checked for existence here, so that sleeping or
+unmounted external drives are never touched; `dired-tabs--visit' reports
+a missing directory when you switch to that tab.  Nothing is displayed;
 the next tab command or outside `dired' call picks the tabs up."
   (unless dired-tabs--restored
     (setq dired-tabs--restored t)
@@ -290,15 +327,14 @@ the next tab command or outside `dired' call picks the tabs up."
                            (read (current-buffer)))))
                  (tabs (and (eq (plist-get data :version) 1)
                             (cl-loop for (num dir file) in (plist-get data :tabs)
-                                     when (and (natnump num) (stringp dir)
-                                               (or (file-remote-p dir)
-                                                   (file-directory-p dir)))
+                                     when (and (natnump num) (stringp dir))
                                      collect (dired-tabs--make
                                               :num num :dir dir
                                               :file (and (stringp file) file))))))
             (when tabs
               (setq dired-tabs--list tabs)
               (dired-tabs--sort)
+              (cl-incf dired-tabs--version)
               (let ((cur (plist-get data :current)))
                 (setq dired-tabs--current
                       (if (and (natnump cur) (dired-tabs--find cur))
@@ -316,10 +352,46 @@ the next tab command or outside `dired' call picks the tabs up."
 (defconst dired-tabs--header-spec '(:eval (dired-tabs--format))
   "Value of `header-line-format' while the tab bar is visible.")
 
-(defun dired-tabs--name (dir)
-  "Return the short display name of DIR: its last component, or \"/\"."
-  (let ((name (file-name-nondirectory (directory-file-name dir))))
-    (if (string-empty-p name) "/" name)))
+(defun dired-tabs--components (dir)
+  "Return the path components of DIR, innermost first.
+For a remote name the \"/ssh:host:\" part counts as one component."
+  (nreverse (split-string (directory-file-name dir) "/" t)))
+
+(defun dired-tabs--join (comps depth)
+  "Join the DEPTH innermost components of COMPS (innermost first) with \"/\"."
+  (if (null comps)
+      "/"
+    (mapconcat #'identity (reverse (seq-take comps depth)) "/")))
+
+(defun dired-tabs--labels (dirs)
+  "Return a display label for each directory in DIRS, in the same order.
+A label is normally the last path component.  While several tabs would
+get the same label but show different directories, the clashing labels
+are extended with parent components (\"Photos\" becomes \"DiskB/Photos\")
+until they differ or run out of components.  With
+`dired-tabs-disambiguate' nil, only the last component is used."
+  (let* ((comps (mapcar #'dired-tabs--components dirs))
+         (depths (make-list (length dirs) 1))
+         (labels (cl-mapcar #'dired-tabs--join comps depths)))
+    (when dired-tabs-disambiguate
+      (let ((changed t))
+        (while changed
+          (setq changed nil)
+          (let ((i 0))
+            (dolist (label labels)
+              (when (and (> (cl-count label labels :test #'equal) 1)
+                         (< (nth i depths) (length (nth i comps))))
+                ;; Only grow entries that clash with a *different* path,
+                ;; not tabs that show exactly the same directory.
+                (when (cl-some (lambda (other-label other-dir)
+                                 (and (equal other-label label)
+                                      (not (equal other-dir (nth i dirs)))))
+                               labels dirs)
+                  (cl-incf (nth i depths))
+                  (setq changed t)))
+              (cl-incf i)))
+          (setq labels (cl-mapcar #'dired-tabs--join comps depths)))))
+    labels))
 
 (defun dired-tabs--shorten (label max)
   "Truncate LABEL to at most MAX columns, ending with an ellipsis.
@@ -331,16 +403,22 @@ Uses display width, so double-width (CJK) characters are handled."
 (defun dired-tabs--entries (cap cur-cap)
   "Return (NUM LABEL CURRENT) for every tab.
 Labels are shortened to CAP columns, or CUR-CAP for the current tab."
-  (mapcar
-   (lambda (tab)
-     (let* ((num (dired-tabs-tab-num tab))
-            (current (= num dired-tabs--current))
-            ;; The current tab's saved dir is stale until we leave it.
-            (dir (if current default-directory (dired-tabs-tab-dir tab))))
-       (list num
-             (dired-tabs--shorten (dired-tabs--name dir) (if current cur-cap cap))
-             current)))
-   dired-tabs--list))
+  (let* ((dirs (mapcar
+                (lambda (tab)
+                  ;; The current tab's saved dir is stale until we leave it.
+                  (if (= (dired-tabs-tab-num tab) dired-tabs--current)
+                      default-directory
+                    (dired-tabs-tab-dir tab)))
+                dired-tabs--list))
+         (labels (dired-tabs--labels dirs)))
+    (cl-mapcar
+     (lambda (tab label)
+       (let* ((num (dired-tabs-tab-num tab))
+              (current (= num dired-tabs--current)))
+         (list num
+               (dired-tabs--shorten label (if current cur-cap cap))
+               current)))
+     dired-tabs--list labels)))
 
 (defun dired-tabs--entry-width (entry)
   "Return the display width of ENTRY as drawn: \" N label \"."
@@ -379,42 +457,58 @@ Return (HIDDEN-LEFT VISIBLE HIDDEN-RIGHT), leaving room for the two
     (propertize (format " %d %s " num (replace-regexp-in-string "%" "%%" label))
                 'face (if current 'dired-tabs-current 'dired-tabs-inactive))))
 
-(defun dired-tabs--format ()
-  "Render the tab bar to fit the window, or nil when there is only one tab.
+(defun dired-tabs--render-bar ()
+  "Render the tab bar to fit the window (uncached).
 Labels are truncated; if that is not enough, the bar is squeezed down to
 `dired-tabs-min-label-width', and finally tabs far from the current one
 are hidden behind \"‹N\" / \"N›\" markers."
+  (let* ((avail (max 20 (- (window-width) 2)))
+         (cap dired-tabs-label-width)
+         (cur-cap (max cap dired-tabs-current-label-width))
+         (entries (dired-tabs--entries cap cur-cap))
+         (hidden-left 0)
+         (hidden-right 0)
+         (shrinking t))
+    ;; 1. Shrink the labels (others first, the current tab last).
+    (while (and shrinking (> (dired-tabs--total entries) avail))
+      (cond ((> cap dired-tabs-min-label-width)
+             (setq cap (1- cap)))
+            ((> cur-cap dired-tabs-min-label-width)
+             (setq cur-cap (1- cur-cap)))
+            (t (setq shrinking nil)))
+      (setq entries (dired-tabs--entries cap cur-cap)))
+    ;; 2. Still too wide: hide the tabs farthest from the current one.
+    (when (> (dired-tabs--total entries) avail)
+      (pcase-let ((`(,lo ,visible ,hi) (dired-tabs--window entries avail)))
+        (setq hidden-left lo
+              hidden-right hi
+              entries visible)))
+    (mapconcat
+     #'identity
+     (append
+      (when (> hidden-left 0)
+        (list (propertize (format " ‹%d " hidden-left) 'face 'dired-tabs-overflow)))
+      (mapcar #'dired-tabs--render-entry entries)
+      (when (> hidden-right 0)
+        (list (propertize (format " %d› " hidden-right) 'face 'dired-tabs-overflow))))
+     " ")))
+
+(defun dired-tabs--format ()
+  "Return the tab bar for the header line, or nil when there is only one tab.
+The result is cached in a single slot, keyed on the tab version, the
+window width and the current directory (the current tab's label)."
   (when (cdr dired-tabs--list)
-    (let* ((avail (max 20 (- (window-width) 2)))
-           (cap dired-tabs-label-width)
-           (cur-cap (max cap dired-tabs-current-label-width))
-           (entries (dired-tabs--entries cap cur-cap))
-           (hidden-left 0)
-           (hidden-right 0)
-           (shrinking t))
-      ;; 1. Shrink the labels (others first, the current tab last).
-      (while (and shrinking (> (dired-tabs--total entries) avail))
-        (cond ((> cap dired-tabs-min-label-width)
-               (setq cap (1- cap)))
-              ((> cur-cap dired-tabs-min-label-width)
-               (setq cur-cap (1- cur-cap)))
-              (t (setq shrinking nil)))
-        (setq entries (dired-tabs--entries cap cur-cap)))
-      ;; 2. Still too wide: hide the tabs farthest from the current one.
-      (when (> (dired-tabs--total entries) avail)
-        (pcase-let ((`(,lo ,visible ,hi) (dired-tabs--window entries avail)))
-          (setq hidden-left lo
-                hidden-right hi
-                entries visible)))
-      (mapconcat
-       #'identity
-       (append
-        (when (> hidden-left 0)
-          (list (propertize (format " ‹%d " hidden-left) 'face 'dired-tabs-overflow)))
-        (mapcar #'dired-tabs--render-entry entries)
-        (when (> hidden-right 0)
-          (list (propertize (format " %d› " hidden-right) 'face 'dired-tabs-overflow))))
-       " "))))
+    (let ((c dired-tabs--bar-cache)
+          (w (window-width)))
+      (if (and c
+               (eql (car c) dired-tabs--version)
+               (eql (cadr c) w)
+               (equal (nth 2 c) default-directory))
+          (nthcdr 3 c)
+        (let ((s (dired-tabs--render-bar)))
+          (setq dired-tabs--bar-cache
+                (cl-list* dired-tabs--version w default-directory s))
+          s)))))
 
 (defun dired-tabs--apply-header ()
   "Show or hide the tab bar in the current Dired buffer.
@@ -427,10 +521,15 @@ Only touches `header-line-format' when it is unset or already ours."
                 (and (cdr dired-tabs--list) dired-tabs--header-spec))))
 
 (defun dired-tabs--refresh ()
-  "Update the tab bar in every Dired buffer and schedule a save."
-  (dolist (buf (buffer-list))
-    (with-current-buffer buf
-      (dired-tabs--apply-header)))
+  "Update the tab bar in every Dired buffer and schedule a save.
+Only buffers registered in `dired-buffers' are visited, not the whole
+`buffer-list'."
+  (cl-incf dired-tabs--version)
+  (setq dired-tabs--last-seen nil)
+  (dolist (entry dired-buffers)
+    (when (buffer-live-p (cdr entry))
+      (with-current-buffer (cdr entry)
+        (dired-tabs--apply-header))))
   (force-mode-line-update t)
   (dired-tabs--schedule-write))
 
@@ -449,30 +548,47 @@ enough: the first such buffer would get no header line."
 ;; Switching and creating
 ;; ---------------------------------------------------------------------
 
+(defun dired-tabs--dir-in-use-p (buf)
+  "Non-nil if some tab shows the directory of the Dired buffer BUF."
+  (let ((d (file-name-as-directory
+            (buffer-local-value 'default-directory buf))))
+    (seq-some (lambda (tab)
+                (equal (file-name-as-directory (dired-tabs-tab-dir tab)) d))
+              dired-tabs--list)))
+
 (defun dired-tabs--maybe-kill (old)
   "Kill the Dired buffer OLD we just left, if `dired-tabs-kill-old-buffer'.
-Never kills a buffer that is still shown in some window, nor the
-buffer we are in now, nor a non-Dired buffer."
+Never kills a buffer that is still shown in some window, that some tab
+still points at, nor the buffer we are in now, nor a non-Dired buffer."
   (when (and dired-tabs-kill-old-buffer
              (buffer-live-p old)
              (not (eq old (current-buffer)))
              (derived-mode-p 'dired-mode)
              (provided-mode-derived-p
               (buffer-local-value 'major-mode old) 'dired-mode)
-             (not (get-buffer-window old t)))
+             (not (get-buffer-window old t))
+             (not (dired-tabs--dir-in-use-p old)))
     (kill-buffer old)))
 
 (defun dired-tabs--visit (tab)
-  "Show TAB's directory in the selected window and restore its cursor."
-  (let ((dir (dired-tabs-tab-dir tab))
-        (old (current-buffer)))
-    (unless (file-directory-p dir)
-      (user-error "Directory no longer exists: %s" dir))
-    (let ((dired-tabs--busy t))
-      (dired dir))
+  "Show TAB's directory in the selected window and restore its cursor.
+If a live Dired buffer for the directory exists (and
+`dired-auto-revert-buffer' is off) it is switched to without any disk
+access; otherwise `dired' is called."
+  (let* ((dir (dired-tabs-tab-dir tab))
+         (old (current-buffer))
+         (live (and (not dired-auto-revert-buffer)
+                    (dired-find-buffer-nocreate dir))))
+    (if live
+        (switch-to-buffer live)
+      (unless (file-directory-p dir)
+        (user-error "Directory no longer exists: %s" dir))
+      (let ((dired-tabs--busy t))
+        (dired dir)))
     (dired-tabs--maybe-kill old)
     (when-let* ((file (dired-tabs-tab-file tab)))
-      (dired-goto-file file))
+      (unless (equal file (dired-get-filename nil t))
+        (dired-goto-file file)))
     (dired-tabs--refresh)))
 
 (defun dired-tabs--switch (num)
@@ -563,19 +679,25 @@ Tabs saved by a previous session are loaded first."
   "Keep the current tab's saved directory and cursor file up to date.
 This way the tab is correct even if you leave Dired without switching
 tabs, e.g. by opening a file.  A change of directory also schedules a
-save.  Errors are demoted to messages: an error in `post-command-hook'
-would make Emacs drop the hook and tracking would silently stop."
+save.  When the buffer, its `default-directory' object and point are all
+unchanged since the last call, return immediately.  Errors are demoted
+to messages: an error in `post-command-hook' would make Emacs drop the
+hook and tracking would silently stop."
   (when (and dired-tabs--list
              (derived-mode-p 'dired-mode)
              (eq (current-buffer) (window-buffer)))
-    (with-demoted-errors "dired-tabs: %S"
-      (let* ((tab (dired-tabs--find dired-tabs--current))
-             (moved (and tab
-                         (not (equal (dired-tabs-tab-dir tab)
-                                     (expand-file-name default-directory))))))
-        (dired-tabs--save)
-        (when moved
-          (dired-tabs--schedule-write))))))
+    (let ((seen dired-tabs--last-seen))
+      (unless (and seen
+                   (eq (car seen) (current-buffer))
+                   (eq (cadr seen) default-directory)
+                   (eql (cddr seen) (point)))
+        (with-demoted-errors "dired-tabs: %S"
+          (let ((moved (not (and seen (eq (cadr seen) default-directory)))))
+            (dired-tabs--save)
+            (setq dired-tabs--last-seen
+                  (cons (current-buffer) (cons default-directory (point))))
+            (when moved
+              (dired-tabs--schedule-write))))))))
 
 (add-hook 'post-command-hook #'dired-tabs--track)
 

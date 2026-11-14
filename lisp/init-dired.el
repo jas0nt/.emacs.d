@@ -118,15 +118,17 @@ packages share the exact same cached thumbnail file on disk."
   ;; `--group-directories-first' needs GNU ls; macOS ships BSD ls.
   (when (and (eq system-type 'darwin) (executable-find "gls"))
     (setq insert-directory-program (executable-find "gls")))
+  (setq dired-tabs-kill-old-buffer t)
   :custom
   (dired-kill-when-opening-new-dired-buffer t)
   (dired-movement-style 'bounded-files)
   (dired-dwim-target t)
   (dired-listing-switches
    "-l --almost-all --human-readable --group-directories-first --no-group")
+  (ls-lisp-use-insert-directory-program t)
   (dired-free-space nil)
   ;; Sensible defaults.
-  (dired-auto-revert-buffer #'dired-directory-changed-p)
+  (dired-auto-revert-buffer nil)
   (dired-recursive-copies 'always)
   (dired-recursive-deletes 'top)
   (dired-create-destination-dirs 'ask)
