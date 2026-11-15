@@ -144,6 +144,27 @@
     ]
    ])
 
+(transient-define-prefix cxc/transient-vc ()
+  "transient-toggle"
+  [
+   ["git"
+    ("v" "Status" magit)
+    ("d" "Diff" diff-hl-mode)
+    ("b" "Blamer" blamer-mode)
+    ("i" "Commit Info" blamer-show-commit-info)
+    ]
+
+   ["hunk"
+    ("RET" "Show hunk" diff-hl-show-hunk :transient t)
+    ("j" "Next hunk" diff-hl-next-hunk :transient t)
+    ("k" "Prev hunk" diff-hl-previous-hunk :transient t)
+    ("r" "Revert hunk" diff-hl-revert-hunk :transient t)
+    ]
+
+   ["actions"
+    ("q" "quit" transient-quit-all)
+    ]
+   ])
 
 (transient-define-prefix cxc/transient-toggle ()
   "transient-toggle"
@@ -200,7 +221,7 @@
  "C-c w" 'delete-other-windows
  "C-c e" 'dired-tabs-toggle
  "C-c t" 'cxc/transient-toggle
- "C-c v" 'magit
+ "C-c v" 'cxc/transient-vc
  "C-c f" 'cxc/transient-file
  "C-c j" 'cxc/transient-jump
  "C-c s" 'cxc/transient-search

@@ -15,5 +15,8 @@
   :config
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh))
 
+(use-package blamer
+  :defer t)
+
 (provide 'init-vc)
 ;;; init-vc.el ends here
