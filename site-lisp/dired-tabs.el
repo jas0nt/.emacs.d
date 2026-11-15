@@ -50,6 +50,14 @@
 ;; window's tab alone anyway, and `find-file' on a directory is not
 ;; intercepted.
 ;;
+;; Slow media: switching to a tab whose directory is under one of
+;; `dired-tabs-slow-dir-roots' first reads that directory in a background
+;; process, so a spun-down USB disk or an unmounted automount point cannot
+;; freeze Emacs: the minibuffer says that the disk is waking up, and the
+;; tab is shown as soon as the disk answers.  A warm directory answers
+;; within `dired-tabs-wake-grace' and is switched to normally.  Set
+;; `dired-tabs-wake-slow-dirs' to nil to always switch synchronously.
+;;
 ;; The tab bar is shown in the header line of Dired buffers while there
 ;; are two or more tabs, and hidden again when only one tab is left.  The
 ;; rendered bar is cached and only recomputed when the tabs, the window
@@ -152,6 +160,34 @@ instant).  Regular Dired marks (`*') in a killed buffer are lost;
   :type 'boolean
   :group 'dired-tabs)
 
+(defcustom dired-tabs-wake-slow-dirs t
+  "When non-nil, open tabs on slow media without freezing Emacs.
+Switching to a tab whose directory is under one of
+`dired-tabs-slow-dir-roots' first reads that directory in a background
+process.  While a sleeping USB disk spins up (or an automount point is
+mounted) the minibuffer says so and Emacs stays responsive; the
+directory is shown as soon as the disk answers.  Switching to a live
+Dired buffer never touches the disk and is unaffected."
+  :type 'boolean
+  :group 'dired-tabs)
+
+(defcustom dired-tabs-slow-dir-roots '("/run/media/" "/media/" "/mnt/")
+  "Directory prefixes whose tabs are woken asynchronously.
+See `dired-tabs-wake-slow-dirs'.  Only the name is matched, nothing is
+stat'ed, so a sleeping disk is not touched by the check itself.  TRAMP
+names are never probed."
+  :type '(repeat string)
+  :group 'dired-tabs)
+
+(defcustom dired-tabs-wake-grace 0.15
+  "Seconds to wait for a slow directory before probing in the background.
+If the directory answers within this delay -- a warm disk, or a page
+cache hit -- the tab switch simply completes and nothing is shown.
+Increase it for very large directories; 0 always probes in the
+background."
+  :type 'number
+  :group 'dired-tabs)
+
 (defcustom dired-tabs-label-width 14
   "Maximum width, in columns, of an inactive tab's label.
 Longer directory names are truncated with an ellipsis."
@@ -224,6 +260,10 @@ Keeps `dired-tabs--dired-advice' from treating our own tab switches as
 (defvar dired-tabs--last-seen nil
   "(BUFFER DIR . POINT) at the last tracked command, or nil.
 Lets `dired-tabs--track' return immediately when nothing has moved.")
+
+(defvar dired-tabs--wake-process nil
+  "Background process that is waking a slow directory, or nil.
+Only one runs at a time; a new tab switch kills it.")
 
 (defun dired-tabs--sort ()
   "Keep `dired-tabs--list' sorted by tab number."
@@ -570,31 +610,123 @@ still points at, nor the buffer we are in now, nor a non-Dired buffer."
              (not (dired-tabs--dir-in-use-p old)))
     (kill-buffer old)))
 
-(defun dired-tabs--visit (tab)
-  "Show TAB's directory in the selected window and restore its cursor.
-If a live Dired buffer for the directory exists (and
-`dired-auto-revert-buffer' is off) it is switched to without any disk
-access; otherwise `dired' is called."
-  (let* ((dir (dired-tabs-tab-dir tab))
-         (old (current-buffer))
-         (live (and (not dired-auto-revert-buffer)
-                    (dired-find-buffer-nocreate dir))))
-    (if live
-        (switch-to-buffer live)
+(defun dired-tabs--slow-dir-p (dir)
+  "Non-nil if DIR may live on media that is slow to wake up.
+Nothing is stat'ed here: only the name is inspected, so asking the
+question never touches a sleeping disk."
+  (and dired-tabs-wake-slow-dirs
+       (not (file-remote-p dir))
+       (seq-some (lambda (root) (string-prefix-p root dir))
+                 dired-tabs-slow-dir-roots)))
+
+(defun dired-tabs--wake-program ()
+  "Return the absolute name of the `ls' program, or nil if there is none.
+The probe uses the same program Dired itself lists directories with."
+  (executable-find (or insert-directory-program "ls")))
+
+(defun dired-tabs--cancel-wake ()
+  "Kill the pending wake-up process, if any.
+The process is forgotten first, so that its sentinel does nothing."
+  (when dired-tabs--wake-process
+    (let ((proc dired-tabs--wake-process))
+      (setq dired-tabs--wake-process nil)
+      (when (process-live-p proc)
+        (delete-process proc)))))
+
+(defun dired-tabs--cancel-wake-on-command ()
+  "Abandon a pending background switch when another command starts.
+Runs from `pre-command-hook', so a directory that is still being woken
+never replaces the buffer under the user's hands long after the switch
+was asked for.  The tab remains the one that is on screen."
+  (when dired-tabs--wake-process
+    (dired-tabs--cancel-wake)))
+
+(defun dired-tabs--wake (dir cont)
+  "Read DIR in a background process, then call CONT.
+Emacs stays responsive while a sleeping disk spins up or an automount
+point gets mounted.  If DIR answers within `dired-tabs-wake-grace' the
+switch stays synchronous; otherwise CONT runs from the process sentinel.
+Nothing is committed before CONT runs, so a switch that cannot complete
+\(the minibuffer is in use, the directory disappeared) leaves the tabs
+untouched and can simply be repeated."
+  (let ((proc (make-process
+               :name "dired-tabs-wake"
+               :command (list (dired-tabs--wake-program) "-A" dir)
+               :connection-type 'pipe
+               :noquery t
+               :buffer nil
+               :filter #'ignore)))
+    ;; A warm directory answers at once: keep the switch synchronous then.
+    (accept-process-output proc dired-tabs-wake-grace)
+    (if (not (process-live-p proc))
+        (progn
+          (delete-process proc)
+          (funcall cont))
+      (setq dired-tabs--wake-process proc)
+      (message "dired-tabs: waking %s…" (abbreviate-file-name dir))
+      (set-process-sentinel
+       proc
+       (lambda (p _event)
+         (when (eq p dired-tabs--wake-process)
+           (setq dired-tabs--wake-process nil)
+           (when (memq (process-status p) '(exit signal))
+             (message "")
+             (if (active-minibuffer-window)
+                 ;; Do not switch buffers under a prompt; the tab stays
+                 ;; current and pressing its digit again is now instant.
+                 (message "dired-tabs: %s is ready" (abbreviate-file-name dir))
+               (condition-case err
+                   (funcall cont)
+                 (error (message "dired-tabs: %s"
+                                 (error-message-string err))))))))))))
+
+(defun dired-tabs--show (tab old live)
+  "Display TAB's directory in the selected window and restore its cursor.
+OLD is the buffer the switch started from; LIVE, if non-nil, is an
+existing Dired buffer for the directory, which is reused as is."
+  (if live
+      (switch-to-buffer live)
+    (let ((dir (dired-tabs-tab-dir tab)))
       (unless (file-directory-p dir)
         (user-error "Directory no longer exists: %s" dir))
       (let ((dired-tabs--busy t))
-        (dired dir)))
-    (dired-tabs--maybe-kill old)
-    (when-let* ((file (dired-tabs-tab-file tab)))
-      (unless (equal file (dired-get-filename nil t))
-        (dired-goto-file file)))
-    (dired-tabs--refresh)))
+        (dired dir))))
+  ;; The switch only happens here, so the active tab always matches what
+  ;; is on screen, even while a slow directory is still being woken.
+  (setq dired-tabs--current (dired-tabs-tab-num tab))
+  (dired-tabs--maybe-kill old)
+  (when-let* ((file (dired-tabs-tab-file tab)))
+    (unless (equal file (dired-get-filename nil t))
+      (dired-goto-file file)))
+  (dired-tabs--refresh))
+
+(defun dired-tabs--visit (tab &optional then)
+  "Show TAB's directory in the selected window and restore its cursor.
+Call THEN, if non-nil, once the directory is displayed.
+If a live Dired buffer for the directory exists (and
+`dired-auto-revert-buffer' is off) it is switched to without any disk
+access; otherwise `dired' is called.  A directory on slow media is first
+read in a background process (see `dired-tabs-wake-slow-dirs'), in which
+case this function returns before the switch is complete."
+  (dired-tabs--cancel-wake)
+  (let* ((dir (dired-tabs-tab-dir tab))
+         (old (current-buffer))
+         (live (and (not dired-auto-revert-buffer)
+                    (dired-find-buffer-nocreate dir)))
+         (cont (lambda ()
+                 (dired-tabs--show tab old live)
+                 (when then (funcall then)))))
+    (if (or live
+            (not (dired-tabs--slow-dir-p dir))
+            (not (dired-tabs--wake-program)))
+        (funcall cont)
+      (dired-tabs--wake dir cont))))
 
 (defun dired-tabs--switch (num)
-  "Leave the current tab (remembering its state) and activate tab NUM."
+  "Leave the current tab (remembering its state) and activate tab NUM.
+The tab only becomes current once its directory is on screen, which may
+be delayed for a slow disk (see `dired-tabs--wake')."
   (dired-tabs--save)
-  (setq dired-tabs--current num)
   (dired-tabs--visit (dired-tabs--find num)))
 
 (defun dired-tabs--create (num)
@@ -700,6 +832,10 @@ hook and tracking would silently stop."
               (dired-tabs--schedule-write))))))))
 
 (add-hook 'post-command-hook #'dired-tabs--track)
+
+;; A switch that is still waiting for a slow disk is dropped as soon as
+;; the user does something else; see `dired-tabs--cancel-wake-on-command'.
+(add-hook 'pre-command-hook #'dired-tabs--cancel-wake-on-command)
 
 ;; ---------------------------------------------------------------------
 ;; Commands
@@ -830,11 +966,13 @@ Tabs saved by a previous session count as existing tabs."
    (t
     (let ((file buffer-file-name)
           (tab (dired-tabs--find dired-tabs--current)))
-      (dired-tabs--visit tab)
-      (when (and file
-                 (equal (file-name-directory file)
-                        (file-name-as-directory (dired-tabs-tab-dir tab))))
-        (dired-goto-file file))))))
+      (dired-tabs--visit
+       tab
+       (lambda ()
+         (when (and file
+                    (equal (file-name-directory file)
+                           (file-name-as-directory (dired-tabs-tab-dir tab))))
+           (dired-goto-file file))))))))
 
 (provide 'dired-tabs)
 ;;; dired-tabs.el ends here
