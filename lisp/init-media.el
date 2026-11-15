@@ -77,6 +77,82 @@ If thumbnails fail to display, switch to \"png\"."
   :type 'directory)
 
 ;; ---------------------------------------------------------------------------
+;; HDR-aware frame extraction
+;; ---------------------------------------------------------------------------
+;;
+;; HDR sources (PQ / HLG) decoded without a colour conversion come out
+;; washed out and desaturated: the 10-bit PQ signal is written straight to
+;; an SDR JPEG.  ffmpegthumbnailer cannot tonemap, so HDR files go through
+;; ffmpeg + zscale/tonemap instead.  With `-skip_frame nokey' plus scaling
+;; before the colour pipeline that costs ~440ms on a 4K60 source, versus
+;; ~380ms for ffmpegthumbnailer -- and it is the difference between a grey
+;; smear and the actual frame.
+
+(defcustom my-media-hdr-color-transfers '("smpte2084" "arib-std-b67")
+  "ffprobe `color_transfer' values that mean HDR (PQ / HLG)."
+  :type '(repeat string))
+
+(defvar my-media--probe-cache (make-hash-table :test 'equal)
+  "FILE -> (HDR . DURATION).  See `my-media-probe'.")
+
+(defun my-media-probe (file)
+  "Return (HDR . DURATION) for FILE, cached for the whole session.
+HDR is non-nil for PQ/HLG sources, DURATION is in seconds (nil when
+unknown).  One ffprobe run costs 20-190ms, hence the cache."
+  (let ((cached (gethash file my-media--probe-cache 'miss)))
+    (if (not (eq cached 'miss))
+        cached
+      (puthash file
+               (condition-case nil
+                   (let* ((json (with-temp-buffer
+                                  (unless (zerop (call-process
+                                                  "ffprobe" nil t nil
+                                                  "-v" "error" "-select_streams" "v:0"
+                                                  "-show_entries"
+                                                  "format=duration:stream=color_transfer"
+                                                  "-of" "json" file))
+                                    (signal 'error nil))
+                                  ;; `call-process' leaves point at eob.
+                                  (goto-char (point-min))
+                                  (json-parse-buffer :object-type 'alist)))
+                          (stream (aref (alist-get 'streams json) 0))
+                          (transfer (alist-get 'color_transfer stream))
+                          (duration (alist-get 'duration (alist-get 'format json))))
+                     (cons (and transfer
+                                (member transfer my-media-hdr-color-transfers)
+                                t)
+                           (and duration (string-to-number duration))))
+                 (error (cons nil nil)))
+               my-media--probe-cache))))
+
+(defun my-media-tonemap-filter (width)
+  "Return an ffmpeg -vf chain scaling to WIDTH and tonemapping HDR to SDR.
+Scaling first keeps the colour pipeline cheap on 4K sources."
+  (concat (format "scale=%d:-2," width)
+          "zscale=t=linear:npl=100,format=gbrpf32le,"
+          "zscale=p=bt709,tonemap=hable:desat=0,"
+          "zscale=t=bt709:m=bt709:r=tv,format=yuv420p"))
+
+(defun my-media-frame-argv (file percent out-path)
+  "Return the argv that writes a thumbnail of FILE at PERCENT into OUT-PATH."
+  (if (car (my-media-probe file))
+      (let* ((duration (or (cdr (my-media-probe file)) 600))
+             (seek (max 0 (* duration (/ percent 100.0)))))
+        (list "ffmpeg" "-v" "error" "-skip_frame" "nokey"
+              "-ss" (format "%.3f" seek)
+              "-i" file "-frames:v" "1"
+              "-vf" (my-media-tonemap-filter my-ready-player-thumbnail-size)
+              "-q:v" "3"
+              ;; The job writes to a ".tmp" temp file, so the muxer cannot be
+              ;; guessed from the extension.
+              "-f" "mjpeg" "-y" out-path))
+    (list "ffmpegthumbnailer" "-i" file
+          "-s" (number-to-string my-ready-player-thumbnail-size)
+          "-c" my-ready-player-thumbnail-format
+          "-t" (format "%d%%" percent)
+          "-o" out-path)))
+
+;; ---------------------------------------------------------------------------
 ;; ready-player: state and helpers
 ;; ---------------------------------------------------------------------------
 
@@ -129,18 +205,15 @@ If thumbnails fail to display, switch to \"png\"."
    (t (user-error "Not in ready-player or dired"))))
 
 (defun my-ready-player--spawn-thumbnailer (file percent thumb-path sentinel)
-  "Start ffmpegthumbnailer for FILE at PERCENT and return the process.
-Output goes to a unique temp file next to THUMB-PATH so concurrent jobs
-never write to the same file."
+  "Start a thumbnail job for FILE at PERCENT and return the process.
+Uses `my-media-frame-argv', so HDR sources get tonemapped and everything
+else keeps ffmpegthumbnailer.  Output goes to a unique temp file next to
+THUMB-PATH so concurrent jobs never write to the same file."
   (let* ((temp-path (concat (make-temp-name (concat thumb-path ".")) ".tmp"))
          (proc (make-process
                 :name "ready-player-thumbnail"
                 :buffer (my-ready-player--log-buffer)
-                :command (list "ffmpegthumbnailer" "-i" file
-                               "-s" (number-to-string my-ready-player-thumbnail-size)
-                               "-c" my-ready-player-thumbnail-format
-                               "-t" (format "%d%%" percent)
-                               "-o" temp-path)
+                :command (my-media-frame-argv file percent temp-path)
                 :connection-type 'pipe
                 :noquery t
                 :sentinel sentinel)))
@@ -349,6 +422,73 @@ The directory is created once in the `ready-player' :config block."
   (advice-add 'ready-player--cached-item-path-for :override
               #'my-ready-player--cached-item-path-for)
   (ready-player-mode 1))
+
+;; ---------------------------------------------------------------------------
+;; Thumbnails: one bounded, HDR-correct JPEG per file, shared with media-thumbnail
+;; ---------------------------------------------------------------------------
+;;
+;; ready-player asks ffmpegthumbnailer for `-s 0' (original size) and names
+;; the result ".png", so every thumbnail was a full-resolution PNG (~800KB,
+;; 1920x1080, ~8MB once decoded into Emacs) and `media-thumbnail' forced
+;; image type `png' by extension even for the JPEGs we wrote ourselves.
+;; Everything now lands in the same <md5>.jpg: bounded to
+;; `my-ready-player-thumbnail-size' pixels and tonemapped when HDR.
+
+(defun my-ready-player--cached-thumbnail-path (media-file)
+  "Return the cache path for MEDIA-FILE's thumbnail, with a .jpg suffix.
+The suffix is what makes ffmpeg write JPEG instead of the original-size
+PNG, and what makes `media-thumbnail' decode it as jpeg."
+  (ready-player--cached-item-path-for media-file ".jpg"))
+
+(advice-add 'ready-player--cached-thumbnail-path :override
+            #'my-ready-player--cached-thumbnail-path)
+
+(defun my-ready-player-load-thumbnail (media-file &optional on-loaded _silent)
+  "Replacement for ready-player's ffmpegthumbnailer loader.
+Runs through `my-media-frame-argv', so the result is bounded in size and
+colour-correct for HDR sources."
+  (if (not (executable-find "ffmpegthumbnailer"))
+      (when on-loaded (funcall on-loaded nil))
+    (let ((thumb (ready-player--cached-thumbnail-path media-file)))
+      (my-ready-player--spawn-thumbnailer
+       media-file (my-ready-player--thumbnail-percent-for media-file) thumb
+       (lambda (proc _event)
+         (when (memq (process-status proc) '(exit signal))
+           (when on-loaded
+             (funcall on-loaded (and (my-ready-player--finalize-thumbnail proc)
+                                     thumb)))))))))
+
+(with-eval-after-load 'ready-player
+  (advice-add 'ready-player--load-file-thumbnail-via-ffmpegthumbnailer
+              :override #'my-ready-player-load-thumbnail))
+
+;; `media-thumbnail' builds its own ffmpeg command line; give it the same
+;; HDR treatment.  Its cache path already comes from the advice above.
+(with-eval-after-load 'media-thumbnail
+  (define-advice media-thumbnail-ffmpeg-frame-cmd
+      (:around (orig file cache-path &rest args) my-hdr)
+    "Tonemap HDR sources instead of writing a washed-out frame."
+    (if (not (car (my-media-probe file)))
+        (apply orig file cache-path args)
+      (let ((size (or (plist-get args :size) media-thumbnail-size)))
+        (mapconcat
+         #'identity
+         (list media-thumbnail-ffmpeg-executable
+               "-nostdin" "-y" "-loglevel" "error"
+               "-skip_frame" "nokey"
+               "-ss" (shell-quote-argument
+                      (or (plist-get args :seek-time)
+                          (car media-thumbnail-ffmpeg-seek-times)
+                          "5"))
+               "-i" (shell-quote-argument file)
+               "-frames:v" "1" "-q:v" "2"
+               "-vf" (shell-quote-argument
+                      (my-media-tonemap-filter
+                       (if (or (null size) (zerop size))
+                           my-ready-player-thumbnail-size
+                         size)))
+               (shell-quote-argument cache-path))
+         " ")))))
 
 (provide 'init-media)
 ;;; init-media.el ends here

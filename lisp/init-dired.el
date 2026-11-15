@@ -18,6 +18,11 @@
 
 (defvar my-emacs-cache-dir)
 
+;; Declared special so that `my-dired-do-open-current-only' below can bind it
+;; dynamically (a plain `let' would create a lexical binding and the callee
+;; would still see the default marker char).
+(defvar dired-marker-char)
+
 ;; Defined in the user's own ready-player glue config.
 ;; (declare-function my-ready-player--adjust-thumbnail-percent "...")
 ;; (declare-function my-ready-player-batch-generate-thumbnails "...")
@@ -40,6 +45,14 @@
   (interactive)
   (let ((dired-marker-char ?\0))
     (dired-do-open)))
+
+(defun my-dired-k ()
+  "Run `dired-k' only inside a git repository.
+Media directories have no VCS, so `dired-k' would shell out for nothing."
+  (interactive)
+  (if (locate-dominating-file default-directory ".git")
+      (dired-k)
+    (user-error "Not a git repository: %s" default-directory)))
 
 (defun my-dired-jump-with-zoxide ()
   "Jump to a zoxide directory, replacing the current Dired buffer."
@@ -71,7 +84,7 @@
     ("T" "thumbnail"   media-thumbnail-dired-mode)
     ("d" "detail"      dired-hide-details-mode)
     ("u" "du"          dired-du-mode)
-    ("g" "git"         dired-k)
+    ("g" "git"         my-dired-k)
     ("p" "preview"     dired-preview-global-mode)
     ("s" "script mode" satchel-toggle-script-mode)]
    ["Thumbnail"
@@ -147,7 +160,9 @@ packages share the exact same cached thumbnail file on disk."
         ;; Navigation
         ("h" . dired-up-directory)
         ("j" . dired-next-line)
+        ("J" . (lambda () (interactive) (dired-next-line 5)))
         ("k" . dired-previous-line)
+        ("K" . (lambda () (interactive) (dired-previous-line 5)))
         ("l" . dired-find-file)
         ("]" . pixel-scroll-interpolate-down)
         ("[" . pixel-scroll-interpolate-up)
@@ -218,6 +233,10 @@ packages share the exact same cached thumbnail file on disk."
   (media-thumbnail-cache-dir
    (expand-file-name "media-thumbnails/" my-emacs-cache-dir))
   :config
+  ;; Bound the generated image the same way the ready-player pipeline does.
+  ;; The default 0 means "original size", which for a 4K film writes a
+  ;; full-resolution JPEG that dired then displays at 150px.
+  (setq media-thumbnail-size my-ready-player-thumbnail-size)
   ;; `:config' already runs after the package is loaded.
   (advice-add 'media-thumbnail-get-cache-path :override
               #'my-media-thumbnail-get-cache-path))
@@ -226,6 +245,9 @@ packages share the exact same cached thumbnail file on disk."
   :after dired
   :custom
   (dired-preview-delay 0.3)
+  ;; 50MB on purpose: every video here is several GB, and auto-previewing
+  ;; them would spawn a decoder on every cursor move.  Videos are opened
+  ;; with RET into ready-player instead, which uses the cached thumbnail.
   (dired-preview-max-size (* 50 1024 1024))
   (dired-preview-display-action-alist #'my-dired-preview-to-the-right)
   :config

@@ -80,6 +80,15 @@
 ;; Use `satchel-script-progress' to see how many operations/files are
 ;; queued, or to jump to the live output of a running script.
 ;;
+;; `satchel-script-open' (the transient's "s") shows the queue as an
+;; interactive list rather than raw shell text: `j'/`k' move the cursor,
+;; `J'/`K' reorder the operation at point, `d' removes it, `RET' shows
+;; its files and generated command, `s' shows the full script, `x' runs
+;; it and `C' clears it.  Reordering really changes the generated
+;; script, since operations are executed in list order.  Removing an
+;; operation never touches files on disk; a file that no other
+;; operation references loses its mark, as if it had never been pasted.
+;;
 ;; Satchel model (the keys mirror the Yazi task-queue plugin):
 ;;
 ;;   y  copy:  add the marked files (or the file at point) to the satchel
@@ -93,9 +102,14 @@
 ;; The satchel accumulates: you can `x' in one directory, `y' in another
 ;; and `p' in the destination.  Packing a file again with the other key
 ;; simply switches its kind.  Only plain `*' marks are collected, so files
-;; that are already packed (marked `y'/`x') are never re-packed by accident.
-;; Packed or queued files show `y' (copy) or `x' (move); deletions show the
-;; usual `D'.
+;; that are already packed or queued (marked `y'/`x') are never
+;; re-packed by accident.
+;; Packed files show `y' (copy) or `x' (move); deletions show the usual
+;; `D'.  Pasting in SCRIPT mode keeps those files marked (they are not
+;; done yet), but paints the mark with `satchel-queued-mark-face', so
+;; "packed, not pasted" and "pasted, waiting for the script" are
+;; different colors instead of different characters.  In LIVE mode a
+;; paste finishes immediately, so its marks simply go away.
 ;;
 ;; Suggested keybindings:
 ;;
@@ -117,6 +131,8 @@
 (require 'dired)
 (require 'dired-aux)
 (require 'transient)
+(require 'tabulated-list)
+(require 'hl-line)
 (require 'cl-lib)
 (require 'seq)
 (require 'pcase)
@@ -127,6 +143,7 @@
 (require 'notifications nil t)
 
 (declare-function notifications-notify "notifications")
+(declare-function evil-make-overriding-map "evil-core")
 
 (defgroup dired-satchel nil
   "Stash Dired files and copy/move/delete them, live or scripted."
@@ -146,13 +163,30 @@
   :group 'dired-satchel)
 
 (defcustom satchel-copy-marker-char ?y
-  "Marker character for files packed (or queued) to be copied."
+  "Marker character for files packed in the satchel to be copied.
+A pasted file keeps this character; its queued state is shown with
+`satchel-queued-mark-face' instead."
   :type 'character
   :group 'dired-satchel)
 
 (defcustom satchel-cut-marker-char ?x
-  "Marker character for files packed (or queued) to be moved."
+  "Marker character for files packed in the satchel to be moved.
+A pasted file keeps this character; its queued state is shown with
+`satchel-queued-mark-face' instead."
   :type 'character
+  :group 'dired-satchel)
+
+(defface satchel-queued-mark-face
+  '((t :inherit font-lock-function-name-face :weight bold))
+  "Face for the mark of a satchel operation waiting for the script.
+Packed files that have not been pasted yet use `dired-mark-face'
+instead; both states keep the same `y'/`x' character.
+The foreground is inherited from `font-lock-function-name-face', so it
+comes from the active theme and follows theme changes; the bold weight
+keeps the mark distinguishable even without color.  To derive the color
+from a different theme face, change the Inherit attribute with
+`M-x customize-face RET satchel-queued-mark-face' (or use
+`set-face-attribute' with `:inherit')."
   :group 'dired-satchel)
 
 (defcustom satchel-rsync-flags "-avh --info=progress2 --partial"
@@ -224,19 +258,27 @@ This is a global toggle shared by all Dired buffers.")
 ;; ---------------------------------------------------------------------
 
 (defvar satchel-persistent-marks (make-hash-table :test 'equal)
-  "Map of absolute file name -> dired marker char.
-Used to redraw pack/delete marks after a Dired buffer is recreated,
-e.g. via `find-alternate-file' when switching tabs.")
+  "Map of absolute file name -> stored dired marker char.
+This is the *stored* state (packed kind or deletion flag).  A pasted
+file keeps the same character, but is painted with
+`satchel-queued-mark-face'; see `satchel--set-mark-appearance'.  Used
+to redraw pack/delete marks after a Dired buffer is recreated, e.g. via
+`find-alternate-file' when switching tabs.")
+
+;; The script queue is defined further down, but painting a mark needs to
+;; know which files are still waiting for the script.
+(defvar satchel--script-ops)
+(defvar satchel--script-pending-cleanup)
 
 (defconst satchel--goto-threshold 40
   "Up to this many files, jump with `dired-goto-file'; above, scan once.")
 
 (defun satchel--record-mark (file char)
-  "Remember CHAR as the persistent mark of FILE."
+  "Remember CHAR as the stored mark of FILE."
   (puthash (expand-file-name file) char satchel-persistent-marks))
 
 (defun satchel--forget-mark (file)
-  "Forget the persistent mark of FILE."
+  "Forget the stored mark of FILE."
   (remhash (expand-file-name file) satchel-persistent-marks))
 
 (defun satchel--buffer-dirs ()
@@ -245,8 +287,57 @@ e.g. via `find-alternate-file' when switching tabs.")
     (dolist (e dired-subdir-alist h)
       (puthash (car e) t h))))
 
+(defun satchel--waiting-files ()
+  "Return a hash set of files with queued-but-unfinished script work."
+  (let ((set (make-hash-table :test 'equal)))
+    (dolist (op satchel--script-ops)
+      (dolist (f (satchel-op-files op))
+        (puthash f t set)))
+    (dolist (f satchel--script-pending-cleanup)
+      (puthash f t set))
+    set))
+
+(defun satchel--queued-mark-p (file char waiting)
+  "Return non-nil if FILE's mark CHAR denotes a queued operation.
+A file is queued when it is waiting for the script and is no longer
+packed in the satchel."
+  (and (not (eq char ?\s))
+       (not (eq char dired-del-marker))
+       (gethash file waiting)
+       (not (assoc file satchel-stash))))
+
+(defun satchel--set-mark-appearance (bol queued)
+  "Set the face of the Dired mark at BOL, according to QUEUED.
+The queued flag is also stored as the `satchel-queued-mark' text
+property, so the font-lock rule can restore the face if the line is
+fontified again."
+  (let ((char (char-after bol)))
+    (cond
+     ((eq char ?\s)
+      (remove-text-properties bol (1+ bol)
+                              '(face nil satchel-queued-mark nil)))
+     ((eq char dired-del-marker)
+      (put-text-property bol (1+ bol) 'face 'dired-flagged-face)
+      (remove-text-properties bol (1+ bol) '(satchel-queued-mark nil)))
+     (queued
+      (put-text-property bol (1+ bol) 'face 'satchel-queued-mark-face)
+      (put-text-property bol (1+ bol) 'satchel-queued-mark t))
+     (t
+      (put-text-property bol (1+ bol) 'face dired-mark-face)
+      (remove-text-properties bol (1+ bol) '(satchel-queued-mark nil))))))
+
+(defun satchel--mark-line (file char waiting)
+  "Mark the current Dired line for FILE with CHAR, then paint its state.
+WAITING is the hash set returned by `satchel--waiting-files'."
+  (let ((inhibit-read-only t)
+        (bol (line-beginning-position))
+        (queued (satchel--queued-mark-p file char waiting))
+        (dired-marker-char char))
+    (dired-mark 1)
+    (satchel--set-mark-appearance bol queued)))
+
 (defun satchel--paint (table)
-  "Apply TABLE (hash: absolute file -> marker char) to this Dired buffer.
+  "Apply TABLE (hash: absolute file -> stored marker char) to this buffer.
 A char of SPC clears the mark.  Only files whose directory is listed in
 this buffer are considered.  A few files are located with
 `dired-goto-file'; many files are handled in a single scan.  This calls
@@ -255,6 +346,7 @@ this buffer are considered.  A few files are located with
   (when (and (derived-mode-p 'dired-mode)
              (> (hash-table-count table) 0))
     (let ((dirs (satchel--buffer-dirs))
+          (waiting (satchel--waiting-files))
           todo)
       (maphash (lambda (f c)
                  (when (gethash (file-name-directory f) dirs)
@@ -265,26 +357,55 @@ this buffer are considered.  A few files are located with
           (if (<= (length todo) satchel--goto-threshold)
               (pcase-dolist (`(,f . ,c) todo)
                 (when (dired-goto-file f)
-                  (let ((dired-marker-char c))
-                    (dired-mark 1))))
+                  (satchel--mark-line f c waiting)))
             (goto-char (point-min))
             (while (not (eobp))
               (let* ((f (dired-get-filename nil t))
                      (c (and f (gethash f table))))
                 (if c
                     ;; `dired-mark' marks the current line and advances.
-                    (let ((dired-marker-char c))
-                      (dired-mark 1))
+                    (satchel--mark-line f c waiting)
                   (forward-line 1))))))))))
+
+(defun satchel--font-lock-mark-matcher (limit)
+  "Match the next `y'/`x' Dired mark up to LIMIT, for font-lock."
+  (let (found)
+    (while (and (not found)
+                (re-search-forward "^[^ \n]" limit t))
+      (let ((char (char-after (match-beginning 0))))
+        (when (or (eq char satchel-copy-marker-char)
+                  (eq char satchel-cut-marker-char))
+          (setq found t))))
+    found))
+
+(defun satchel--font-lock-mark-face ()
+  "Return the face for the Dired mark currently matched by font-lock."
+  (if (get-text-property (match-beginning 0) 'satchel-queued-mark)
+      'satchel-queued-mark-face
+    dired-mark-face))
+
+(defun satchel--font-lock-marks ()
+  "Install the font-lock rule that colors queued satchel marks."
+  (font-lock-add-keywords
+   nil
+   (list (list #'satchel--font-lock-mark-matcher
+               '(0 (satchel--font-lock-mark-face) t)))
+   t))
+
+(add-hook 'dired-mode-hook #'satchel--font-lock-marks)
+
+(defun satchel--paint-in-all-buffers (table)
+  "Apply TABLE (hash: absolute file -> stored marker char) to every buffer."
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      (satchel--paint table))))
 
 (defun satchel--mark-in-all-buffers (files char)
   "Apply CHAR as the mark of every file in FILES in every Dired buffer."
   (when files
     (let ((table (make-hash-table :test 'equal :size (length files))))
       (dolist (f files) (puthash f char table))
-      (dolist (buf (buffer-list))
-        (with-current-buffer buf
-          (satchel--paint table))))))
+      (satchel--paint-in-all-buffers table))))
 
 (defun satchel-restore-persistent-marks ()
   "Redraw marks recorded in `satchel-persistent-marks' for the files
@@ -526,6 +647,7 @@ script queue.  Meant as :after advice on the Dired unmark commands."
              (> (hash-table-count satchel-persistent-marks) 0))
     (when-let* ((dropped (satchel--unmarked-tracked-files)))
       (when (satchel--drop-files dropped)
+        (satchel--preview-refresh-if-open)
         (message "Removed queued command(s) for %d unmarked file(s)"
                  (length dropped))))))
 
@@ -549,15 +671,29 @@ script queue.  Meant as :after advice on the Dired unmark commands."
            when (eq k kind) collect file))
 
 (defun satchel--release-marks (files)
-  "Forget the persistent marks of FILES and clear them in every buffer."
+  "Forget the stored marks of FILES and clear them in every buffer."
   (dolist (f files)
     (satchel--forget-mark f))
   (satchel--mark-in-all-buffers files ?\s))
 
+(defun satchel--release-unneeded-marks (files)
+  "Clear the marks of FILES that are neither packed nor still queued.
+Used after removing an operation from the queue: a file that another
+operation still references, or that has been packed again, keeps its
+mark."
+  (let ((waiting (satchel--waiting-files))
+        (stashed (make-hash-table :test 'equal)))
+    (dolist (entry satchel-stash)
+      (puthash (car entry) t stashed))
+    (satchel--release-marks
+     (cl-remove-if (lambda (f)
+                     (or (gethash f waiting) (gethash f stashed)))
+                   files))))
+
 (defun satchel--star-marked-files ()
   "Return the absolute names of files carrying the plain `*' mark.
-Files already marked `y'/`x' (packed) or `D' (flagged) are not
-included, so packing never picks up the satchel's own marks."
+Files already marked `y'/`x' (packed or queued) or `D' (flagged) are
+not included, so packing never picks up the satchel's own marks."
   (let ((case-fold-search nil)
         files)
     (save-excursion
@@ -657,11 +793,17 @@ Files that still have a queued operation keep their mark (it is the
 Refused while the satchel script is running."
   (interactive)
   (satchel--ensure-idle)
-  (let ((pending (satchel--script-pending-files)))
+  ;; Keep the marks of everything that is still waiting for the script,
+  ;; whether it is in the queue or only in a failed run's cleanup list.
+  (let ((pending (seq-union satchel--script-pending-cleanup
+                            (satchel--script-pending-files))))
     (satchel--release-marks
      (cl-remove-if (lambda (f) (member f pending))
                    (mapcar #'car satchel-stash))))
   (setq satchel-stash nil)
+  ;; A file packed again after it was pasted loses its packed mark here,
+  ;; but it still has queued work, so redraw it with the queued mark.
+  (satchel--paint-in-all-buffers satchel-persistent-marks)
   (message "Satchel emptied"))
 
 ;; ---------------------------------------------------------------------
@@ -760,25 +902,295 @@ in this Dired buffer.  Only the flagged lines are visited."
     (nreverse files)))
 
 ;; ---------------------------------------------------------------------
-;; Script commands: preview, clear, execute
+;; Interactive queue preview
 ;; ---------------------------------------------------------------------
 
-(defun satchel-script-open ()
-  "Preview the script.
-With a non-empty queue, show the script rendered from the queue in a
-read-only buffer (nothing is written to disk).  With an empty queue,
-open the leftover script on disk, if there is one."
+(defconst satchel--preview-buffer "*satchel-preview*"
+  "Name of the buffer that lists the queued satchel operations.")
+
+(defconst satchel--operation-buffer "*satchel-operation*"
+  "Name of the buffer that shows one queued operation in detail.")
+
+(defconst satchel--script-text-buffer "*satchel-script*"
+  "Name of the buffer that shows the full generated script.")
+
+(defun satchel--preview-action (op)
+  "Return OP's action word, propertized for the preview."
+  (pcase (satchel-op-type op)
+    ('copy   (propertize "copy"   'face 'success))
+    ('move   (propertize "move"   'face 'warning))
+    ('delete (propertize "delete" 'face 'error))))
+
+(defun satchel--preview-file-names (op)
+  "Return a short one-line summary of OP's files."
+  (let* ((files (satchel-op-files op))
+         (n (length files))
+         (names (mapcar (lambda (f)
+                          (file-name-nondirectory (directory-file-name f)))
+                        files)))
+    (if (= n 1)
+        (car names)
+      (format "%d files: %s%s"
+              n
+              (string-join (seq-take names 3) ", ")
+              (if (> n 3) (format ", +%d" (- n 3)) "")))))
+
+(defun satchel--preview-target (op)
+  "Return a short description of where OP works, for the preview."
+  (pcase (satchel-op-type op)
+    ((or 'copy 'move)
+     (concat (propertize "→ " 'face 'shadow)
+             (abbreviate-file-name (satchel-op-dest op))))
+    ('delete
+     (concat (propertize "from " 'face 'shadow)
+             (abbreviate-file-name
+              (file-name-directory
+               (directory-file-name (car (satchel-op-files op)))))))))
+
+(defun satchel--preview-entries ()
+  "Return `tabulated-list-entries' for the satchel queue."
+  (let ((index 0))
+    (mapcar
+     (lambda (op)
+       (cl-incf index)
+       (list op
+             (vector (propertize (number-to-string index) 'face 'shadow)
+                     (satchel--preview-action op)
+                     (satchel--preview-file-names op)
+                     (satchel--preview-target op))))
+     satchel--script-ops)))
+
+(defun satchel--preview-update-summary ()
+  "Update the mode-line summary of the queue preview."
+  (let ((ops (length satchel--script-ops))
+        (files (length (satchel--script-pending-files))))
+    (setq mode-line-process
+          (format " [%d op%s, %d file%s]"
+                  ops (if (= ops 1) "" "s")
+                  files (if (= files 1) "" "s")))))
+
+(defun satchel--preview-refresh ()
+  "Reprint the queue preview from `satchel--script-ops'."
+  (satchel--preview-update-summary)
+  (tabulated-list-print t)
+  (when (null satchel--script-ops)
+    (let ((inhibit-read-only t))
+      (goto-char (point-max))
+      (insert "\n  " (propertize "No queued operations." 'face 'shadow) "\n")))
+  (force-mode-line-update))
+
+(defun satchel--preview-revert (&rest _)
+  "`revert-buffer-function' for the interactive queue preview."
+  (satchel--preview-refresh))
+
+(define-derived-mode satchel-preview-mode tabulated-list-mode "Satchel-Preview"
+  "Major mode for reviewing and editing the satchel script queue.
+
+The queue is executed in order, so the order shown here is the order
+the generated script will use.
+
+\\{satchel-preview-mode-map}"
+  (setq tabulated-list-format
+        [("#" 4 nil :right-align t)
+         ("Action" 7 nil)
+         ("Files" 36 nil)
+         ("Destination" 0 nil)])
+  (setq tabulated-list-entries #'satchel--preview-entries)
+  (setq tabulated-list-padding 1)
+  (setq-local revert-buffer-function #'satchel--preview-revert)
+  (hl-line-mode 1)
+  (tabulated-list-init-header))
+
+(define-key satchel-preview-mode-map (kbd "RET") #'satchel-preview-show-op)
+(define-key satchel-preview-mode-map (kbd "j") #'next-line)
+(define-key satchel-preview-mode-map (kbd "k") #'previous-line)
+(define-key satchel-preview-mode-map (kbd "J") #'satchel-preview-move-op-down)
+(define-key satchel-preview-mode-map (kbd "K") #'satchel-preview-move-op-up)
+(define-key satchel-preview-mode-map (kbd "d") #'satchel-preview-delete-op)
+(define-key satchel-preview-mode-map (kbd "M-<up>") #'satchel-preview-move-op-up)
+(define-key satchel-preview-mode-map (kbd "C-<up>") #'satchel-preview-move-op-up)
+(define-key satchel-preview-mode-map (kbd "M-<down>") #'satchel-preview-move-op-down)
+(define-key satchel-preview-mode-map (kbd "C-<down>") #'satchel-preview-move-op-down)
+(define-key satchel-preview-mode-map (kbd "s") #'satchel-preview-show-script)
+(define-key satchel-preview-mode-map (kbd "x") #'satchel-preview-execute)
+(define-key satchel-preview-mode-map (kbd "C") #'satchel-preview-clear)
+(define-key satchel-preview-mode-map (kbd "?") #'ignore)
+
+;; Evil's state keymaps are consulted before a mode's local map, so
+;; without this `K' would run `evil-lookup' and `RET' would run
+;; `evil-ret' in the preview.  Elevating the map lets its own keys win;
+;; keys it does not bind still fall through to Evil.
+(with-eval-after-load 'evil
+  (when (fboundp 'evil-make-overriding-map)
+    (evil-make-overriding-map satchel-preview-mode-map)))
+
+(defun satchel--preview-current-op ()
+  "Return the queued operation at point in the preview."
+  (or (tabulated-list-get-id)
+      (user-error "No satchel operation at point")))
+
+(defun satchel--preview-goto-index (index)
+  "Move to the INDEXth (0-based) operation in the preview."
+  (goto-char (point-min))
+  (unless tabulated-list-use-header-line
+    (forward-line 1))
+  (forward-line (max 0 index))
+  (beginning-of-line))
+
+(defun satchel-preview-open ()
+  "Open (or refresh) the interactive satchel queue preview."
   (interactive)
-  (cond
-   (satchel--script-ops
-    (with-current-buffer (get-buffer-create "*satchel-preview*")
+  (let ((buf (get-buffer-create satchel--preview-buffer)))
+    (with-current-buffer buf
+      (unless (derived-mode-p 'satchel-preview-mode)
+        (satchel-preview-mode))
+      (satchel--preview-refresh))
+    (pop-to-buffer buf)))
+
+(defun satchel--preview-refresh-if-open ()
+  "Refresh the queue preview buffer if it is currently live."
+  (when-let* ((buf (get-buffer satchel--preview-buffer)))
+    (with-current-buffer buf
+      (when (derived-mode-p 'satchel-preview-mode)
+        (satchel--preview-refresh)))))
+
+(defun satchel-preview-delete-op ()
+  "Remove the queued operation at point.
+Only the operation is removed; files are not touched.  A file that no
+operation references any more, and that is not packed in the satchel,
+loses its mark."
+  (interactive)
+  (let* ((op (satchel--preview-current-op))
+         (files (satchel-op-files op))
+         (type (satchel-op-type op))
+         (index (cl-position op satchel--script-ops :test #'eq)))
+    (setq satchel--script-ops (delq op satchel--script-ops))
+    (satchel--release-unneeded-marks files)
+    (satchel--preview-refresh)
+    (satchel--preview-goto-index
+     (min index (1- (length satchel--script-ops))))
+    (message "Removed %s operation on %d file(s) (files untouched)"
+             type (length files))))
+
+(defun satchel--preview-move-op (delta)
+  "Move the operation at point DELTA positions in the queue."
+  (let* ((op (satchel--preview-current-op))
+         (index (cl-position op satchel--script-ops :test #'eq))
+         (target (+ index delta)))
+    (unless (and (>= target 0) (< target (length satchel--script-ops)))
+      (user-error "Operation is already at the %s"
+                  (if (< delta 0) "top" "bottom")))
+    (let ((ops (copy-sequence satchel--script-ops))
+          (a (nth index satchel--script-ops))
+          (b (nth target satchel--script-ops)))
+      (setcar (nthcdr index ops) b)
+      (setcar (nthcdr target ops) a)
+      (setq satchel--script-ops ops))
+    (satchel--preview-refresh)
+    (message "Moved operation %s" (if (< delta 0) "up" "down"))))
+
+(defun satchel-preview-move-op-up ()
+  "Move the queued operation at point one step earlier."
+  (interactive)
+  (satchel--preview-move-op -1))
+
+(defun satchel-preview-move-op-down ()
+  "Move the queued operation at point one step later."
+  (interactive)
+  (satchel--preview-move-op +1))
+
+(defvar-local satchel--operation-op nil
+  "Operation currently shown in the operation detail buffer.")
+
+(defun satchel--operation-render ()
+  "Insert the detail view of `satchel--operation-op' into the current buffer."
+  (let ((op satchel--operation-op)
+        (inhibit-read-only t))
+    (erase-buffer)
+    (if (null op)
+        (insert "No operation selected.\n")
+      (let ((type (satchel-op-type op))
+            (files (satchel-op-files op)))
+        (insert (propertize (format "%s operation (%d file%s)\n\n"
+                                    (capitalize (symbol-name type))
+                                    (length files)
+                                    (if (= (length files) 1) "" "s"))
+                            'face 'bold))
+        (insert (propertize "Files\n" 'face 'bold))
+        (dolist (f files)
+          (insert "  " (propertize f 'face 'dired-filename) "\n"))
+        (when-let* ((dest (satchel-op-dest op)))
+          (insert "\n" (propertize "Destination\n" 'face 'bold))
+          (insert "  " (abbreviate-file-name dest) "\n"))
+        (insert "\n" (propertize "Command\n" 'face 'bold))
+        (insert (satchel--op-command op) "\n")))))
+
+(defun satchel--operation-revert (&rest _)
+  "Revert the operation detail buffer."
+  (satchel--operation-render))
+
+(define-derived-mode satchel-operation-mode special-mode "Satchel-Operation"
+  "Major mode for the detail view of one satchel operation.
+
+\\{satchel-operation-mode-map}"
+  (setq-local revert-buffer-function #'satchel--operation-revert))
+
+(defun satchel-preview-show-op ()
+  "Show the files and generated command of the operation at point."
+  (interactive)
+  (let* ((op (satchel--preview-current-op))
+         (buf (get-buffer-create satchel--operation-buffer)))
+    (with-current-buffer buf
+      (unless (derived-mode-p 'satchel-operation-mode)
+        (satchel-operation-mode))
+      (setq satchel--operation-op op)
+      (satchel--operation-render)
+      (goto-char (point-min)))
+    (display-buffer buf)))
+
+(defun satchel-preview-show-script ()
+  "Show the full script that the current queue would run."
+  (interactive)
+  (unless satchel--script-ops
+    (user-error "Satchel queue is empty"))
+  (let ((buf (get-buffer-create satchel--script-text-buffer)))
+    (with-current-buffer buf
       (let ((inhibit-read-only t))
         (erase-buffer)
         (insert (satchel--render-script)))
       (sh-mode)
       (goto-char (point-min))
-      (view-mode 1)
-      (pop-to-buffer (current-buffer))))
+      (view-mode 1))
+    (pop-to-buffer buf)))
+
+(defun satchel-preview-execute ()
+  "Run the queued satchel script."
+  (interactive)
+  (let ((count (length satchel--script-ops)))
+    (satchel-script-execute)
+    (unless satchel--script-ops
+      (message "Running %d satchel operation(s); watch %s"
+               count satchel--execute-buffer))))
+
+(defun satchel-preview-clear ()
+  "Clear every queued satchel operation (asks for confirmation)."
+  (interactive)
+  (satchel-script-clear))
+
+;; ---------------------------------------------------------------------
+;; Script commands: preview, clear, execute
+;; ---------------------------------------------------------------------
+
+(defun satchel-script-open ()
+  "Preview the satchel queue or the leftover script.
+With a non-empty queue, open the interactive queue preview, where
+operations can be inspected, deleted and reordered (nothing is written
+to disk).  With an empty queue, open the leftover script on disk, if
+there is one."
+  (interactive)
+  (cond
+   (satchel--script-ops
+    (satchel-preview-open))
    ((file-exists-p satchel-script-file)
     (find-file satchel-script-file))
    (t
@@ -812,6 +1224,7 @@ confirmation first, since it throws the whole queue away."
           satchel--script-pending-cleanup nil)
     (when script-exists
       (delete-file satchel-script-file))
+    (satchel--preview-refresh-if-open)
     (message "Cleared satchel queue and script file: %s" satchel-script-file)))
 
 (defun satchel--format-duration (seconds)
@@ -929,6 +1342,7 @@ file.  On failure the script stays on disk for a retry."
                      (satchel--script-pending-files))
           satchel--script-ops nil
           satchel--script-start-time (current-time))
+    (satchel--preview-refresh-if-open)
     (add-hook 'compilation-finish-functions #'satchel--script-finish-cleanup)
     (compile (format "bash %s" (shell-quote-argument satchel-script-file)))
     (with-current-buffer satchel--execute-buffer
@@ -1086,7 +1500,11 @@ script actually runs.  Refused while the satchel script is running."
                    (length copies) (length cuts) dest)
           ;; Skipped files have nothing queued, so their mark goes away too.
           (satchel--release-marks skipped)
-          (setq satchel-stash nil))
+          (setq satchel-stash nil)
+          ;; Repaint: the pasted files are no longer in the satchel, so
+          ;; their mark now shows as queued instead of packed.
+          (satchel--paint-in-all-buffers satchel-persistent-marks)
+          (satchel--preview-refresh-if-open))
       ;; Even if one file fails half way, leave the stash and the marks
       ;; consistent: files already moved must not stay packed.
       (unwind-protect
@@ -1121,11 +1539,14 @@ tab switches; in script mode it is cleared only once the script runs
       (satchel--script-queue-op 'delete (list file))
       (message "Queued %s for %s"
                (if delete-by-moving-to-trash "TRASH" "DELETE")
-               (file-name-nondirectory file)))
+               (file-name-nondirectory file))
+      (satchel--preview-refresh-if-open))
+    ;; Flag first: `dired-flag-file-deletion' rewrites the marker column,
+    ;; so painting before it would lose the face of the `D'.
+    (dired-flag-file-deletion 1)
     (satchel--record-mark file dired-del-marker)
     ;; Every buffer showing this file, so none looks "unmarked".
-    (satchel--mark-in-all-buffers (list file) dired-del-marker)
-    (dired-flag-file-deletion 1)))
+    (satchel--mark-in-all-buffers (list file) dired-del-marker)))
 
 (defun satchel-action-execute ()
   "In immediate mode, delete files flagged for deletion.
@@ -1154,7 +1575,7 @@ the queue is empty) via `satchel-script-execute'."
   ["Satchel script"
    :if-derived 'dired-mode
    ("v" "Progress"                          satchel-script-progress)
-   ("s" "Preview"                           satchel-script-open)
+   ("s" "Queue preview"                     satchel-script-open)
    ("x" "Execute"                           satchel-action-execute)
    ("c" "Clear queue and script file"       satchel-script-clear)
    ("t" "Toggle SCRIPT / LIVE mode"         satchel-toggle-script-mode)
