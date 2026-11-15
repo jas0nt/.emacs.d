@@ -1,3 +1,5 @@
+;;; init-pkgs.el --- Package bootstrap -*- lexical-binding: t -*-
+
 (require 'package)
 
 (setq package-archives '(("elpa"   . "https://elpa.gnu.org/packages/")

@@ -1,3 +1,5 @@
+;;; init-lang.el --- Language major modes -*- lexical-binding: t -*-
+
 (use-package rust-mode
   :mode "\\.rs\\'")
 

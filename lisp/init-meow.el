@@ -1,3 +1,5 @@
+;;; init-meow.el --- Meow keybindings (alternative to evil) -*- lexical-binding: t -*-
+
 (use-package meow
   :init
   (defun meow-setup ()

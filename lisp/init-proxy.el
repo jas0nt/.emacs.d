@@ -1,3 +1,5 @@
+;;; init-proxy.el --- HTTP proxy -*- lexical-binding: t -*-
+
 (setq url-proxy-services
    '(("no_proxy" . "^\\(localhost\\|127\\.0\\.0\\.1\\|10\\..*\\|192\\.168\\..*\\)")
      ("http"     . "127.0.0.1:7890")

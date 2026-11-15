@@ -1,3 +1,5 @@
+;;; init-dashboard.el --- Dashboard -*- lexical-binding: t -*-
+
 (use-package dashboard
   :custom
   (dashboard-center-content t)

@@ -1,3 +1,5 @@
+;;; init-keys.el --- Keybindings and transient menus -*- lexical-binding: t -*-
+
 (use-package transient
   :custom
   (transient-show-menu -0.4))

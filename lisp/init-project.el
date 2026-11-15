@@ -1,3 +1,5 @@
+;;; init-project.el --- Project management -*- lexical-binding: t -*-
+
 (use-package projectile
   :init
   (projectile-mode +1)

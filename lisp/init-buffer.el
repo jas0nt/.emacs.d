@@ -1,3 +1,5 @@
+;;; init-buffer.el --- Buffer management -*- lexical-binding: t -*-
+
 (use-package ibuffer
   ;; :hook (ibuffer-mode . olivetti-mode)
   :bind

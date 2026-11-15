@@ -1,3 +1,5 @@
+;;; init-system.el --- System monitoring -*- lexical-binding: t -*-
+
 (use-package proced
   :custom
   ;; Auto-refresh every 2 seconds.
