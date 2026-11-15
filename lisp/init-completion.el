@@ -9,8 +9,8 @@
   (corfu-popupinfo-mode)
   :custom
   (corfu-auto t)                    ; Enable auto completion
-  (corfu-auto-delay 0.1)
-  (corfu-auto-prefix 1)
+  (corfu-auto-delay 0.2)
+  (corfu-auto-prefix 2)             ; 1 pops up on every single keystroke
   (corfu-cycle t)                   ; Enable cycling for `corfu-next/previous'
   (corfu-preselect 'prompt)         ; Always preselect the prompt
   (corfu-quit-no-match 'separator)  ; Quit if no match (easier to type new things)

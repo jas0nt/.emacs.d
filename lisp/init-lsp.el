@@ -1,4 +1,4 @@
-;;; eglot-config.el --- Eglot config migrated from lsp-bridge -*- lexical-binding: t; -*-
+;;; init-lsp.el --- Eglot configuration -*- lexical-binding: t; -*-
 
 (use-package eglot
   :ensure nil
@@ -50,17 +50,17 @@
   (eldoc-echo-area-use-multiline-p nil)
   (eldoc-idle-delay 0.2))
 
+;; `consult-eglot-symbols' is available via M-x; `C-c s' stays bound to
+;; `cxc/transient-search' everywhere (see init-keys.el).
 (use-package consult-eglot
-  :after (eglot consult)
-  :bind (:map eglot-mode-map
-              ("C-c s" . consult-eglot-symbols)))
+  :after (eglot consult))
 
 (use-package yasnippet
   :hook (eglot-managed-mode . yas-minor-mode))
 
 ;;; Performance tuning
-(setq read-process-output-max (* 1024 1024))  ;; 1MB, improves LSP throughput
-(setq gc-cons-threshold (* 100 1024 1024))    ;; fewer GC pauses
+;; `read-process-output-max' and `gc-cons-threshold' are already set in
+;; init-generic.el / early-init.el; do not duplicate them here.
 
 (provide 'init-lsp)
 ;;; init-lsp.el ends here

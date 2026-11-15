@@ -23,7 +23,17 @@
       word-wrap-by-category t         ; Better word wrapping for CJK characters
       completion-auto-select nil
       ad-redefinition-action 'accept) ; Suppress warnings when a function is redefined
-(add-hook 'before-save-hook #'delete-trailing-whitespace)
+
+;; Trim trailing whitespace on save, but only in code/text buffers and only
+;; below a size where the scan is free.  A global `delete-trailing-whitespace'
+;; on a 50MB data file costs >1s per save and rewrites the whole file.
+(defun my-maybe-delete-trailing-whitespace ()
+  "Delete trailing whitespace in code/text buffers smaller than 4MB."
+  (when (and (derived-mode-p 'prog-mode 'text-mode)
+             (< (buffer-size) (* 4 1024 1024)))
+    (delete-trailing-whitespace)))
+
+(add-hook 'before-save-hook #'my-maybe-delete-trailing-whitespace)
 
 ;; Platform-specific tweaks.
 (setq frame-resize-pixelwise t) ; For pixel-perfect resizing, useful on macOS
@@ -42,9 +52,11 @@
 ;; Large file performance improvements.
 (setq-default bidi-display-reordering nil
               bidi-paragraph-direction 'left-to-right)
+;; `long-line-threshold' is left at its default (50000): lowering it makes
+;; ordinary files with long-ish lines silently lose font-lock.
+;; `global-so-long-mode' already handles genuinely pathological files.
 (setq bidi-inhibit-bpa t
-      large-file-warning-threshold 100000000 ; 100MB
-      long-line-threshold 2000)
+      large-file-warning-threshold 100000000) ; 100MB
 
 (when (>= emacs-major-version 29)
   (pixel-scroll-precision-mode 1))

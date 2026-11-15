@@ -1,3 +1,5 @@
+;;; init-edit.el --- Editing helpers -*- lexical-binding: t -*-
+
 (use-package markmacro
   :vc (:url "https://github.com/manateelazycat/markmacro" :rev "master")
   :bind
@@ -19,12 +21,12 @@
   (setq vundo-glyph-alist vundo-unicode-symbols))
 
 (use-package rainbow-delimiters
-  :config
-  (rainbow-delimiters-mode)
-  (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
+  :hook (prog-mode . rainbow-delimiters-mode))
 
+;; `rainbow-mode' colours colour literals in the buffer; running it in every
+;; prog-mode buffer just makes it scan code for nothing.
 (use-package rainbow-mode
-  :hook (prog-mode . rainbow-mode))
+  :hook ((css-mode html-mode svg-mode scss-mode less-css-mode) . rainbow-mode))
 
 (use-package evil-nerd-commenter)
 
@@ -50,3 +52,4 @@
 
 
 (provide 'init-edit)
+;;; init-edit.el ends here

@@ -1,5 +1,9 @@
 ;;; init-music.el --- EMMS music player configuration -*- lexical-binding: t -*-
 
+;; `transient-define-prefix' is not autoloaded: without this require the
+;; byte-compiler cannot expand it and produces a broken .elc.
+(require 'transient)
+
 ;; -----------------------------------------------------------------------
 ;; EMMS
 ;; -----------------------------------------------------------------------
@@ -38,15 +42,15 @@
         emms-playlist-buffer-name "*Music*"
         emms-show-format " %i %t ")       ; Display format in playlist
 
-  ;; Auto-load the music library whenever EMMS is opened.
+  ;; Reload the whole library on demand.  This used to be advised onto the
+  ;; `emms' command, which cleared the restored history and re-scanned the
+  ;; library on every single invocation (slow once ~/Music grows).
   (defun my-emms-load-music-library ()
     "Clear the current playlist and reload all tracks from
 `emms-source-file-default-directory'."
     (interactive)
     (emms-playlist-current-clear)
     (emms-add-directory-tree emms-source-file-default-directory))
-
-  (advice-add 'emms :before #'my-emms-load-music-library)
 
   ;; Mode line & persistence.
   (emms-mode-line-mode 1)
@@ -70,6 +74,13 @@
 ;; -----------------------------------------------------------------------
 ;; Transient Music Controller
 ;; -----------------------------------------------------------------------
+
+(defun my-emms-reload-library ()
+  "Load EMMS if necessary, then reload the playlist from the music directory."
+  (interactive)
+  (require 'emms)
+  (my-emms-load-music-library))
+
 (transient-define-prefix cxc/transient-music ()
   "Music Controller (EMMS)."
   [["Playback"
@@ -89,7 +100,8 @@
     ("p" "Show Playlist" emms)
     ("d" "Directory"     emms-play-directory)
     ("f" "File"          emms-play-file)
-    ("b" "Browser"       emms-smart-browse)]
+    ("b" "Browser"       emms-smart-browse)
+    ("L" "Reload library" my-emms-reload-library)]
 
    ["Actions"
     ("q" "Quit Menu" transient-quit-all)]])

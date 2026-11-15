@@ -1,3 +1,5 @@
+;;; init-theme.el --- Theme, mode line, pulse -*- lexical-binding: t -*-
+
 (use-package doom-themes
   :custom
   (doom-themes-enable-bold t)
@@ -44,14 +46,18 @@
   :custom
   (pulsar-pulse t)
   (pulsar-delay 0.05)
-  (pulsar-iterations 10)
+  ;; 10 pulses x 0.05s = half a second of forced redisplay per window
+  ;; switch; 4 looks the same for a fraction of the cost.
+  (pulsar-iterations 4)
   :config
   (defface my-pulsar-face
     `((t :background ,(face-attribute 'success :foreground nil t)))
-    "Pulse highlight color, auto-derived from current theme's face.")
+    "Pulse highlight color, auto-derived from current theme's face."
+    :group 'pulsar)
   (setq pulsar-face 'my-pulsar-face)
   (pulsar-global-mode 1)
   (advice-add 'keyboard-quit :before #'pulsar-pulse-line))
 
 
 (provide 'init-theme)
+;;; init-theme.el ends here

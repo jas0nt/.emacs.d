@@ -4,10 +4,20 @@
 (setq gc-cons-threshold most-positive-fixnum
       gc-cons-percentage 0.6)
 
+;; Skip the file-name-handler lookup (tramp, epa, jka-compr, ...) for every
+;; file operation during startup.  Restored together with the GC threshold.
+(defvar my--file-name-handler-alist file-name-handler-alist)
+(setq file-name-handler-alist nil)
+
 (add-hook 'emacs-startup-hook
           (lambda ()
             (setq gc-cons-threshold (* 100 1024 1024) ; 100MB
-                  gc-cons-percentage 0.1)))
+                  gc-cons-percentage 0.1
+                  file-name-handler-alist my--file-name-handler-alist)))
+
+;; The config is byte-compiled: load the .el source when it is newer than
+;; its .elc, instead of silently running the stale compiled version.
+(setq load-prefer-newer t)
 
 ;; UI chrome: set frame parameters directly instead of calling
 ;; tool-bar-mode/menu-bar-mode/scroll-bar-mode, so the first frame
@@ -16,6 +26,10 @@
 (push '(tool-bar-lines . 0)   default-frame-alist)
 (push '(vertical-scroll-bars) default-frame-alist)
 (push '(fullscreen . maximized) default-frame-alist)
+;; Declare the font here so the first frame is created with it already in
+;; place.  init-font.el still re-applies it (to set up the CJK fontset),
+;; but the initial frame no longer has to be re-laid-out.
+(push '(font . "Maple Mono NF-22") default-frame-alist)
 
 (setq initial-frame-alist default-frame-alist)
 

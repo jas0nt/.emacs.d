@@ -1,19 +1,19 @@
 ;;; init-session.el --- Session persistence configuration -*- lexical-binding: t -*-
 
 ;; -----------------------------------------------------------------------
-;; Desktop (restores buffers, window layout, and point positions)
+;; Desktop
 ;; -----------------------------------------------------------------------
 
-;; `desktop-dirname' is set by `my-set-cache-files' in init-generic.el,
-;; which must be loaded before this file.
-(setq desktop-path (list desktop-dirname)
-      desktop-base-file-name "emacs-desktop"
-      desktop-save t
-      desktop-load-locked-desktop t
-      desktop-auto-save-timeout 30)
-
+;; Desktop restore is off on purpose: the dashboard, recentf and save-place
+;; already cover "pick up where I left off", and restoring window layouts
+;; fights with dired-tabs / project buffers.  `desktop-dirname' is still
+;; pointed into cache/ by `my-set-cache-files' (init-generic.el), so turning
+;; it back on needs no other change.
 (desktop-save-mode -1)
 
+;; -----------------------------------------------------------------------
+;; Minibuffer / search history
+;; -----------------------------------------------------------------------
 (use-package savehist
   :init
   (savehist-mode))
@@ -21,13 +21,11 @@
 ;; -----------------------------------------------------------------------
 ;; Cursor position persistence (per file)
 ;; -----------------------------------------------------------------------
-
 (save-place-mode 1)
 
 ;; -----------------------------------------------------------------------
 ;; Recent files
 ;; -----------------------------------------------------------------------
-
 ;; Required by `consult-recent-file' (used in init-keys.el).
 (recentf-mode 1)
 (setq recentf-max-saved-items 500
