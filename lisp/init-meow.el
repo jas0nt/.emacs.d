@@ -67,8 +67,7 @@
      '("K" . meow-prev-expand)
      '("L" . meow-right-expand)
      '("v" . meow-line)
-     '("s" . meow-block)
-     '("S" . meow-to-block)
+     '("s" . my/er-expand)
      '("e" . meow-mark-word)
      '("E" . meow-mark-symbol)
      '("=" . er/expand-region)
@@ -97,10 +96,10 @@
 
      ;; ---------- Edit: copy/paste/grab ----------
      '("y" . meow-save)
-     '("Y" . meow-sync-grab)
      '("p" . meow-yank)
+     '("P" . meow-sync-grab)
      '("G" . meow-grab)
-     '("R" . meow-swap-grab)
+     '("S" . meow-swap-grab)
 
      ;; ---------- Undo / repeat ----------
      '("u" . meow-undo)
@@ -171,12 +170,17 @@
 ;;; Note: x, c, h, m, g are already used in NORMAL state, not reused here
 ;;; ================================================================
 (meow-leader-define-key
- '(";" . consult-buffer)
  '("," . cxc/prev-buffer)
+ '(";" . consult-buffer)
+ '("q" . cxc/kill-current-buffer)
+ '("W" . delete-other-windows)
+ '("e" . dired-tabs-toggle)
+ '("t" . cxc/transient-toggle)
+ '("v" . cxc/transient-vc)
  '("f" . cxc/transient-file)
  '("j" . cxc/transient-jump)
  '("s" . cxc/transient-search)
- '("w" . cxc/transient-window)
+ '("W" . cxc/transient-window)
  '("p" . cxc/transient-music))
 
 (provide 'init-meow)

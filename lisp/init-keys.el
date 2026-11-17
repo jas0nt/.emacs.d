@@ -201,6 +201,12 @@
     ]
    ])
 
+(defun cxc/C-s ()
+  (interactive)
+  (if (or defining-kbd-macro executing-kbd-macro)
+      (call-interactively #'isearch-forward)
+    (call-interactively #'consult-line)))
+
 
 (general-define-key
  "<f5>" 'revert-buffer
@@ -212,7 +218,7 @@
  "C-," 'cxc/prev-buffer
  "C-;" 'consult-buffer
  "C-'" 'avy-goto-char-2
- "C-s" 'consult-line
+ "C-s" 'cxc/C-s
  "C-=" 'er/expand-region
 
  "C-c C-/" 'evilnc-comment-or-uncomment-lines
