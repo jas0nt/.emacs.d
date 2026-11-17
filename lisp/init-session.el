@@ -24,6 +24,18 @@
 (save-place-mode 1)
 
 ;; -----------------------------------------------------------------------
+;; Emacs server
+;; -----------------------------------------------------------------------
+;; Let `emacsclient' reach this instance: the desktop's file-manager
+;; hotkey (Mod+E, see ~/scripts/desktop.sh) opens Dired in a new frame
+;; with `emacsclient -c', which needs the server to be running.
+(use-package server
+  :ensure nil
+  :config
+  (unless (server-running-p)
+    (server-start)))
+
+;; -----------------------------------------------------------------------
 ;; Recent files
 ;; -----------------------------------------------------------------------
 ;; Required by `consult-recent-file' (used in init-keys.el).

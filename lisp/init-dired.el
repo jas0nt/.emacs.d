@@ -114,12 +114,20 @@ packages share the exact same cached thumbnail file on disk."
   (ready-player--cached-thumbnail-path (expand-file-name file)))
 
 (defun my-dired-preview-to-the-right ()
-  "Display dired-preview window on the right side."
+  "Display dired-preview window on the right side.
+Previewing a directory shows a Dired buffer, which carries the
+`dired-tabs' tab bar in its header line.  The `header-line-format'
+window parameter (Emacs 30+) suppresses that bar in the preview
+window only; the buffer's own header line stays untouched, so the
+tab bar is still there when the same buffer is shown elsewhere."
   `((display-buffer-in-side-window)
     (side . right)
     (slot . 0)
     (window-width . 0.45)
-    (preserve-size . (t . nil))))
+    (preserve-size . (t . nil))
+    ;; `none' hides the header line for this window (see "Window
+    ;; Parameters" in the Emacs Lisp manual).
+    (window-parameters . ((header-line-format . none)))))
 
 ;; -----------------------------------------------------------------------
 ;; Packages

@@ -57,6 +57,10 @@
 ;; tab is shown as soon as the disk answers.  A warm directory answers
 ;; within `dired-tabs-wake-grace' and is switched to normally.  Set
 ;; `dired-tabs-wake-slow-dirs' to nil to always switch synchronously.
+;; A directory that cannot be read at all (disk unmounted, automount
+;; unreachable) is probed only once; the switch then fails with a
+;; message, and `dired-tabs-toggle' falls back to Dired in the current
+;; buffer's directory, so a dead tab never locks you out of Dired.
 ;;
 ;; The tab bar is shown in the header line of Dired buffers while there
 ;; are two or more tabs, and hidden again when only one tab is left.  The
@@ -610,14 +614,19 @@ still points at, nor the buffer we are in now, nor a non-Dired buffer."
              (not (dired-tabs--dir-in-use-p old)))
     (kill-buffer old)))
 
+(defun dired-tabs--slow-name-p (dir)
+  "Non-nil if DIR is under one of `dired-tabs-slow-dir-roots'.
+Nothing is stat'ed here: only the name is inspected."
+  (seq-some (lambda (root) (string-prefix-p root dir))
+            dired-tabs-slow-dir-roots))
+
 (defun dired-tabs--slow-dir-p (dir)
   "Non-nil if DIR may live on media that is slow to wake up.
 Nothing is stat'ed here: only the name is inspected, so asking the
 question never touches a sleeping disk."
   (and dired-tabs-wake-slow-dirs
        (not (file-remote-p dir))
-       (seq-some (lambda (root) (string-prefix-p root dir))
-                 dired-tabs-slow-dir-roots)))
+       (dired-tabs--slow-name-p dir)))
 
 (defun dired-tabs--wake-program ()
   "Return the absolute name of the `ls' program, or nil if there is none.
@@ -642,26 +651,38 @@ was asked for.  The tab remains the one that is on screen."
     (dired-tabs--cancel-wake)))
 
 (defun dired-tabs--wake (dir cont)
-  "Read DIR in a background process, then call CONT.
-Emacs stays responsive while a sleeping disk spins up or an automount
-point gets mounted.  If DIR answers within `dired-tabs-wake-grace' the
-switch stays synchronous; otherwise CONT runs from the process sentinel.
-Nothing is committed before CONT runs, so a switch that cannot complete
-\(the minibuffer is in use, the directory disappeared) leaves the tabs
-untouched and can simply be repeated."
-  (let ((proc (make-process
-               :name "dired-tabs-wake"
-               :command (list (dired-tabs--wake-program) "-A" dir)
-               :connection-type 'pipe
-               :noquery t
-               :buffer nil
-               :filter #'ignore)))
-    ;; A warm directory answers at once: keep the switch synchronous then.
-    (accept-process-output proc dired-tabs-wake-grace)
-    (if (not (process-live-p proc))
-        (progn
-          (delete-process proc)
-          (funcall cont))
+  "Read DIR in a background process, then call CONT with the outcome.
+CONT receives non-nil when the probe failed, meaning that DIR could not
+be read at all (unmounted disk, failed automount, missing directory);
+in that case the caller must not touch DIR again, since every access
+costs another mount attempt.  Emacs stays responsive while a sleeping
+disk spins up or an automount point gets mounted.  If DIR answers within
+`dired-tabs-wake-grace' the switch stays synchronous; otherwise CONT
+runs from the process sentinel."
+  ;; The child must not inherit a `default-directory' on the mount that
+  ;; is being probed: starting it would fail before `ls' even runs.
+  (let* ((default-directory temporary-file-directory)
+         (proc (condition-case nil
+                   (make-process
+                    :name "dired-tabs-wake"
+                    :command (list (dired-tabs--wake-program) "-A" dir)
+                    :connection-type 'pipe
+                    :noquery t
+                    :buffer nil
+                    :filter #'ignore)
+                 (error nil))))
+    (cond
+     ((null proc)
+      ;; No process: report DIR as unavailable rather than signaling.
+      (funcall cont t))
+     ((progn
+        ;; A warm directory answers at once: keep the switch synchronous.
+        (accept-process-output proc dired-tabs-wake-grace)
+        (not (process-live-p proc)))
+      (let ((failed (not (zerop (process-exit-status proc)))))
+        (delete-process proc)
+        (funcall cont failed)))
+     (t
       (setq dired-tabs--wake-process proc)
       (message "dired-tabs: waking %s…" (abbreviate-file-name dir))
       (set-process-sentinel
@@ -670,15 +691,19 @@ untouched and can simply be repeated."
          (when (eq p dired-tabs--wake-process)
            (setq dired-tabs--wake-process nil)
            (when (memq (process-status p) '(exit signal))
-             (message "")
-             (if (active-minibuffer-window)
-                 ;; Do not switch buffers under a prompt; the tab stays
-                 ;; current and pressing its digit again is now instant.
-                 (message "dired-tabs: %s is ready" (abbreviate-file-name dir))
-               (condition-case err
-                   (funcall cont)
-                 (error (message "dired-tabs: %s"
-                                 (error-message-string err))))))))))))
+             (dired-tabs--wake-finish
+              dir cont (not (zerop (process-exit-status p))))))))))))
+
+(defun dired-tabs--wake-finish (dir cont failed)
+  "Finish a background wake-up of DIR, calling CONT with FAILED.
+CONT is skipped while a prompt is active: the tab simply stays current
+and can be opened again later."
+  (message "")
+  (if (active-minibuffer-window)
+      (message "dired-tabs: %s is ready" (abbreviate-file-name dir))
+    (condition-case err
+        (funcall cont failed)
+      (error (message "dired-tabs: %s" (error-message-string err))))))
 
 (defun dired-tabs--show (tab old live)
   "Display TAB's directory in the selected window and restore its cursor.
@@ -700,27 +725,58 @@ existing Dired buffer for the directory, which is reused as is."
       (dired-goto-file file)))
   (dired-tabs--refresh))
 
-(defun dired-tabs--visit (tab &optional then)
+(defun dired-tabs--visit (tab &optional then on-error)
   "Show TAB's directory in the selected window and restore its cursor.
 Call THEN, if non-nil, once the directory is displayed.
 If a live Dired buffer for the directory exists (and
 `dired-auto-revert-buffer' is off) it is switched to without any disk
 access; otherwise `dired' is called.  A directory on slow media is first
 read in a background process (see `dired-tabs-wake-slow-dirs'), in which
-case this function returns before the switch is complete."
+case this function returns before the switch is complete.
+
+When TAB cannot be shown, call ON-ERROR with the error data instead of
+signaling it.  Without ON-ERROR the error is signaled: from the current
+command, or -- when the switch was asynchronous -- reported as a
+message."
   (dired-tabs--cancel-wake)
   (let* ((dir (dired-tabs-tab-dir tab))
          (old (current-buffer))
          (live (and (not dired-auto-revert-buffer)
                     (dired-find-buffer-nocreate dir)))
-         (cont (lambda ()
-                 (dired-tabs--show tab old live)
-                 (when then (funcall then)))))
+         (fail (lambda (err)
+                 (if on-error
+                     (funcall on-error err)
+                   (signal (car err) (cdr err)))))
+         (cont (lambda (&optional probe-failed)
+                 (if probe-failed
+                     (funcall fail
+                              (list 'user-error
+                                    (format "%s is unavailable (unmounted or unreachable)"
+                                            (abbreviate-file-name dir))))
+                   (condition-case err
+                       (progn
+                         (dired-tabs--show tab old live)
+                         (when then (funcall then)))
+                     (user-error (funcall fail err)))))))
     (if (or live
             (not (dired-tabs--slow-dir-p dir))
             (not (dired-tabs--wake-program)))
         (funcall cont)
       (dired-tabs--wake dir cont))))
+
+(defun dired-tabs--visit-fallback (err)
+  "Report ERR, then open Dired somewhere reachable.
+Used by `dired-tabs-toggle' so that a tab whose directory is gone (an
+unmounted USB disk, an unreachable automount) cannot make Dired itself
+unreachable.  `dired-jump' is skipped when the current buffer lives on
+the same kind of slow media: it would only trigger another failed mount
+attempt before giving up on the home directory."
+  (message "dired-tabs: %s" (error-message-string err))
+  (if (dired-tabs--slow-name-p default-directory)
+      (dired (expand-file-name "~"))
+    (condition-case nil
+        (dired-jump)
+      (error (dired (expand-file-name "~"))))))
 
 (defun dired-tabs--switch (num)
   "Leave the current tab (remembering its state) and activate tab NUM.
@@ -972,7 +1028,9 @@ Tabs saved by a previous session count as existing tabs."
          (when (and file
                     (equal (file-name-directory file)
                            (file-name-as-directory (dired-tabs-tab-dir tab))))
-           (dired-goto-file file))))))))
+           (dired-goto-file file)))
+       ;; A tab whose directory is gone must not make Dired unreachable.
+       #'dired-tabs--visit-fallback)))))
 
 (provide 'dired-tabs)
 ;;; dired-tabs.el ends here
