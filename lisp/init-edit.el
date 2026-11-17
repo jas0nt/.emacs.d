@@ -15,6 +15,10 @@
   ("C-c C-m c" . markmacro-rect-mark-columns)
   ("C-c C-m s" . markmacro-rect-mark-symbols))
 
+(use-package pcre2el
+  :config
+  (pcre-mode 1))
+
 (use-package vundo
   :bind ("C-x u" . vundo)
   :config
@@ -29,6 +33,9 @@
   :hook ((css-mode html-mode svg-mode scss-mode less-css-mode) . rainbow-mode))
 
 (use-package evil-nerd-commenter)
+
+(use-package evil-matchit
+  :defer t)
 
 (use-package expand-region
   :init

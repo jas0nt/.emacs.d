@@ -9,15 +9,18 @@
 ;; pyim builds its dict tables and pinyin regexps when it loads (~50ms).
 ;; Nothing needs it before the first input-method switch.
 (use-package pyim
-  :defer t
   :init
   (setq pyim-default-scheme 'xiaohe-shuangpin)
   :config
-  ;; 让 vertico 通过 orderless 支持拼音搜索候选项功能
+  ;; orderless 拼音搜索
   (defun my-orderless-regexp (orig_func component)
-    (let ((result (funcall orig_func component)))
-      (pyim-cregexp-build result)))
-  (advice-add 'orderless-regexp :around #'my-orderless-regexp))
+    (pyim-cregexp-build (funcall orig_func component)))
+  (advice-add 'orderless-regexp :around #'my-orderless-regexp)
+
+  ;; isearch 拼音搜索
+  (require 'pyim-cregexp-utils)
+  (pyim-isearch-mode 1))
+
 
 ;; rime loads a dynamic module; `default-input-method' only stores a symbol,
 ;; so setting it here does not need rime to be loaded.
