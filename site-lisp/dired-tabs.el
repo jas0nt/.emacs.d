@@ -285,12 +285,16 @@ Only one runs at a time; a new tab switch kills it.")
 
 (defun dired-tabs--ensure ()
   "Create tab 1 from the current directory if there are no tabs yet.
-Tabs saved by a previous session are loaded first."
+Tabs saved by a previous session are loaded first.  Afterwards the
+current tab number always refers to an existing tab."
   (dired-tabs--restore)
   (unless dired-tabs--list
     (setq dired-tabs--list
           (list (dired-tabs--make :num 1 :dir (expand-file-name default-directory)))
           dired-tabs--current 1)
+    (cl-incf dired-tabs--version))
+  (unless (dired-tabs--find dired-tabs--current)
+    (setq dired-tabs--current (dired-tabs-tab-num (car dired-tabs--list)))
     (cl-incf dired-tabs--version)))
 
 (defun dired-tabs--save ()
@@ -325,6 +329,7 @@ tabs does not overwrite the saved state."
         (progn
           ;; Make sure the current tab is up to date if we are in Dired.
           (dired-tabs--save)
+          (make-directory (file-name-directory (expand-file-name dired-tabs-save-file)) t)
           (with-temp-file dired-tabs-save-file
             (let ((print-length nil) (print-level nil))
               (prin1 (list :version 1
@@ -607,7 +612,6 @@ still points at, nor the buffer we are in now, nor a non-Dired buffer."
   (when (and dired-tabs-kill-old-buffer
              (buffer-live-p old)
              (not (eq old (current-buffer)))
-             (derived-mode-p 'dired-mode)
              (provided-mode-derived-p
               (buffer-local-value 'major-mode old) 'dired-mode)
              (not (get-buffer-window old t))
@@ -661,11 +665,12 @@ disk spins up or an automount point gets mounted.  If DIR answers within
 runs from the process sentinel."
   ;; The child must not inherit a `default-directory' on the mount that
   ;; is being probed: starting it would fail before `ls' even runs.
-  (let* ((default-directory temporary-file-directory)
+  (let* ((program (dired-tabs--wake-program))
+         (default-directory temporary-file-directory)
          (proc (condition-case nil
                    (make-process
                     :name "dired-tabs-wake"
-                    :command (list (dired-tabs--wake-program) "-A" dir)
+                    :command (list program "-A" dir)
                     :connection-type 'pipe
                     :noquery t
                     :buffer nil
@@ -738,6 +743,8 @@ When TAB cannot be shown, call ON-ERROR with the error data instead of
 signaling it.  Without ON-ERROR the error is signaled: from the current
 command, or -- when the switch was asynchronous -- reported as a
 message."
+  (unless tab
+    (user-error "No such dired-tabs tab"))
   (dired-tabs--cancel-wake)
   (let* ((dir (dired-tabs-tab-dir tab))
          (old (current-buffer))
@@ -1021,7 +1028,8 @@ Tabs saved by a previous session count as existing tabs."
     (dired-jump))
    (t
     (let ((file buffer-file-name)
-          (tab (dired-tabs--find dired-tabs--current)))
+          (tab (or (dired-tabs--find dired-tabs--current)
+                   (car dired-tabs--list))))
       (dired-tabs--visit
        tab
        (lambda ()

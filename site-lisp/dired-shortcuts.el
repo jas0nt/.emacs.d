@@ -46,16 +46,21 @@ Falls back to `default-directory' if point is not on a file line."
               (list default-directory))))
 
 (defun dired-shortcuts--spawn (command &rest args)
-  "Start COMMAND detached from Emacs, passing ARGS.
-COMMAND is a string that may carry its own arguments (e.g. \"open -a Terminal\").
-Output is discarded and Emacs does not wait for the process."
+  "Start COMMAND in the background, passing ARGS.
+COMMAND is a string that may carry its own arguments (e.g. \"open -a
+Terminal\").  The process runs asynchronously and its output is
+discarded, so a terminal or viewer that stays open never blocks Emacs."
   (when (file-remote-p default-directory)
     (user-error "Not supported on remote (TRAMP) directories"))
   (let* ((parts (split-string-and-unquote command))
          (program (car parts)))
     (unless (and program (executable-find program))
       (user-error "Program not found: %s (see `dired-shortcuts' options)" program))
-    (apply #'call-process program nil 0 nil (append (cdr parts) args))))
+    (make-process :name (file-name-nondirectory program)
+                  :command (append (list program) (cdr parts) args)
+                  :buffer nil
+                  :noquery t
+                  :sentinel #'ignore)))
 
 ;;; -----------------------------------------------------------------------
 ;;; 1. Copy name / path variants

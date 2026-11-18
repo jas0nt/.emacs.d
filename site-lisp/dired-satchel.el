@@ -245,10 +245,12 @@ Passed straight to `notifications-notify' as :timeout."
   "Alist of (FILE . KIND) for the files packed into the satchel.
 FILE is an absolute file name; KIND is `copy' or `cut'.")
 
-(defvar satchel-script-mode t
+(defcustom satchel-script-mode t
   "When non-nil, satchel actions queue shell commands for
 `satchel-script-file' instead of executing immediately.
-This is a global toggle shared by all Dired buffers.")
+This is a global toggle shared by all Dired buffers."
+  :type 'boolean
+  :group 'dired-satchel)
 
 (defconst satchel--execute-buffer "*satchel-execute*"
   "Name of the compilation buffer the script runs in.")
@@ -391,6 +393,19 @@ this buffer are considered.  A few files are located with
    (list (list #'satchel--font-lock-mark-matcher
                '(0 (satchel--font-lock-mark-face) t)))
    t))
+
+(defun satchel--font-lock-marks-now ()
+  "Install the mark font-lock rule in already-existing Dired buffers.
+`dired-satchel' can be loaded lazily, long after the first Dired buffer
+was created.  Without this, those buffers keep only Dired's own mark
+rule, which repaints `y'/`x' marks in `dired-mark-face' on the next
+redisplay and after every `revert-buffer', hiding the queued color."
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      (when (derived-mode-p 'dired-mode)
+        (satchel--font-lock-marks)
+        (when font-lock-mode
+          (font-lock-flush))))))
 
 (add-hook 'dired-mode-hook #'satchel--font-lock-marks)
 
@@ -769,9 +784,8 @@ Refused while the satchel script is running."
     ;; Acting on the file at point: advance like `dired-flag-file-deletion'.
     (unless star-files
       (dired-next-line 1))
-    (message "%s %d file(s) (satchel now has %d)"
-             (if (eq kind 'cut) "Cut" "Copied")
-             changed (length satchel-stash))))
+    (message "Packed %d file(s) to %s (satchel now has %d)"
+             changed (if (eq kind 'cut) "move" "copy") (length satchel-stash))))
 
 (defun satchel-pack ()
   "Pack the marked files (or the file at point) to be COPIED.
@@ -1284,8 +1298,10 @@ signalling) and reset the running state."
                       0)))
       (when success
         ;; The script file first: it is the part that must not be missed.
+        ;; Demote a failure so the marks and the notification still happen.
         (when (file-exists-p satchel-script-file)
-          (delete-file satchel-script-file))
+          (with-demoted-errors "dired-satchel: deleting the script failed: %S"
+            (delete-file satchel-script-file)))
         (with-demoted-errors "dired-satchel: clearing marks failed: %S"
           ;; Keep the mark of files that are back in the satchel or were
           ;; queued again while the script was running.
@@ -1410,12 +1426,11 @@ progress (e.g. rsync's --progress output) is visible."
         (propertize " [LIVE]" 'face '(:foreground "green" :weight bold)))))
   "Mode-line indicator for `satchel-script-mode'.")
 
-;; Without this property Emacs ignores `:eval' in the variable's value.
-(put 'satchel-mode-line-lighter 'risky-local-variable t)
-
-(unless (memq satchel-mode-line-lighter global-mode-string)
-  (setq global-mode-string
-        (append global-mode-string (list satchel-mode-line-lighter))))
+;; Drop a previous copy first: re-evaluating this file builds an `equal'
+;; but not `eq' list, which would otherwise be added a second time.
+(setq global-mode-string
+      (append (remove satchel-mode-line-lighter global-mode-string)
+              (list satchel-mode-line-lighter)))
 
 ;; ---------------------------------------------------------------------
 ;; Mode-aware copy / move / delete actions
@@ -1582,6 +1597,12 @@ the queue is empty) via `satchel-script-execute'."
    ("y" "Empty satchel"                     satchel-unpack)]
   ["Actions"
    ("q" "Quit" transient-quit-all)])
+
+;; `dired-satchel' is often loaded lazily by the first satchel command,
+;; when Dired buffers already exist.  Give those buffers the mark
+;; font-lock rule too, then redraw any marks that are already in memory.
+(satchel--font-lock-marks-now)
+(satchel--paint-in-all-buffers satchel-persistent-marks)
 
 (provide 'dired-satchel)
 ;;; dired-satchel.el ends here

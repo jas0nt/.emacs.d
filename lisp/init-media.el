@@ -15,11 +15,17 @@
 ;; Provided by ready-player / dired.
 (declare-function ready-player-is-video-p "ready-player")
 (declare-function ready-player--cached-thumbnail-path "ready-player")
+(declare-function ready-player--cached-item-path-for "ready-player")
 (declare-function ready-player--refresh "ready-player")
 (declare-function dired-get-filename "dired")
 (declare-function dired-get-marked-files "dired")
 (declare-function dired-current-directory "dired")
 (defvar ready-player--thumbnail)
+
+;; Provided by media-thumbnail (only used from advice, see below).
+(defvar media-thumbnail-size)
+(defvar media-thumbnail-ffmpeg-executable)
+(defvar media-thumbnail-ffmpeg-seek-times)
 
 ;; ---------------------------------------------------------------------------
 ;; image-mode
@@ -83,10 +89,14 @@ If thumbnails fail to display, switch to \"png\"."
 ;; HDR sources (PQ / HLG) decoded without a colour conversion come out
 ;; washed out and desaturated: the 10-bit PQ signal is written straight to
 ;; an SDR JPEG.  ffmpegthumbnailer cannot tonemap, so HDR files go through
-;; ffmpeg + zscale/tonemap instead.  With `-skip_frame nokey' plus scaling
-;; before the colour pipeline that costs ~440ms on a 4K60 source, versus
-;; ~380ms for ffmpegthumbnailer -- and it is the difference between a grey
-;; smear and the actual frame.
+;; ffmpeg + zscale/tonemap instead, scaling before the colour pipeline to
+;; keep it cheap on 4K sources.
+;;
+;; The frame is seeked with a pre-input `-ss' and decoded from the keyframe
+;; before it.  `-skip_frame nokey' must NOT be added here: with a source
+;; whose only keyframe is before the target (a large GOP, or a short
+;; clip), the decoder then emits no frame at all and ffmpeg fails with a
+;; confusing encoder error instead of writing a thumbnail.
 
 (defcustom my-media-hdr-color-transfers '("smpte2084" "arib-std-b67")
   "ffprobe `color_transfer' values that mean HDR (PQ / HLG)."
@@ -135,22 +145,36 @@ Scaling first keeps the colour pipeline cheap on 4K sources."
 
 (defun my-media-frame-argv (file percent out-path)
   "Return the argv that writes a thumbnail of FILE at PERCENT into OUT-PATH."
-  (if (car (my-media-probe file))
-      (let* ((duration (or (cdr (my-media-probe file)) 600))
-             (seek (max 0 (* duration (/ percent 100.0)))))
-        (list "ffmpeg" "-v" "error" "-skip_frame" "nokey"
-              "-ss" (format "%.3f" seek)
-              "-i" file "-frames:v" "1"
-              "-vf" (my-media-tonemap-filter my-ready-player-thumbnail-size)
-              "-q:v" "3"
-              ;; The job writes to a ".tmp" temp file, so the muxer cannot be
-              ;; guessed from the extension.
-              "-f" "mjpeg" "-y" out-path))
-    (list "ffmpegthumbnailer" "-i" file
-          "-s" (number-to-string my-ready-player-thumbnail-size)
-          "-c" my-ready-player-thumbnail-format
-          "-t" (format "%d%%" percent)
-          "-o" out-path)))
+  (let ((probe (my-media-probe file)))
+    (if (car probe)
+        (let ((seek (max 0 (* (or (cdr probe) 600) (/ percent 100.0)))))
+          (list "ffmpeg" "-v" "error"
+                "-ss" (format "%.3f" seek)
+                "-i" file "-frames:v" "1"
+                "-vf" (my-media-tonemap-filter my-ready-player-thumbnail-size)
+                "-q:v" "3"
+                ;; The job writes to a ".tmp" temp file, so the muxer cannot be
+                ;; guessed from the extension.
+                "-f" "mjpeg" "-y" out-path))
+      (list "ffmpegthumbnailer" "-i" file
+            "-s" (number-to-string my-ready-player-thumbnail-size)
+            "-c" my-ready-player-thumbnail-format
+            "-t" (format "%d%%" percent)
+            "-o" out-path))))
+
+(defun my-media--thumbnailer-program (file)
+  "Return the program `my-media-frame-argv' needs to thumbnail FILE.
+HDR sources are tonemapped by ffmpeg; everything else is handled by
+ffmpegthumbnailer.  The program may not be installed; see
+`my-media--check-thumbnailer'."
+  (if (car (my-media-probe file)) "ffmpeg" "ffmpegthumbnailer"))
+
+(defun my-media--check-thumbnailer (file)
+  "Signal a `user-error' unless FILE can be thumbnailed with an installed program."
+  (let ((program (my-media--thumbnailer-program file)))
+    (unless (executable-find program)
+      (user-error "%s not found (needed to thumbnail %s)"
+                  program (file-name-nondirectory file)))))
 
 ;; ---------------------------------------------------------------------------
 ;; ready-player: state and helpers
@@ -176,7 +200,7 @@ Scaling first keeps the colour pipeline cheap on 4K sources."
 (defvar my-ready-player--batch-gen 0
   "Incremented on every batch start/cancel; sentinels of stale jobs are ignored.")
 
-(defun my-ready-player--log-buffer ()
+(defun my-ready-player--get-log-buffer ()
   "Return the shared log buffer, creating it if needed."
   (unless (buffer-live-p my-ready-player--log-buffer)
     (setq my-ready-player--log-buffer
@@ -189,7 +213,7 @@ Scaling first keeps the colour pipeline cheap on 4K sources."
   "Erase the log buffer unless thumbnailer jobs are running."
   (when (and (zerop my-ready-player--batch-active)
              (zerop (hash-table-count my-ready-player--regrab-process-table)))
-    (with-current-buffer (my-ready-player--log-buffer)
+    (with-current-buffer (my-ready-player--get-log-buffer)
       (erase-buffer))))
 
 (defun my-ready-player--thumbnail-percent-for (media-file)
@@ -209,10 +233,11 @@ Scaling first keeps the colour pipeline cheap on 4K sources."
 Uses `my-media-frame-argv', so HDR sources get tonemapped and everything
 else keeps ffmpegthumbnailer.  Output goes to a unique temp file next to
 THUMB-PATH so concurrent jobs never write to the same file."
+  (my-media--check-thumbnailer file)
   (let* ((temp-path (concat (make-temp-name (concat thumb-path ".")) ".tmp"))
          (proc (make-process
                 :name "ready-player-thumbnail"
-                :buffer (my-ready-player--log-buffer)
+                :buffer (my-ready-player--get-log-buffer)
                 :command (my-media-frame-argv file percent temp-path)
                 :connection-type 'pipe
                 :noquery t
@@ -225,11 +250,18 @@ THUMB-PATH so concurrent jobs never write to the same file."
 
 (defun my-ready-player--finalize-thumbnail (process)
   "Install PROCESS's output on success; always remove its temp file.
-Return non-nil on success."
+Return non-nil on success.  Never signals, since it runs from process
+sentinels."
   (let ((temp (process-get process 'my-temp-path))
         (thumb (process-get process 'my-thumb-path)))
     (if (and (eq (process-exit-status process) 0) (file-exists-p temp))
-        (progn (rename-file temp thumb t) t)
+        (condition-case err
+            (progn (rename-file temp thumb t) t)
+          (error
+           (ignore-errors (delete-file temp))
+           (message "Thumbnail could not be installed as %s: %s"
+                    thumb (error-message-string err))
+           nil))
       (ignore-errors (delete-file temp))
       nil)))
 
@@ -263,13 +295,12 @@ Return non-nil on success."
               (message "Thumbnail regenerated for %s at %d%%"
                        (file-name-nondirectory media-file) percent))
           (message "Failed to regenerate thumbnail (see %s)"
-                   (buffer-name (my-ready-player--log-buffer))))))))
+                   (buffer-name (my-ready-player--get-log-buffer))))))))
 
 (defun my-ready-player--regrab-thumbnail-for-file (media-file percent)
   "Regenerate MEDIA-FILE's cached thumbnail at PERCENT (async).
 Cancels any in-flight regrab for the same file first."
-  (unless (executable-find "ffmpegthumbnailer")
-    (user-error "ffmpegthumbnailer not found"))
+  (my-media--check-thumbnailer media-file)
   (when-let* ((old (gethash media-file my-ready-player--regrab-process-table))
               ((process-live-p old)))
     (delete-process old))
@@ -356,8 +387,12 @@ have a cached thumbnail are skipped.  Runs up to
   (interactive)
   (unless (derived-mode-p 'dired-mode)
     (user-error "Run this from a Dired buffer"))
-  (unless (executable-find "ffmpegthumbnailer")
-    (user-error "ffmpegthumbnailer not found"))
+  ;; Which program a file needs depends on the file (HDR goes through
+  ;; ffmpeg), so only require that at least one of them exists; a file
+  ;; whose own program is missing is counted as failed by the pump.
+  (unless (or (executable-find "ffmpeg")
+              (executable-find "ffmpegthumbnailer"))
+    (user-error "Neither ffmpeg nor ffmpegthumbnailer found"))
   (when (> my-ready-player--batch-active 0)
     (user-error "A batch thumbnail generation is already running"))
   (let* ((marked (dired-get-marked-files nil 'marked))
@@ -438,57 +473,60 @@ The directory is created once in the `ready-player' :config block."
   "Return the cache path for MEDIA-FILE's thumbnail, with a .jpg suffix.
 The suffix is what makes ffmpeg write JPEG instead of the original-size
 PNG, and what makes `media-thumbnail' decode it as jpeg."
-  (ready-player--cached-item-path-for media-file ".jpg"))
-
-(advice-add 'ready-player--cached-thumbnail-path :override
-            #'my-ready-player--cached-thumbnail-path)
+  (ready-player--cached-item-path-for (expand-file-name media-file) ".jpg"))
 
 (defun my-ready-player-load-thumbnail (media-file &optional on-loaded _silent)
   "Replacement for ready-player's ffmpegthumbnailer loader.
 Runs through `my-media-frame-argv', so the result is bounded in size and
 colour-correct for HDR sources."
-  (if (not (executable-find "ffmpegthumbnailer"))
+  (if (not (executable-find (my-media--thumbnailer-program media-file)))
       (when on-loaded (funcall on-loaded nil))
     (let ((thumb (ready-player--cached-thumbnail-path media-file)))
       (my-ready-player--spawn-thumbnailer
        media-file (my-ready-player--thumbnail-percent-for media-file) thumb
        (lambda (proc _event)
          (when (memq (process-status proc) '(exit signal))
-           (when on-loaded
-             (funcall on-loaded (and (my-ready-player--finalize-thumbnail proc)
-                                     thumb)))))))))
+           ;; Finalize even without a callback, or the temp file leaks.
+           (let ((ok (my-ready-player--finalize-thumbnail proc)))
+             (when on-loaded
+               (funcall on-loaded (and ok thumb))))))))))
 
 (with-eval-after-load 'ready-player
+  (advice-add 'ready-player--cached-thumbnail-path :override
+              #'my-ready-player--cached-thumbnail-path)
   (advice-add 'ready-player--load-file-thumbnail-via-ffmpegthumbnailer
               :override #'my-ready-player-load-thumbnail))
 
 ;; `media-thumbnail' builds its own ffmpeg command line; give it the same
 ;; HDR treatment.  Its cache path already comes from the advice above.
+(defun my-media-hdr-frame-cmd (orig file cache-path &rest args)
+  "Tonemap HDR sources instead of writing a washed-out frame.
+Around advice for `media-thumbnail-ffmpeg-frame-cmd'; falls through to
+ORIG, with FILE, CACHE-PATH and ARGS, for everything that is not HDR."
+  (if (not (car (my-media-probe file)))
+      (apply orig file cache-path args)
+    (let ((size (or (plist-get args :size) media-thumbnail-size)))
+      (mapconcat
+       #'identity
+       (list media-thumbnail-ffmpeg-executable
+             "-nostdin" "-y" "-loglevel" "error"
+             "-ss" (shell-quote-argument
+                    (or (plist-get args :seek-time)
+                        (car media-thumbnail-ffmpeg-seek-times)
+                        "5"))
+             "-i" (shell-quote-argument file)
+             "-frames:v" "1" "-q:v" "2"
+             "-vf" (shell-quote-argument
+                    (my-media-tonemap-filter
+                     (if (or (null size) (zerop size))
+                         my-ready-player-thumbnail-size
+                       size)))
+             (shell-quote-argument cache-path))
+       " "))))
+
 (with-eval-after-load 'media-thumbnail
-  (define-advice media-thumbnail-ffmpeg-frame-cmd
-      (:around (orig file cache-path &rest args) my-hdr)
-    "Tonemap HDR sources instead of writing a washed-out frame."
-    (if (not (car (my-media-probe file)))
-        (apply orig file cache-path args)
-      (let ((size (or (plist-get args :size) media-thumbnail-size)))
-        (mapconcat
-         #'identity
-         (list media-thumbnail-ffmpeg-executable
-               "-nostdin" "-y" "-loglevel" "error"
-               "-skip_frame" "nokey"
-               "-ss" (shell-quote-argument
-                      (or (plist-get args :seek-time)
-                          (car media-thumbnail-ffmpeg-seek-times)
-                          "5"))
-               "-i" (shell-quote-argument file)
-               "-frames:v" "1" "-q:v" "2"
-               "-vf" (shell-quote-argument
-                      (my-media-tonemap-filter
-                       (if (or (null size) (zerop size))
-                           my-ready-player-thumbnail-size
-                         size)))
-               (shell-quote-argument cache-path))
-         " ")))))
+  (advice-add 'media-thumbnail-ffmpeg-frame-cmd
+              :around #'my-media-hdr-frame-cmd))
 
 (provide 'init-media)
 ;;; init-media.el ends here

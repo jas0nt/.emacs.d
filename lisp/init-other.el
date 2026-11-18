@@ -2,9 +2,6 @@
 
 ;; Everything here is invoked on demand; only the keybindings/autoloads
 ;; should exist at startup.
-(use-package google-this
-  :defer t)
-
 (use-package deadgrep
   :defer t)
 
