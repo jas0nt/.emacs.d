@@ -15,11 +15,7 @@
   ;; orderless 拼音搜索
   (defun my-orderless-regexp (orig_func component)
     (pyim-cregexp-build (funcall orig_func component)))
-  (advice-add 'orderless-regexp :around #'my-orderless-regexp)
-
-  ;; isearch 拼音搜索
-  (require 'pyim-cregexp-utils)
-  (pyim-isearch-mode 1))
+  (advice-add 'orderless-regexp :around #'my-orderless-regexp))
 
 
 ;; rime loads a dynamic module; `default-input-method' only stores a symbol,
