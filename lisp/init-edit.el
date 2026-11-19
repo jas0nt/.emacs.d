@@ -1,19 +1,28 @@
 ;;; init-edit.el --- Editing helpers -*- lexical-binding: t -*-
 
+;; Keep markmacro's commands in one prefix map so that the global `C-c C-m'
+;; binding and orbyte's Normal-state `m' (see init-orbyte.el) stay in sync.
+;; A keymap variable is not followed when used as a prefix key, so give the
+;; symbol a keymap function definition as well.
+(defvar-keymap markmacro-command-map
+  :doc "Prefix map for markmacro commands."
+  "w" #'markmacro-mark-words
+  "W" #'markmacro-mark-symbols
+  "l" #'markmacro-mark-lines
+  "," #'markmacro-apply-all
+  "." #'markmacro-apply-all-except-first
+  "m" #'markmacro-rect-set
+  "d" #'markmacro-rect-delete
+  "r" #'markmacro-rect-replace
+  "i" #'markmacro-rect-insert
+  "c" #'markmacro-rect-mark-columns
+  "s" #'markmacro-rect-mark-symbols)
+(fset 'markmacro-command-map markmacro-command-map)
+
 (use-package markmacro
   :vc (:url "https://github.com/manateelazycat/markmacro" :rev "master")
-  :bind
-  ("C-c C-m w" . markmacro-mark-words)
-  ("C-c C-m W" . markmacro-mark-symbols)
-  ("C-c C-m l" . markmacro-mark-lines)
-  ("C-c C-m ," . markmacro-apply-all)
-  ("C-c C-m ." . markmacro-apply-all-except-first)
-  ("C-c C-m m" . markmacro-rect-set)
-  ("C-c C-m d" . markmacro-rect-delete)
-  ("C-c C-m r" . markmacro-rect-replace)
-  ("C-c C-m i" . markmacro-rect-insert)
-  ("C-c C-m c" . markmacro-rect-mark-columns)
-  ("C-c C-m s" . markmacro-rect-mark-symbols))
+  :demand t
+  :bind ("C-c C-m" . markmacro-command-map))
 
 (use-package pcre2el
   :config

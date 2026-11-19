@@ -20,7 +20,7 @@
 ;; -----------------------------------------------------------------------
 
 (global-auto-revert-mode 1)
-(global-hl-line-mode 1)
+(global-hl-line-mode -1)
 
 (put 'narrow-to-region 'disabled nil)
 

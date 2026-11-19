@@ -16,6 +16,8 @@
 ;;    taking over keys the buffer needs.
 ;; Editing commands (kill/copy/yank, etc.) keep using native Emacs keys
 ;; such as C-w / M-w / C-y / C-k / C-d, which also work in Normal state.
+;; In Normal state `d' and `y' are bound to `kill-region' and
+;; `kill-ring-save', so they behave exactly like C-w / M-w.
 ;;
 ;; `orbyte-global-mode' enables one `orbyte-mode' per buffer and picks the
 ;; starting state: Normal for `orbyte-modes', Motion for buffers where
@@ -26,9 +28,10 @@
 ;;  - `v' selects whole lines and `V' selects characters, the reverse of
 ;;    vim.  See `orbyte-visual-line' and `orbyte-visual'.
 ;;  - There is no operator-pending state, so `dw' / `dd' / `cw' do not
-;;    exist.  Select first (for example `v e'), then edit: `c' and `y'
-;;    need a selection, and `d' kills the selection.  Without a
-;;    selection `d' kills the character at point (like vim's `x').
+;;    exist.  Select first, then edit: `d' and `y' use the native
+;;    region (`kill-region' / `kill-ring-save'), and `c' kills it and
+;;    enters Insert.  The region is Emacs's half-open region, not an
+;;    inclusive vim-style selection.
 ;;  - Transient Mark mode is required; it is on by default.
 ;;
 ;; In Normal state SPC starts a keypad (like Meow keypad) that lets you
@@ -72,11 +75,34 @@
 Matches the listed modes and any mode derived from them.  Other buffers
 get Motion state when letters do not insert text, and no state at all
 otherwise."
-  :type '(repeat symbol))
+  :type '(repeat symbol)
+  :group 'orbyte)
 
-(defconst orbyte--excluded-modes
+(defcustom orbyte-excluded-modes
   '(term-mode vterm-mode eat-mode eshell-mode)
-  "Major modes that never get any state, so their keys reach the process.")
+  "Major modes that never get any state, so their keys reach the process.
+`eshell-mode' also looks self-inserting, but it is listed explicitly so
+that a change in keymap detection cannot give it Motion state."
+  :type '(repeat symbol)
+  :group 'orbyte)
+
+(defcustom orbyte-normal-lighter (string #x20 #xF0018)
+  "Mode line indicator for the Normal state.
+Change it to another string if the default Nerd Font glyph is unavailable."
+  :type 'string
+  :group 'orbyte)
+
+(defcustom orbyte-insert-lighter (string #x20 #xF4E9)
+  "Mode line indicator for the Insert state.
+Change it to another string if the default Nerd Font glyph is unavailable."
+  :type 'string
+  :group 'orbyte)
+
+(defcustom orbyte-motion-lighter (string #x20 #xF0E7B)
+  "Mode line indicator for the Motion state.
+Change it to another string if the default Nerd Font glyph is unavailable."
+  :type 'string
+  :group 'orbyte)
 
 ;;;; Motion commands
 
@@ -148,13 +174,23 @@ WORDs are separated by whitespace only."
   "Forget the line-wise selection state."
   (setq orbyte--linewise nil)
   (when (markerp orbyte--linewise-anchor)
-    (set-marker orbyte--linewise-anchor nil)
-    (setq orbyte--linewise-anchor nil)))
+    (set-marker orbyte--linewise-anchor nil))
+  (setq orbyte--linewise-anchor nil))
 
-(defun orbyte--linewise-pre-command ()
+(defun orbyte--selection-clear ()
+  "Forget any orbyte selection state."
+  (orbyte--linewise-clear))
+
+(defun orbyte--selection-pre-command ()
   "Drop stale line-wise state once the region has been deactivated."
   (when (and orbyte--linewise (not (region-active-p)))
-    (orbyte--linewise-clear)))
+    (orbyte--selection-clear)))
+
+(defun orbyte--line-eol (pos)
+  "Return the end of the line at POS, ignoring fields."
+  (save-excursion
+    (goto-char pos)
+    (pos-eol)))
 
 (defun orbyte--linewise-refresh ()
   "Keep a line-wise selection aligned to whole lines.
@@ -163,128 +199,88 @@ selection by complete lines, the way vim's line-wise visual mode does."
   (when (and orbyte--linewise
              (markerp orbyte--linewise-anchor)
              (marker-position orbyte--linewise-anchor)
-             (region-active-p))
+             (region-active-p)
+             (not deactivate-mark))
     (let ((anchor (marker-position orbyte--linewise-anchor)))
       (if (>= (point) anchor)
           (progn
             (set-mark anchor)
-            (goto-char (line-end-position)))
-        (set-mark (save-excursion
-                    (goto-char anchor)
-                    (line-end-position)))
-        (goto-char (line-beginning-position))))))
-
-(defun orbyte--selection-bounds ()
-  "Return the (BEG . END) of the active selection.
-A line-wise selection is widened to whole lines, including the trailing
-newline, so that `d' / `c' / `y' behave like vim.  An empty character-wise
-selection counts as the character at point."
-  (let ((b (region-beginning))
-        (e (region-end)))
-    (cond
-     ((and orbyte--linewise (> e b))
-      (cons (save-excursion (goto-char b) (line-beginning-position))
-            (save-excursion (goto-char e)
-                            (if (bolp) e (line-beginning-position 2)))))
-     ((and orbyte--linewise (>= (point) b))
-      ;; A line-wise selection of a single empty line.
-      (cons (save-excursion (goto-char b) (line-beginning-position))
-            (save-excursion (goto-char b) (line-beginning-position 2))))
-     ((= b e)
-      (cons (point) (min (1+ (point)) (point-max))))
-     (t (cons b e)))))
+            (goto-char (pos-eol)))
+        (set-mark (orbyte--line-eol anchor))
+        (goto-char (pos-bol))))))
 
 (defun orbyte-visual ()
   "Toggle character-wise selection (character-wise visual mode).
 This is vim's `v', but bound to `V' here; see `orbyte-visual-line'.
-The character at point is selected and later motions extend the region."
+Starts an empty selection at point; later motions extend it.  The
+selection is the ordinary Emacs region, so the position at the moving
+end is exclusive, like `kill-region' and `kill-ring-save'."
   (interactive)
-  (orbyte--linewise-clear)
   (if (region-active-p)
-      (deactivate-mark)
-    (push-mark (point) t t)
-    (unless (eobp) (forward-char 1))))
+      (progn
+        (deactivate-mark)
+        (orbyte--selection-clear))
+    (orbyte--selection-clear)
+    (set-mark (point))))
 
 (defun orbyte-visual-line ()
   "Toggle line-wise selection (line-wise visual mode).
 This is vim's `V', but bound to `v' here; see `orbyte-visual'.
 Selects the current line; later motions keep extending the selection by
-whole lines, and `d' / `c' / `y' operate on complete lines including
-the trailing newline."
+whole lines.  The region is the ordinary Emacs region, so it ends at the
+line end and does not include the trailing newline."
   (interactive)
   (if (and orbyte--linewise (region-active-p))
       (progn
         (deactivate-mark)
-        (orbyte--linewise-clear))
-    (when (markerp orbyte--linewise-anchor)
-      (set-marker orbyte--linewise-anchor nil))
+        (orbyte--selection-clear))
+    (orbyte--selection-clear)
     (setq orbyte--linewise t
-          orbyte--linewise-anchor (copy-marker (line-beginning-position) t))
-    (goto-char (line-beginning-position))
-    (push-mark (point) t t)
-    (goto-char (line-end-position))))
+          orbyte--linewise-anchor (copy-marker (pos-bol) t))
+    (goto-char (pos-bol))
+    (set-mark (point))
+    (goto-char (pos-eol))))
 
 ;;;; Editing commands
 
 (defun orbyte-change ()
-  "Kill the active selection and enter Insert state (vim's visual c)."
+  "Kill the active selection and enter Insert state (vim's visual c).
+Killing uses the native region, like `kill-region'."
   (interactive "*")
   (unless (region-active-p)
     (user-error "No active selection"))
-  (let ((bounds (orbyte--selection-bounds)))
-    (kill-region (car bounds) (cdr bounds)))
-  (orbyte--linewise-clear)
+  (kill-region (mark t) (point) 'region)
+  (orbyte--selection-clear)
   (orbyte-insert-mode 1))
-
-(defun orbyte-delete (&optional arg)
-  "Kill the active selection, staying in Normal state (vim's visual d).
-Without an active selection, kill ARG characters at point like `kill-region',
-so that the text can be pasted back with `yank'."
-  (interactive "*P")
-  (if (region-active-p)
-      (progn
-        (let ((bounds (orbyte--selection-bounds)))
-          (kill-region (car bounds) (cdr bounds)))
-        (orbyte--linewise-clear))
-    (let* ((n (prefix-numeric-value arg))
-           (p (point))
-           (q (save-excursion (forward-char n) (point))))
-      (kill-region (min p q) (max p q)))))
-
-(defun orbyte-copy ()
-  "Copy the active selection to the kill ring (vim's visual y).
-Point moves to the start of the selection and the selection is cleared."
-  (interactive)
-  (unless (region-active-p)
-    (user-error "No active selection"))
-  (let* ((bounds (orbyte--selection-bounds))
-         (beg (car bounds)))
-    (kill-ring-save beg (cdr bounds))
-    (deactivate-mark)
-    (orbyte--linewise-clear)
-    (goto-char beg)))
 
 (defun orbyte-paste (&optional arg)
   "Yank at point (vim's p).
-With an active selection, replace the selection with the yanked text.
+With an active selection, replace the region with the yanked text.
 ARG is passed to `yank'."
   (interactive "*P")
   (when (region-active-p)
-    (let ((bounds (orbyte--selection-bounds)))
-      (delete-region (car bounds) (cdr bounds)))
-    (orbyte--linewise-clear)
+    (delete-region (region-beginning) (region-end))
+    (orbyte--selection-clear)
     (deactivate-mark))
   (yank arg))
 
 (defun orbyte-o ()
   "With an active selection, swap point and mark (vim's visual o).
-Otherwise open a new line below and enter Insert state (vim's o).
-Note that the two meanings are exclusive: to open a line while a
-selection is active, cancel the selection first."
+In a line-wise selection this swaps the anchor line, so the selection
+does not collapse.  Otherwise, open a new line below and enter Insert
+state (vim's o)."
   (interactive)
-  (if (region-active-p)
-      (exchange-point-and-mark)
-    (orbyte-open-below)))
+  (cond
+   ((not (region-active-p))
+    (orbyte-open-below))
+   ((and orbyte--linewise
+         (markerp orbyte--linewise-anchor)
+         (marker-position orbyte--linewise-anchor))
+    (let ((old (marker-position orbyte--linewise-anchor)))
+      (set-marker orbyte--linewise-anchor (pos-bol))
+      (goto-char old)))
+   (t
+    (exchange-point-and-mark))))
 
 ;;;; Entering / leaving Insert
 
@@ -296,7 +292,7 @@ sits on the last typed character, the way vim leaves the cursor after
   (interactive)
   (when (and orbyte-insert-mode (not (bolp)))
     (backward-char))
-  (orbyte--linewise-clear)
+  (orbyte--selection-clear)
   (orbyte-normal-mode 1))
 
 (defun orbyte-insert ()
@@ -319,20 +315,20 @@ sits on the last typed character, the way vim leaves the cursor after
 (defun orbyte-append-eol ()
   "Enter Insert state at the end of the line (vim's A)."
   (interactive)
-  (end-of-line)
+  (goto-char (pos-eol))
   (orbyte-insert-mode 1))
 
 (defun orbyte-open-below ()
   "Open a new line below and enter Insert state (vim's o)."
   (interactive)
-  (end-of-line)
+  (goto-char (pos-eol))
   (newline-and-indent)
   (orbyte-insert-mode 1))
 
 (defun orbyte-open-above ()
   "Open a new line above and enter Insert state (vim's O)."
   (interactive)
-  (beginning-of-line)
+  (goto-char (pos-bol))
   (open-line 1)
   (indent-according-to-mode)
   (orbyte-insert-mode 1))
@@ -349,6 +345,9 @@ inside the previous one (the `23' inside `123' for `[0-9]+').")
 `orbyte-search-next' and `orbyte-search-prev' rebuild the search through
 `isearch-search-fun' with it, so custom engines (pcre2el, visual-regexp,
 ...) keep working after the isearch has ended.")
+
+(defvar-local orbyte--hi-lock-lighter nil
+  "Lighter of the hi-lock pattern left by orbyte's search, or nil.")
 
 (defun orbyte--search (forward)
   "Search for the last isearch string in direction FORWARD, wrapping around.
@@ -386,25 +385,93 @@ isearch.  Point ends up on the start of the match."
   (interactive)
   (orbyte--search (not isearch-forward)))
 
+(defun orbyte-find-region-or-symbol ()
+  "Search for the active region, or the symbol at point.
+With no active region, if a search highlight is already shown, remove
+it instead of searching again.  A region always starts a new search.
+The region's text is searched literally.  The search finishes
+immediately, so `n' and `N' can be used right away.  Unlike
+`isearch-forward-symbol-at-point', this does not leave isearch active."
+  (interactive)
+  (cond
+   ((and orbyte--hi-lock-lighter (not (use-region-p)))
+    (orbyte-clear-search-highlight))
+   ((use-region-p)
+    (let ((string (buffer-substring-no-properties (region-beginning)
+                                                  (region-end))))
+      (when (string-empty-p string)
+        (user-error "Empty region"))
+      (deactivate-mark)
+      (isearch-forward nil 1)
+      (isearch-yank-string string)
+      (isearch-done)))
+   (t
+    (isearch-forward-symbol-at-point)
+    (isearch-done))))
+
+(defun orbyte-clear-search-highlight ()
+  "Remove the highlight left by the last orbyte search."
+  (interactive)
+  (when orbyte--hi-lock-lighter
+    (require 'hi-lock nil t)
+    (ignore-errors (unhighlight-regexp orbyte--hi-lock-lighter))
+    (setq orbyte--hi-lock-lighter nil)))
+
+(defun orbyte--search-regexp ()
+  "Return the regexp matching the current isearch string."
+  (cond
+   ((functionp isearch-regexp-function)
+    (funcall isearch-regexp-function isearch-string))
+   (isearch-regexp-function
+    (word-search-regexp isearch-string))
+   ((and isearch-regexp
+         (bound-and-true-p pcre-mode)
+         (fboundp 'pcre-to-elisp/cached))
+    (pcre-to-elisp/cached isearch-string))
+   (isearch-regexp isearch-string)
+   (t (regexp-quote isearch-string))))
+
+(defun orbyte--highlight-search ()
+  "Use hi-lock to keep the last isearch's matches visible."
+  (when (and (or orbyte-normal-mode orbyte-insert-mode)
+             (not (equal isearch-string "")))
+    (require 'hi-lock nil t)
+    (let ((regexp (orbyte--search-regexp)))
+      (orbyte-clear-search-highlight)
+      (let ((case-fold-search isearch-case-fold-search)
+            (search-upper-case nil))
+        (when (ignore-errors
+                (highlight-regexp regexp 'lazy-highlight nil isearch-string)
+                t)
+          (setq orbyte--hi-lock-lighter isearch-string))))))
+
 (defun orbyte--isearch-end ()
   "Remember the engine and match, then move to the match start.
-This makes `/' behave like vim's search; Emacs leaves point at the end."
-  (setq orbyte--search-fun-function isearch-search-fun-function)
-  (setq orbyte--last-match
-        (unless isearch-mode-end-hook-quit
-          (when isearch-other-end
-            (if isearch-forward
-                (cons isearch-other-end (point))
-              (cons (point) isearch-other-end)))))
-  (when (and orbyte-normal-mode
-             isearch-forward
-             isearch-other-end
-             (not isearch-mode-end-hook-quit))
-    (goto-char isearch-other-end)))
+This makes `/' behave like vim's search; Emacs leaves point at the end.
+Only buffers in Normal or Insert state are affected, even though the
+hook itself is global."
+  (when (or orbyte-normal-mode orbyte-insert-mode)
+    (setq orbyte--search-fun-function isearch-search-fun-function)
+    (setq orbyte--last-match
+          (unless isearch-mode-end-hook-quit
+            (when isearch-other-end
+              (if isearch-forward
+                  (cons isearch-other-end (point))
+                (cons (point) isearch-other-end)))))
+    (when (and orbyte-normal-mode
+               isearch-forward
+               isearch-other-end
+               (not isearch-mode-end-hook-quit))
+      (goto-char isearch-other-end))
+    (when (and (or orbyte-normal-mode orbyte-insert-mode)
+               (not isearch-mode-end-hook-quit))
+      (orbyte--highlight-search))))
 
 ;; Run before other end hooks: pcre2el restores `isearch-search-fun-function'
 ;; in its own end hook, and the value is needed for `n' / `N' afterwards.
 (add-hook 'isearch-mode-end-hook #'orbyte--isearch-end -90)
+;; A new search replaces the highlight left by the previous one.
+(add-hook 'isearch-mode-hook #'orbyte-clear-search-highlight)
 
 ;;;; Keypad (SPC): type key sequences without holding modifiers
 
@@ -547,7 +614,7 @@ A numeric prefix typed before SPC is passed on to the command."
   "r" #'query-replace
   "R" #'query-replace-regexp
   "t" #'rectangle-mark-mode
-  "y" #'orbyte-copy
+  "y" #'kill-ring-save
   "u" #'undo
   "U" #'undo-redo
   "i" #'orbyte-insert
@@ -559,7 +626,8 @@ A numeric prefix typed before SPC is passed on to the command."
   ;; a s d f g h j k l
   "a" #'orbyte-append
   "A" #'orbyte-append-eol
-  "d" #'orbyte-delete
+  "d" #'kill-region
+  "f" #'orbyte-find-region-or-symbol
   "g" orbyte-g-map
   "G" #'end-of-buffer
   "h" #'backward-char
@@ -578,7 +646,6 @@ A numeric prefix typed before SPC is passed on to the command."
   "B" #'orbyte-WORD-backward
   "n" #'orbyte-search-next
   "N" #'orbyte-search-prev
-  "m" #'evilmi-jump-items-native
   "M" #'orbyte-window-middle
 
   ;; Space bar: keypad / leader key (SPC q = C-c q, SPC x f = C-x C-f)
@@ -587,7 +654,6 @@ A numeric prefix typed before SPC is passed on to the command."
   ;; Symbol keys
   "^" #'back-to-indentation
   "%" #'orbyte-match-paren
-  "*" #'isearch-forward-symbol-at-point
   "[" #'backward-paragraph
   "]" #'forward-paragraph
   "{" #'backward-sentence
@@ -628,77 +694,114 @@ KEY is anything `keymap-set' accepts, and DEF may be nil to unbind KEY."
             (let ((map (car group))
                   (pairs (cdr group)))
               (while pairs
+                (unless (cdr pairs)
+                  (error "orbyte-define-keys: %S has an odd number of arguments"
+                         group))
                 (push `(keymap-set ,map ,(car pairs) ,(cadr pairs)) forms)
                 (setq pairs (cddr pairs)))))
           (nreverse forms))))
 
 ;;;; States (three minor modes)
 
-(defun orbyte--update-cursor ()
-  "Use a bar cursor in Insert state and a box in the other states."
+(defvar-local orbyte-mode-line-tag nil
+  "Mode line tag for the active orbyte state, or nil.
+Updated by `orbyte--update-ui'.")
+
+(defun orbyte--state-lighter (mode)
+  "Return MODE's lighter, with surrounding whitespace removed.
+MODE is one of the orbyte state minor modes.  This follows the
+`:lighter' value, so customising it also changes the mode line tag."
+  (let ((lighter (cadr (assq mode minor-mode-alist))))
+    (when lighter
+      (let ((tag (if (stringp lighter) lighter (eval lighter))))
+        (when (stringp tag)
+          (string-trim tag))))))
+
+(defun orbyte--update-ui ()
+  "Update cursor shape and mode line tag for the current state."
   (if (or orbyte-normal-mode orbyte-insert-mode orbyte-motion-mode)
-      (setq-local cursor-type (if orbyte-insert-mode 'bar 'box))
-    (kill-local-variable 'cursor-type)))
+      (progn
+        (setq-local cursor-type (if orbyte-insert-mode 'bar 'box))
+        (setq orbyte-mode-line-tag
+              (orbyte--state-lighter
+               (cond (orbyte-insert-mode 'orbyte-insert-mode)
+                     (orbyte-normal-mode 'orbyte-normal-mode)
+                     (orbyte-motion-mode 'orbyte-motion-mode)))))
+    (kill-local-variable 'cursor-type)
+    (kill-local-variable 'orbyte-mode-line-tag)))
 
 (define-minor-mode orbyte-normal-mode
   "Normal state: single-key motion/selection; native Emacs keys for editing."
-  :lighter " <N>"
+  :lighter orbyte-normal-lighter
   :keymap orbyte-normal-map
   (if orbyte-normal-mode
       (progn
-        ;; Keep line-wise selections aligned to whole lines.
-        (add-hook 'pre-command-hook #'orbyte--linewise-pre-command nil t)
+        ;; Keep line-wise selections aligned to whole lines, and drop
+        ;; stale state when the mark is deactivated.
+        (add-hook 'pre-command-hook #'orbyte--selection-pre-command nil t)
         (add-hook 'post-command-hook #'orbyte--linewise-refresh nil t)
+        (add-hook 'deactivate-mark-hook #'orbyte--selection-clear nil t)
         (orbyte-insert-mode -1)
         (orbyte-motion-mode -1))
-    (remove-hook 'pre-command-hook #'orbyte--linewise-pre-command t)
+    (remove-hook 'pre-command-hook #'orbyte--selection-pre-command t)
     (remove-hook 'post-command-hook #'orbyte--linewise-refresh t)
-    (orbyte--linewise-clear))
-  (orbyte--update-cursor))
+    (remove-hook 'deactivate-mark-hook #'orbyte--selection-clear t)
+    (orbyte--selection-clear))
+  (orbyte--update-ui))
 
 (define-minor-mode orbyte-motion-mode
   "Motion state: the leader in buffers that take no text input.
 Used for buffers such as dired, help or magit, where letters do not
 insert text.  Its keymap only holds the leader, so the buffer's own keys
 keep working."
-  :lighter " <M>"
+  :lighter orbyte-motion-lighter
   :keymap orbyte-motion-map
   (when orbyte-motion-mode
     (orbyte-normal-mode -1)
     (orbyte-insert-mode -1))
-  (orbyte--update-cursor))
+  (orbyte--update-ui))
 
 (define-minor-mode orbyte-insert-mode
   "Insert state: native Emacs."
-  :lighter " <I>"
+  :lighter orbyte-insert-lighter
   :keymap orbyte-insert-map
   (when orbyte-insert-mode
     (orbyte-normal-mode -1)
     (orbyte-motion-mode -1))
-  (orbyte--update-cursor))
+  (orbyte--update-ui))
 
 ;;;; The orbyte mode (one per buffer)
 
 (defun orbyte--self-inserting-p ()
   "Return non-nil when plain letters insert text in the current buffer.
 Remapped commands count as self-inserting, so terminals that remap
-`self-insert-command' are recognised too."
-  (let ((i ?a)
-        (found nil))
-    (while (and (<= i ?z) (not found))
-      (let ((cmd (key-binding (vector i))))
-        (when (and (symbolp cmd)
-                   (string-match-p "self-insert" (symbol-name cmd)))
-          (setq found t)))
-      (setq i (1+ i)))
-    found))
+`self-insert-command' are recognised too.  The orbyte state keymaps are
+ignored while checking, so re-enabling `orbyte-mode' in a buffer that is
+already in Normal state does not mistake the orbyte bindings for buffer
+bindings."
+  (let ((orbyte-normal-mode nil)
+        (orbyte-insert-mode nil)
+        (orbyte-motion-mode nil))
+    (and (seq-some
+          (lambda (i)
+            (let ((cmd (key-binding (vector i))))
+              (and (symbolp cmd)
+                   (string-match-p "self-insert" (symbol-name cmd)))))
+          (number-sequence ?a ?z))
+         t)))
 
 (defun orbyte--switch-state (state)
-  "Enable STATE and disable the other states."
-  (dolist (pair '((normal . orbyte-normal-mode)
-                  (insert . orbyte-insert-mode)
-                  (motion . orbyte-motion-mode)))
-    (funcall (cdr pair) (if (eq (car pair) state) 1 -1))))
+  "Enable STATE and disable the other states.
+Each state's minor-mode body already disables the other two, so only
+the target state needs to be enabled.  With STATE nil, disable all three."
+  (pcase state
+    ('normal (orbyte-normal-mode 1))
+    ('insert (orbyte-insert-mode 1))
+    ('motion (orbyte-motion-mode 1))
+    (_
+     (orbyte-normal-mode -1)
+     (orbyte-insert-mode -1)
+     (orbyte-motion-mode -1))))
 
 (define-minor-mode orbyte-mode
   "Modal editing for the current buffer.
@@ -706,15 +809,18 @@ This is the buffer-level switch used by `orbyte-global-mode'; the keys
 come from `orbyte-normal-mode', `orbyte-insert-mode' or
 `orbyte-motion-mode'.  The starting state is Normal for `orbyte-modes',
 Motion for buffers where letters do not insert text (dired, help,
-magit, ...), and none for everything else."
+magit, ...), and none for everything else.  Re-enabling the mode keeps
+the current state instead of choosing it again."
   :lighter nil
-  (orbyte--switch-state
-   (and orbyte-mode
-        (cond
-         ((apply #'derived-mode-p orbyte--excluded-modes) nil)
-         ((apply #'derived-mode-p orbyte-modes) 'normal)
-         ((orbyte--self-inserting-p) nil)
-         (t 'motion)))))
+  (unless (and orbyte-mode
+               (or orbyte-normal-mode orbyte-insert-mode orbyte-motion-mode))
+    (orbyte--switch-state
+     (and orbyte-mode
+          (cond
+           ((apply #'derived-mode-p orbyte-excluded-modes) nil)
+           ((apply #'derived-mode-p orbyte-modes) 'normal)
+           ((orbyte--self-inserting-p) nil)
+           (t 'motion))))))
 
 ;;;; Global mode
 
