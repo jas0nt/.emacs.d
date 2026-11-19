@@ -262,9 +262,9 @@ This is a global toggle shared by all Dired buffers."
 (defvar satchel-persistent-marks (make-hash-table :test 'equal)
   "Map of absolute file name -> stored dired marker char.
 This is the *stored* state (packed kind or deletion flag).  A pasted
-file keeps the same character, but is painted with
-`satchel-queued-mark-face'; see `satchel--set-mark-appearance'.  Used
-to redraw pack/delete marks after a Dired buffer is recreated, e.g. via
+file keeps the same character and gets a queued-mark overlay with
+`satchel-queued-mark-face'; see `satchel--set-mark-overlay'.  Used to
+redraw pack/delete marks after a Dired buffer is recreated, e.g. via
 `find-alternate-file' when switching tabs.")
 
 ;; The script queue is defined further down, but painting a mark needs to
@@ -308,25 +308,46 @@ packed in the satchel."
        (gethash file waiting)
        (not (assoc file satchel-stash))))
 
-(defun satchel--set-mark-appearance (bol queued)
-  "Set the face of the Dired mark at BOL, according to QUEUED.
-The queued flag is also stored as the `satchel-queued-mark' text
-property, so the font-lock rule can restore the face if the line is
-fontified again."
-  (let ((char (char-after bol)))
-    (cond
-     ((eq char ?\s)
-      (remove-text-properties bol (1+ bol)
-                              '(face nil satchel-queued-mark nil)))
-     ((eq char dired-del-marker)
-      (put-text-property bol (1+ bol) 'face 'dired-flagged-face)
-      (remove-text-properties bol (1+ bol) '(satchel-queued-mark nil)))
-     (queued
-      (put-text-property bol (1+ bol) 'face 'satchel-queued-mark-face)
-      (put-text-property bol (1+ bol) 'satchel-queued-mark t))
-     (t
-      (put-text-property bol (1+ bol) 'face dired-mark-face)
-      (remove-text-properties bol (1+ bol) '(satchel-queued-mark nil))))))
+(defvar-local satchel--mark-overlays nil
+  "Hash of absolute file name -> overlay for queued marks in this buffer.")
+
+(defun satchel--mark-overlay-table ()
+  "Return this buffer's queued-mark overlay table, creating it if needed."
+  (if (hash-table-p satchel--mark-overlays)
+      satchel--mark-overlays
+    (setq satchel--mark-overlays (make-hash-table :test 'equal))))
+
+(defun satchel--remove-mark-overlay (file)
+  "Delete the queued-mark overlay of FILE in this buffer, if any."
+  (when (hash-table-p satchel--mark-overlays)
+    (when-let* ((ov (gethash file satchel--mark-overlays)))
+      (delete-overlay ov)
+      (remhash file satchel--mark-overlays))))
+
+(defun satchel--set-mark-overlay (file bol queued)
+  "Show FILE's mark at BOL as queued with an overlay, or remove it.
+Overlays are used instead of a text face because Dired's font-lock
+would replace a text face on the next redisplay or after
+`revert-buffer'; an overlay face takes precedence over font-lock."
+  (if (not queued)
+      (satchel--remove-mark-overlay file)
+    (let* ((table (satchel--mark-overlay-table))
+           (ov (gethash file table)))
+      (unless (and ov (overlay-buffer ov))
+        (setq ov (make-overlay bol (1+ bol)))
+        (overlay-put ov 'satchel-mark t)
+        (overlay-put ov 'evaporate t)
+        (puthash file ov table))
+      (move-overlay ov bol (1+ bol))
+      (overlay-put ov 'face 'satchel-queued-mark-face))))
+
+(defun satchel--remove-mark-overlays (files)
+  "Delete queued-mark overlays for FILES in every buffer."
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      (when (hash-table-p satchel--mark-overlays)
+        (dolist (f files)
+          (satchel--remove-mark-overlay f))))))
 
 (defun satchel--mark-line (file char waiting)
   "Mark the current Dired line for FILE with CHAR, then paint its state.
@@ -336,7 +357,7 @@ WAITING is the hash set returned by `satchel--waiting-files'."
         (queued (satchel--queued-mark-p file char waiting))
         (dired-marker-char char))
     (dired-mark 1)
-    (satchel--set-mark-appearance bol queued)))
+    (satchel--set-mark-overlay file bol queued)))
 
 (defun satchel--paint (table)
   "Apply TABLE (hash: absolute file -> stored marker char) to this buffer.
@@ -369,46 +390,6 @@ this buffer are considered.  A few files are located with
                     (satchel--mark-line f c waiting)
                   (forward-line 1))))))))))
 
-(defun satchel--font-lock-mark-matcher (limit)
-  "Match the next `y'/`x' Dired mark up to LIMIT, for font-lock."
-  (let (found)
-    (while (and (not found)
-                (re-search-forward "^[^ \n]" limit t))
-      (let ((char (char-after (match-beginning 0))))
-        (when (or (eq char satchel-copy-marker-char)
-                  (eq char satchel-cut-marker-char))
-          (setq found t))))
-    found))
-
-(defun satchel--font-lock-mark-face ()
-  "Return the face for the Dired mark currently matched by font-lock."
-  (if (get-text-property (match-beginning 0) 'satchel-queued-mark)
-      'satchel-queued-mark-face
-    dired-mark-face))
-
-(defun satchel--font-lock-marks ()
-  "Install the font-lock rule that colors queued satchel marks."
-  (font-lock-add-keywords
-   nil
-   (list (list #'satchel--font-lock-mark-matcher
-               '(0 (satchel--font-lock-mark-face) t)))
-   t))
-
-(defun satchel--font-lock-marks-now ()
-  "Install the mark font-lock rule in already-existing Dired buffers.
-`dired-satchel' can be loaded lazily, long after the first Dired buffer
-was created.  Without this, those buffers keep only Dired's own mark
-rule, which repaints `y'/`x' marks in `dired-mark-face' on the next
-redisplay and after every `revert-buffer', hiding the queued color."
-  (dolist (buf (buffer-list))
-    (with-current-buffer buf
-      (when (derived-mode-p 'dired-mode)
-        (satchel--font-lock-marks)
-        (when font-lock-mode
-          (font-lock-flush))))))
-
-(add-hook 'dired-mode-hook #'satchel--font-lock-marks)
-
 (defun satchel--paint-in-all-buffers (table)
   "Apply TABLE (hash: absolute file -> stored marker char) to every buffer."
   (dolist (buf (buffer-list))
@@ -426,6 +407,14 @@ redisplay and after every `revert-buffer', hiding the queued color."
   "Redraw marks recorded in `satchel-persistent-marks' for the files
 in the current Dired buffer.  Meant for `dired-after-readin-hook'."
   (satchel--paint satchel-persistent-marks))
+
+(defun satchel-refresh-marks ()
+  "Redraw every satchel mark in every Dired buffer.
+Useful after external changes, or as a manual fallback if a Dired
+buffer looks stale.  `revert-buffer' should not be needed for this."
+  (interactive)
+  (satchel--paint-in-all-buffers satchel-persistent-marks)
+  (message "Satchel marks refreshed"))
 
 (add-hook 'dired-after-readin-hook #'satchel-restore-persistent-marks)
 
@@ -608,6 +597,7 @@ Return non-nil if the queue changed."
     (dolist (f files)
       (puthash f t set)
       (remhash f satchel-persistent-marks))
+    (satchel--remove-mark-overlays files)
     (setq satchel-stash
           (cl-remove-if (lambda (e) (gethash (car e) set)) satchel-stash))
     (dolist (op satchel--script-ops)
@@ -1599,9 +1589,8 @@ the queue is empty) via `satchel-script-execute'."
    ("q" "Quit" transient-quit-all)])
 
 ;; `dired-satchel' is often loaded lazily by the first satchel command,
-;; when Dired buffers already exist.  Give those buffers the mark
-;; font-lock rule too, then redraw any marks that are already in memory.
-(satchel--font-lock-marks-now)
+;; when Dired buffers already exist.  Redraw marks that are already in
+;; memory; the overlays also work in those buffers.
 (satchel--paint-in-all-buffers satchel-persistent-marks)
 
 (provide 'dired-satchel)
