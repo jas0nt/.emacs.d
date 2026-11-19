@@ -26,7 +26,35 @@
 
 (use-package pcre2el
   :config
-  (pcre-mode 1))
+  (pcre-mode 1)
+
+  ;; Emacs 29.1 and later highlight `query-replace-regexp' matches live
+  ;; while the regexp is being typed, through
+  ;; `minibuffer-lazy-highlight-setup'.
+  ;; That preview is built straight from the minibuffer text, outside
+  ;; `read-regexp', so `pcre-mode' does not translate it: typing "\d"
+  ;; previews a literal "d" even though the replacement that follows
+  ;; uses the translated `[[:digit:]]'.  Translate the preview string
+  ;; as well, but leave isearch's own minibuffer editing alone.
+  (defun my/pcre-lazy-highlight-transform (orig &rest args)
+    (when (and pcre-mode
+               (not isearch-mode)
+               (eq (plist-get args :regexp) t)
+               (null (plist-get args :regexp-function)))
+      (let ((transform (or (plist-get args :transform) #'identity)))
+        (plist-put args :transform
+                   (lambda (string)
+                     (let ((from (funcall transform string)))
+                       (condition-case nil
+                           (pcre-to-elisp/cached from)
+                         (error from)))))))
+    (apply orig args))
+
+  (when (and (fboundp 'minibuffer-lazy-highlight-setup)
+             (not (advice-member-p #'my/pcre-lazy-highlight-transform
+                                   'minibuffer-lazy-highlight-setup)))
+    (advice-add 'minibuffer-lazy-highlight-setup :around
+                #'my/pcre-lazy-highlight-transform)))
 
 (use-package vundo
   :bind ("C-x u" . vundo)
